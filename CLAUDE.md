@@ -12,7 +12,9 @@ to. Several futures invite argument; a future measured against the present invit
 whether it is an improvement, which is a different and smaller question.
 
 Built for the **Nomad Futures Lab** exhibition, one strand of Cosmo Local CNX September 2026.
-See `docs/programme-context.md` for who that is and why it exists.
+Programme context — the people, the venue, the audience — is kept **local only at
+`docs/programme-context.md` and is deliberately not committed**, because it names individuals
+and links private documents. Ask Yan for it.
 
 The engine is deliberately separated from the content: it is a general tool for generating an
 editable speculative city from a boundary polygon, and Wat Ket is its first scene.
@@ -93,6 +95,11 @@ Solo development with LLMs, over three months. The failure mode is architectural
 - **This is a public repo on GitHub.** Everything committed is world-readable: no keys, no tokens,
   no venue or participant contact details. Every `.env*` file is gitignored except `.env.example`,
   which documents variable names with empty values.
+- **Never name residency participants or collaborators in committed files**, and never link private
+  Google Docs or Notion pages. That material lives in `docs/programme-context.md`, which is
+  gitignored and local only. Do not commit it and do not quote its contents into files that are
+  committed — refer to "the local programme notes" instead. This rule exists because the file was
+  committed on 12 Sep 2026 and had to be pulled back out.
 - **Three licences, not one** — code MIT, OSM-derived `baseline` data ODbL, authored 2045 content
   CC BY-SA 4.0. See the table in the README. The root `LICENSE` file stays pure MIT so GitHub
   detects it; the split is stated in the README. Never commit an asset that cannot be
@@ -134,7 +141,8 @@ the code they describe, never left untracked.
 
 ## Docs
 
-- `docs/programme-context.md` — the exhibition, the people, the audience
+- `docs/programme-context.md` — the exhibition, the people, the audience. **Local only, never
+  committed** — see the public-repo note in Working conventions.
 - `docs/architecture.md` — scene schema, OSM pipeline, perf budget, asset strategy
 - `docs/roadmap.md` — the week-one cut line and the path to December
 - `plans/` — one file per piece of substantial work: goal, approach, tasks, outcome

@@ -98,4 +98,4 @@ public use:
 ### Open
 
 Whether Chiang Mai Design Week has a submission deadline or curatorial process that works backwards
-from a date earlier than December — see the open questions in `programme-context.md`.
+from a date earlier than December — see the open questions in the local programme notes.

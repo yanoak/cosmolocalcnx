@@ -21,7 +21,6 @@ Next.js App Router + TypeScript · React Three Fiber + drei · deployed on Verce
 
 Start with [`CLAUDE.md`](./CLAUDE.md) — the project context, the locked decisions, and the non-goals.
 
-- [`docs/programme-context.md`](./docs/programme-context.md) — the exhibition, the people, the audience
 - [`docs/architecture.md`](./docs/architecture.md) — scene schema, OSM pipeline, performance budget, asset strategy
 - [`docs/roadmap.md`](./docs/roadmap.md) — the week-one cut line and the path to December
 - [`plans/`](./plans/) — one file per piece of substantial work: goal, approach, tasks, outcome

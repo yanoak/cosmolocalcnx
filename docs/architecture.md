@@ -209,7 +209,8 @@ to Blender Python scripts for batch normalization and LOD generation.
 Image generation is far more mature than 3D generation, and **because the camera is fixed
 orthographic, billboard impostors never break**. A hundred generated sprites for trees, market
 stalls, motorbikes, laundry and people is an afternoon, and does more for the sense of a lived-in
-place than a week of modelling. This tier wants a real illustrator rather than a generator.
+place than a week of modelling. This tier wants a real illustrator rather than a generator — there
+is one on the residency; see the local programme notes.
 
 ### Tier 4 is for props, not buildings
 

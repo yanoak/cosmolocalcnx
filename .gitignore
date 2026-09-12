@@ -62,3 +62,8 @@ Thumbs.db
 # being up (docs/architecture.md), and the editor's output is committed too (roadmap item 4).
 /data/osm-cache/
 *.overpass.json
+
+# Local-only working notes — people, private doc links, internal programme
+# assessments. Never commit: this repo is public.
+/.local/
+docs/programme-context.md
