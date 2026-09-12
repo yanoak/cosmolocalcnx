@@ -1,8 +1,8 @@
 'use client';
 
 import { MapControls } from '@react-three/drei';
-import { Canvas } from '@react-three/fiber';
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Buildings } from './Buildings';
 import { isometricFit, type Bounds } from './camera';
 import { DebugOverlay } from './DebugOverlay';
@@ -54,6 +54,37 @@ function useMeasuredStage(): [React.RefObject<HTMLDivElement | null>, Size | nul
   }, []);
 
   return [ref, size];
+}
+
+/**
+ * Draw again whenever the page becomes visible.
+ *
+ * `frameloop="demand"` schedules its frames through requestAnimationFrame, which
+ * browsers do not run in a backgrounded tab. So a first frame requested while the
+ * page is hidden is simply dropped, and nothing asks for another — the visitor
+ * arrives at a blank diorama with no error and no way to recover but to resize the
+ * window.
+ *
+ * That is not a hypothetical on this project. **The primary surface is a QR code**,
+ * and a scanned link routinely opens in a background tab that the visitor then
+ * switches to. Four lines, and it removes the one failure mode that would look
+ * exactly like the installation being broken.
+ */
+function RedrawOnVisible() {
+  const invalidate = useThree((state) => state.invalidate);
+
+  useEffect(() => {
+    const redraw = () => invalidate();
+    document.addEventListener('visibilitychange', redraw);
+    // Back/forward cache restores skip visibilitychange entirely.
+    window.addEventListener('pageshow', redraw);
+    return () => {
+      document.removeEventListener('visibilitychange', redraw);
+      window.removeEventListener('pageshow', redraw);
+    };
+  }, [invalidate]);
+
+  return null;
 }
 
 /**
@@ -121,6 +152,8 @@ export function Diorama({
           onPointerMissed={() => onSelect(null)}
         >
           <color attach="background" args={[PALETTE['progress.paper']]} />
+
+          <RedrawOnVisible />
 
           <Ground bounds={bounds} roads={roads} />
           <GroundAreas water={water} green={green} />
