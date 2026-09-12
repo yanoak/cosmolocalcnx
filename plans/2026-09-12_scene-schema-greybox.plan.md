@@ -71,6 +71,11 @@ buildings are individually pickable** — that assumption dies the moment mergin
       both scene and scenario level, `terrain: null` reserved and never implemented
 - [ ] Locale lookup helper with a fallback chain, and a locale toggle in the UI
 - [ ] A hand-written `wat-ket` scene: ~12 baseline buildings, a ground plane, the Ping as a ribbon
+- [ ] Design tokens in one file — palette, roles, ramp derivation — feeding both CSS custom
+      properties and `THREE.Color`. See `docs/design-system.md`
+- [ ] Settle three.js colour management in the same commit as the tokens, so a DOM swatch and a
+      building actually match
+- [ ] Unlit materials, ramp tone chosen per face orientation. No lights in the scene
 - [ ] Footprint + height → `ExtrudeGeometry` args — a pure function, unit-tested
 - [ ] Orthographic camera at 45° / 35.264°, `MapControls` constrained to pan and zoom
 - [ ] Click-to-select via raycast → panel opens with the object's id and kind
@@ -174,6 +179,12 @@ is.
   - the origin maps to `[0, 0]`
   - a point ~100 m north is within a metre of `[0, 100]` at Wat Ket's latitude
   - east/west scales by `cos(latitude)`, not 1:1
+- [ ] Three-tone ramp derivation — unit — `src/engine/__tests__/theme.test.ts`
+  - a base colour yields top lighter and shade darker, hue preserved
+  - derivation is stable: same input, same output, no drift across calls
+- [ ] Contrast ratio — unit — `src/engine/__tests__/theme.test.ts`
+  - every `ui.*` text token clears 4.5:1 against `progress.paper`. This is the test that stops a
+    pretty palette value being used for body text
 - [ ] Locale lookup — unit — `src/engine/__tests__/locale.test.ts`
   - exact locale wins; missing locale falls back down the chain; empty map returns a visible
     placeholder rather than `undefined` leaking into the DOM
@@ -195,15 +206,17 @@ Browser-based, keyboard-first, before this plan goes `done`.
    its heading.
 4. `D` shows the overlay; the 1 m cube is plausibly 1 m against a building of known height. This is
    the check that catches a 100× scale error.
-5. The locale toggle switches every string, and no raw key or `undefined` appears.
-6. The ODbL line is visible without scrolling.
+5. A building's rendered colour matches its token swatch in the DOM. If they differ, colour
+   management is wrong — fix it now, not in week two.
+6. The locale toggle switches every string, and no raw key or `undefined` appears.
+7. The ODbL line is visible without scrolling.
 
 **Phone width, 390 px:**
-7. No horizontal scroll. The panel rises from the bottom and does not cover the selected object.
-8. Every control is at least 44 px. Verified by touch, not only by cursor.
+8. No horizontal scroll. The panel rises from the bottom and does not cover the selected object.
+9. Every control is at least 44 px. Verified by touch, not only by cursor.
 
 **Cheap Android, real device:**
-9. Time to first render on mobile data, not wifi. Frame rate while panning. Whether it throttles
+10. Time to first render on mobile data, not wifi. Frame rate while panning. Whether it throttles
    after three minutes. Numbers recorded in the Outcome — they decide whether a second renderer is
    ever worth discussing.
 
@@ -215,6 +228,9 @@ time slider, no "today" state.
 Also not here: OSM import (item 2), scenario switching (item 3), the editor (item 4), the
 still-render pipeline (item 6), any art, and any locale content beyond English and Thai — the
 structure is generic, the words are not yet written.
+
+From the design system: no component library, no runtime theme switching for visitors, no paper
+grain or print-misregistration effects. Tokens and the ramp only.
 
 ## Open questions
 

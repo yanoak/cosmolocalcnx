@@ -159,6 +159,7 @@ the code they describe, never left untracked.
 - `docs/programme-context.md` — the exhibition, the people, the audience. **Local only, never
   committed** — see the public-repo note in Working conventions.
 - `docs/architecture.md` — scene schema, OSM pipeline, perf budget, asset strategy
+- `docs/design-system.md` — palette from the 1967 PROGRESS cover, role tokens, unlit materials
 - `docs/roadmap.md` — the week-one cut line and the path to December
 - `plans/` — one file per piece of substantial work: goal, approach, tasks, outcome
 - `work-diary/` — the daily record: plan of attack, what shipped, plans and their commits, decisions

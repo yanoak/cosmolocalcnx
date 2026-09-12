@@ -67,3 +67,7 @@ Thumbs.db
 # assessments. Never commit: this repo is public.
 /.local/
 docs/programme-context.md
+
+# Visual reference material — photographs of third-party artefacts, often carrying
+# camera EXIF including GPS. Local only. Derived palettes live in docs/design-system.md.
+/docs/references/
