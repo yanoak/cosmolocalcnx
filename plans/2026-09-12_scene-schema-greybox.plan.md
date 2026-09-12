@@ -67,7 +67,8 @@ buildings are individually pickable** — that assumption dies the moment mergin
 
 - [ ] Scaffold Next.js App Router + TypeScript; viewer at `/`, `src/engine/` for shared components
 - [ ] `SceneDocument` types from `docs/architecture.md` — locale maps, no date on edits,
-      `terrain: null` reserved and never implemented
+      `wasAt` on `remove`/`replace`, hotspots carrying exactly one of `target` or `at`, hotspots at
+      both scene and scenario level, `terrain: null` reserved and never implemented
 - [ ] Locale lookup helper with a fallback chain, and a locale toggle in the UI
 - [ ] A hand-written `wat-ket` scene: ~12 baseline buildings, a ground plane, the Ping as a ribbon
 - [ ] Footprint + height → `ExtrudeGeometry` args — a pure function, unit-tested
@@ -180,6 +181,8 @@ is.
   - accepts `terrain: null`; rejects a populated `terrain`
   - rejects an unknown edit `op`
   - rejects an edit carrying a date field, so the cut time slider cannot creep back via data
+  - accepts `wasAt` on `remove` and `replace`
+  - rejects a hotspot with both `target` and `at`, or with neither
 
 ## Verification
 
@@ -218,8 +221,10 @@ structure is generic, the words are not yet written.
 - [ ] Does a dozen grey boxes plus a river read as a *neighbourhood*, or does the answer stay
       meaningless until real OSM roads land in item 2? The ground plane and river are the cheap
       mitigation; if it still reads as nothing, that is a finding worth having on day one.
-- [ ] **Is there a cheap Android to test on?** This is the only external dependency in the plan,
-      and the last task cannot close without one. If not, sort it this week.
+- [x] ~~Is there a cheap Android to test on?~~ **Borrowed at the residency.** Most participants are
+      local and on site all month. Ask in the first days rather than on the 23rd — it is still the
+      only task in this plan that cannot be done at a desk, and it now depends on someone else's
+      schedule.
 - [x] ~~Fixed isometric framing, or orbit constrained to 45° steps?~~ Settled by
       `docs/architecture.md`: `MapControls`, constrained — pan and zoom, no rotation. Touch-first
       argued for it and the document already said so.

@@ -8,7 +8,7 @@ Sequenced so the schema is right on day one and everything downstream is disposa
 |---|---|
 | 1 | **Schema + grey-box blockout.** Orthographic camera, click-to-select, panel opens. No art. Content fields are locale-generic from the first commit, not hardcoded `{en, th}`. Ends by loading it on a cheap Android — see *Device reach*. |
 | 2 | **OSM baseline generation** — a script that writes `baseline` into the scene document. Not a UI. |
-| 3 | **Scenario switching.** Two or three 2045 futures as states of one toggle. No time slider and no "today" view — see below. |
+| 3 | **Scenario switching.** Two or three 2045 futures as states of one toggle, each an independent edit list. No time slider and no "today" view — see below. |
 | 4 | **Scrappy editor, one day.** Localhost only. Click ground to place, arrow keys nudge, `R` rotates, `Delete` removes, one button copies scene JSON to the clipboard. No auth, no uploads, no database. Output gets committed to the repo. |
 | 5 | **Content.** Hotspots and bilingual copy, kept in data files so the partly-formed 2045 material can land late. Each hotspot carries its own before-and-after — with no "today" view, this copy is the only thing that makes an intervention legible as a change. Includes the Thai typography pass: subsetted webfont, and line-breaking checked on a real phone. |
 | 6 | **Exhibition hardening.** Idle reset + attract loop, fullscreen kiosk mode, static export served locally on the laptop/projection machine, thumb-sized hit targets, QR code and short URL, ambient audio. Plus the still-render pipeline — see *Device reach*. |
@@ -32,6 +32,12 @@ What it costs: the present was the reference point that made an intervention leg
 The hotspot copy now has to carry that before-and-after itself, which raises the stakes on item 5
 rather than lowering them. And **two scenarios becomes a hard minimum** — with one, the toggle is
 dead and there is nothing to compare. See "Futures only" in `docs/architecture.md`.
+
+**How many futures: build for N, author two, decide on a third during the residency.** The schema
+takes any number, so the cost of a third is content, not code. Two reads as a binary — this or
+that, better or worse. Three reads as a space of possibilities, which is closer to the argument.
+The 2045 material is still only partly defined, so the honest plan is to commit to two and take a
+view around the 20th on whether the residency has produced enough for a third. Decided 12 Sep 2026.
 
 ### Localization — bilingual now, architected for more
 
@@ -102,13 +108,26 @@ Two reasons beyond convenience:
 
 1. Hand-authoring forty building positions as coordinates in a text file is miserable enough to
    derail the week.
-2. **The NFL workshops are on 26–27 Sep — two days *after* the exhibition opens.** If the editor is
-   usable by then, workshop participants can place their own 2045 interventions into the live scene
-   and the exhibition accumulates over its run. That turns the editor from internal tooling into
-   part of the programme, and argues for building it earlier in the week rather than treating it as
-   optional.
+2. **The workshops are on 26–27 Sep — two days *after* the exhibition opens.** If the editor is
+   usable by then, participants can place their own 2045 interventions and the exhibition
+   accumulates over its run. That turns the editor from internal tooling into part of the
+   programme, and argues for building it earlier in the week rather than treating it as optional.
 
 None of it is throwaway: it is the first draft of the real editor's interaction layer.
+
+#### How workshop output actually lands — decided 12 Sep 2026
+
+**Collected and merged overnight, not written live.** Participants work in the localhost editor on
+a facilitator's laptop and export scene JSON; it gets merged and redeployed that evening.
+
+This keeps every September non-goal intact — no auth, no uploads, no database — and the exhibition
+still accumulates over its run, just on a one-day lag that nobody in a mall will notice. It also
+leaves an editorial step between a stranger's placement and the public scene, which a live write
+path would not.
+
+The alternative was pulling a real save endpoint forward into the week of opening. That breaks
+three non-goals and introduces auth, storage and moderation at the worst possible moment. The
+one-day lag is the cheaper answer to the same problem.
 
 ## To December — Chiang Mai Design Week
 

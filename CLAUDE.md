@@ -72,7 +72,9 @@ Do not build these before 24 Sep, however reasonable they sound in isolation:
   camera clips into geometry, and WASD is meaningless on a phone. This is a fixed isometric diorama
   you inspect, not a world you traverse. If a character is wanted later: click-to-move, fixed camera.
 - **No auth, no uploads, no database, no admin panel.** Week one's editor is localhost-only and
-  copies scene JSON to the clipboard, which gets committed to the repo.
+  copies scene JSON to the clipboard, which gets committed to the repo. This survived the workshop
+  question: participant work on 26–27 Sep is exported, merged and redeployed overnight rather than
+  written live, so the exhibition still accumulates without a save endpoint. Decided 12 Sep 2026.
 - **No time slider, and no "today" view.** Cut 12 Sep 2026. The toggle switches between 2045
   futures only; the present is never a visitor-facing state. Edits therefore carry no date and
   their order means nothing temporally, and no scene state is ever partially applied. The

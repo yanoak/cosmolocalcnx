@@ -24,15 +24,24 @@ The renderer never knows or cares where it came from.
     {
       "id": "commons-2045",
       "label": { "en": "Riverside Commons", "th": "…" },   // locale map, not a fixed pair
-      "edits": [                         // a DIFF over baseline, never a copy of it
+      "edits": [                         // a DIFF over baseline, never a copy of it.
+                                         // Order exists for undo. It carries no sense of time.
         { "op": "add",     "asset": "kenney/market-hall", "at": [120, -40], "rot": 90 },
-        { "op": "remove",  "target": "osm/way/12345" },
-        { "op": "replace", "target": "osm/way/67890", "asset": "custom/floating-school" }
-      ]
+        { "op": "remove",  "target": "osm/way/12345",
+                           "wasAt": [80, -12] },        // snapshot — survives OSM re-import
+        { "op": "replace", "target": "osm/way/67890", "asset": "custom/floating-school",
+                           "wasAt": [150, 30] }
+      ],
+      "hotspots": [ /* scenario-specific: about this future's own interventions */ ]
     }
   ],
 
-  "hotspots": [ /* id, position, label{…}, body{…}, image — same locale maps */ ],
+  "hotspots": [                          // shared: what every future has in common
+    { "id": "wat-ket-temple",
+      "target": "osm/way/12345",         // attach to an object where there is one…
+      "at": [60, -20],                   // …otherwise a bare position. One or the other.
+      "label": { /* locale map */ }, "body": { /* locale map */ }, "image": "…" }
+  ],
 
   "terrain": null                        // reserved. See "Skip elevation" below. Do not implement.
 }
@@ -62,6 +71,54 @@ And switching what the visitor is looking at is trivial: render `baseline + edit
 **The editor is the viewer plus a layer** — same renderer components, same document, one extra mode.
 Building a second renderer for the editor is the failure mode to watch for.
 
+### Edits snapshot what they point at
+
+Edits reference baseline objects by OSM id, which is what lets the baseline be regenerated without
+destroying placement work. But OSM ids are not stable forever — ways get split, merged, retagged
+and deleted upstream, and a re-import in November can leave an edit pointing at nothing.
+
+So **every `remove` and `replace` also stores `wasAt`**, the target's centroid at the time the edit
+was authored. Two fields' worth of cost, and it means:
+
+- A `replace` whose target vanished still places its asset in the right spot.
+- A `remove` whose target vanished is a no-op, which is the correct outcome anyway.
+- The import **warns loudly** and lists every orphaned edit, rather than failing the import or
+  silently dropping work. The import must keep working at 2am in week two; a triage queue that
+  blocks it is worse than a warning nobody reads that day.
+
+Decided 12 Sep 2026.
+
+### Hotspots attach to objects, and fall back to positions
+
+A hotspot names a `target` when it describes something that exists in the scene, so moving that
+object in the editor carries its hotspot along. A hotspot about a place rather than a thing — the
+riverbank, a junction, a view across the water — carries a bare `at` position instead. One or the
+other, never both.
+
+**Scope is two-level.** Hotspots about what every future shares — the river, the temple, the market
+— live once at scene level. Hotspots about a specific intervention live inside that scenario, so
+they appear only while that future is selected. Without the split, either the shared copy gets
+written two or three times and drifts, or an intervention's hotspot shows up while looking at a
+future that does not contain it.
+
+This matters more since the present was cut: the hotspot copy now carries the before-and-after that
+a "today" view used to supply, so a hotspot drifting away from its subject loses more than a label.
+
+Decided 12 Sep 2026.
+
+### Scenarios do not compose
+
+Each scenario is its own `edits` array over the same baseline. There is no shared "common 2045"
+layer that futures inherit and extend.
+
+A shared layer would say something true — that these futures agree on some things — and would avoid
+writing an agreed edit more than once. It was rejected anyway: it introduces a composition order to
+reason about and a second place to look when something renders wrong, for a saving that only bites
+at a scale this project will not reach before December. Independent lists already satisfy the
+roadmap's test that a second scenario is nearly free.
+
+Revisit if a fourth scenario ever appears. Decided 12 Sep 2026.
+
 ### Localised text is a map, not a pair
 
 Every human-readable string in the document — scenario labels, hotspot titles and bodies — is an
@@ -89,6 +146,22 @@ Simpler than it sounds. A day or two, not a week.
 
 Run this as a **script that writes `baseline` into the scene document**, not as a live fetch in the
 viewer. The exhibition must not depend on Overpass being up.
+
+### Coordinates and units
+
+Fixed once, here, because getting it wrong is invisible until everything is 100× too big:
+
+- **Metres**, always. No other unit appears anywhere in the document or the scene graph.
+- **three.js native orientation** — Y is up, X is east, and **−Z is north**. Footprints in the
+  document are planar `[x, y]` pairs in local metres, which map to scene `[x, −y]` on the ground
+  plane with height along Y.
+- **`origin`** is the lat/lon that maps to `[0, 0]`. Local tangent-plane projection against it, with
+  east/west scaled by `cos(latitude)` — not 1:1, which is the classic way to get a squashed city.
+- **Imported assets are baked to this convention at ingest**, not rotated at runtime. Blender and
+  much of the glTF world is Z-up; the normalization step described under "The normalization trap"
+  is where that is resolved, once, per asset.
+
+The projection and the footprint-to-geometry conversion are pure functions and both get unit tests.
 
 ### Limits
 
