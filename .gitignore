@@ -24,9 +24,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
-.env
+# env — public repo, so ignore every variant and document the names instead
+.env*
+!.env.example
 
 # vercel
 .vercel
@@ -34,3 +34,31 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local tooling state — CLAUDE.md and .claude/settings.json stay committed
+.claude/settings.local.json
+
+# editors and OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+Thumbs.db
+
+# 3D asset authoring sources — heavy and not needed to build.
+# The optimised .glb/.gltf and their textures ARE committed: the asset library is one of the
+# three things docs/roadmap.md says compounds, and the perf budget in docs/architecture.md
+# (~100–150k triangles) is the size discipline. Do not move these to Git LFS — it complicates
+# Vercel builds and undermines the offline static export on the exhibition machine.
+*.blend
+*.blend[0-9]
+*.fbx
+*.max
+*.psd
+*.substance
+
+# Raw Overpass / OSM responses — regenerable and large.
+# The GENERATED scene document is committed: the exhibition must not depend on Overpass
+# being up (docs/architecture.md), and the editor's output is committed too (roadmap item 4).
+/data/osm-cache/
+*.overpass.json
