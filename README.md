@@ -29,11 +29,34 @@ Start with [`CLAUDE.md`](./CLAUDE.md) — the project context, the locked decisi
 
 ## Running it
 
-Not yet scaffolded. This repo currently contains planning documentation only.
+Node lives under nvm and is not on the default PATH that tooling sees:
+
+```sh
+export PATH="$HOME/.nvm/versions/node/v22.18.0/bin:$PATH"
+npm install
+npm run dev          # viewer at http://localhost:3000
+npm test             # the pure functions — projection, clipping, height synthesis, budget guards
+npm run typecheck
+```
+
+### Regenerating the baseline
+
+The scene document is committed, so **none of this is needed to run the app** — the exhibition
+must not depend on a third-party API being up. Run it only to re-import OpenStreetMap:
+
+```sh
+npm run fetch:osm                 # rebuilds baseline from the cached Overpass response
+npm run fetch:osm -- --refresh    # re-queries Overpass first
+npm run fetch:elevation           # flood-reference elevation, which the renderer never reads
+```
+
+The district boundary is extracted once from the HDX Common Operational Dataset and committed as
+a single polygon; the 377 MB source archive is not. See the docstring in
+`scripts/extract-boundary.py` for the download URL.
 
 ## Licensing
 
-This repository contains three kinds of thing under three different licences. A single blanket
+This repository contains four kinds of thing under four different licences. A single blanket
 licence would misstate the terms, because OpenStreetMap's is share-alike and cannot be
 relicensed.
 
@@ -42,9 +65,14 @@ relicensed.
 | **Code** — the engine, the OSM pipeline, the editor, everything in `src/` and `scripts/` | [MIT](./LICENSE) |
 | **OSM-derived data** — building footprints, roads, water and landuse in any scene document's `baseline` | [ODbL](https://opendatacommons.org/licenses/odbl/), © OpenStreetMap contributors |
 | **Authored content** — the 2045 scenarios, hotspot text, images, and the Wat Ket scene's speculative layer | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
+| **Administrative boundary** — `src/scenes/wat-ket.boundary.geojson`, the Wat Ket tambon polygon | [CC BY-IGO](https://creativecommons.org/licenses/by/3.0/igo/), OCHA Field Information Services Section |
+
+Elevation samples in `src/scenes/*.elevation.json` come from SRTM, which is public domain
+(NASA/USGS) and needs no attribution.
 
 Third-party 3D assets keep their own licences, recorded alongside them in the asset library.
 Anything that cannot be redistributed is not committed — it gets fetched by a script instead.
 
-**Attribution in the viewer:** "© OpenStreetMap contributors" must be visible on screen. ODbL
-requires it and it is one line of JSX, easy to forget until someone asks.
+**Attribution in the viewer:** two of these require visible on-screen credit, and both are in the
+viewer's footer — "© OpenStreetMap contributors" for ODbL, and OCHA for the CC BY-IGO boundary.
+A few lines of JSX, easy to forget until someone asks.

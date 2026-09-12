@@ -121,8 +121,8 @@ Solo development with LLMs, over three months. The failure mode is architectural
   people's names would defeat the purpose. Without it the hook still catches private links but
   warns that it cannot catch names; ask Yan for a copy. `--no-verify` bypasses it, which should be
   rare enough to feel wrong.
-- **Three licences, not one** — code MIT, OSM-derived `baseline` data ODbL, authored 2045 content
-  CC BY-SA 4.0. See the table in the README. The root `LICENSE` file stays pure MIT so GitHub
+- **Four licences, not one** — code MIT, OSM-derived `baseline` data ODbL, authored 2045 content
+  CC BY-SA 4.0, and the HDX tambon boundary CC BY-IGO. See the table in the README. The root `LICENSE` file stays pure MIT so GitHub
   detects it; the split is stated in the README. Never commit an asset that cannot be
   redistributed — fetch it with a script instead.
 - **Assets live in the repo, not Git LFS.** The optimised `.glb`/`.gltf` and their textures are
@@ -131,7 +131,13 @@ Solo development with LLMs, over three months. The failure mode is architectural
   offline static export the exhibition machine depends on. The perf budget is the size discipline —
   anything too big for git was already too big for a phone.
 - **The Overpass response cache is gitignored; the generated scene document is committed.** Same
-  reason as everything else here: the exhibition must not depend on Overpass being up.
+  reason as everything else here: the exhibition must not depend on Overpass being up. The same
+  goes for the 377 MB HDX boundary archive: `scripts/extract-boundary.py` distils it to one
+  committed polygon and the archive stays out of the repo.
+- **Regenerating data is `npm run fetch:osm` and `npm run fetch:elevation`.** Neither is needed to
+  run the app. A re-run with the same cache must produce a **byte-identical** scene document — if
+  it does not, the height synthesis has stopped being deterministic and every downstream placement
+  judgement is unstable.
 - Update this file when a decision is made, so the next session inherits it. The diary is the trail;
   this file and `docs/` are the source of truth.
 

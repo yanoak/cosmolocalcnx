@@ -163,12 +163,53 @@ Fixed once, here, because getting it wrong is invisible until everything is 100�
 
 The projection and the footprint-to-geometry conversion are pure functions and both get unit tests.
 
+### The boundary comes from HDX, and the scene is a clip of it
+
+OSM has no Wat Ket polygon — no admin relation, no place polygon, nothing. The boundary is the
+**ADM3 (tambon) polygon `TH500106`** from the HDX Common Operational Dataset for Thailand, pulled
+out once by `scripts/extract-boundary.py` and committed as a single 174-point polygon. The 377 MB
+source archive is not committed; nothing at build or run time reads it.
+
+**The tambon is not the scene.** It is 6.85 km² — above the hard limit below — and it is an
+administrative unit rather than a neighbourhood, running 3 km south of the origin past anything a
+resident would call Wat Ket. So `scripts/fetch-osm.ts` intersects it with a rectangular working
+extent, and *that* is what lands in the document's `boundary`. The extent is the editorial lever
+and it is one constant in one file; the tambon polygon beside it stays authoritative and untouched.
+
+Chosen 12 Sep 2026: 1.50 × 2.70 km, 2.98 km², 1,182 buildings.
+
 ### Limits
 
 - Warn above ~1 km², hard-reject above ~4 km², and cap building count. Overpass will time out or
-  return something unrenderable long before any real limit. Wat Ket fits comfortably.
-- **ODbL attribution.** OSM is ODbL — "© OpenStreetMap contributors" must be visible in the viewer.
-  One line of JSX, easy to forget until someone asks.
+  return something unrenderable long before any real limit. **The import enforces both and refuses
+  to write** rather than leaving it to be discovered in the browser.
+- **An extruded footprint is far cheaper than a mesh.** Measured 12 Sep 2026: about **4v − 4
+  triangles for v ring vertices**, which is ~17 per real OSM building — not the 50–100 a mesh
+  costs. All 1,182 buildings come to ~22k triangles against a ~100k baseline ceiling. Geometry is
+  therefore *not* the constraint on how big the boundary can be; area and legibility are. Do not
+  shrink the scene to save triangles without measuring first.
+- **Two attributions, both required to be visible**, and both are in the viewer's footer: "©
+  OpenStreetMap contributors" for ODbL, and OCHA for the CC BY-IGO boundary. A few lines of JSX,
+  easy to forget until someone asks.
+
+### Height is synthesised, not imported
+
+96% of Wat Ket's buildings carry no height information at all — one `height` tag and 56
+`building:levels` across the whole scene. So `src/engine/synth.ts` is not a fallback, it is the
+primary source, and it authors almost the entire skyline.
+
+Two properties matter, and they are the whole design of that module:
+
+- **Deterministic.** Variation comes from a hash of the OSM id, never from `Math.random()`. A
+  re-import in November must not reshuffle the skyline, or every screenshot, every hotspot position
+  and every placement judgement made before it silently stops matching.
+- **Not a spreadsheet.** A flat per-kind default across 1,182 buildings is a city of identical
+  blocks — obviously fake to an audience who knows these streets. Storeys come from footprint area
+  (logarithmically) and kind, jittered by the id hash and quantised to half-storeys.
+
+A tagged height is trusted far further than an invented one: synthesis is capped at 30 m, tags at
+150 m, because `Supalai Monte` on the east bank really is `height=111` and clamping it would delete
+the tallest building in the district.
 
 ## Performance budget
 
@@ -182,7 +223,13 @@ Visitors load this on their own phones. These are requirements, not optimisation
 - **Only hotspots and placed objects need to be pickable.** Baseline buildings do not — which
   removes the main reason merging would otherwise hurt, and saves a day of picking-buffer gymnastics.
 - **Roads as a canvas texture** drawn on the ground plane, not buffered polygons. Vastly less code,
-  and at isometric low-poly it looks the same or better.
+  and at isometric low-poly it looks the same or better. Implemented in `src/engine/roads.ts`: the
+  document stores polylines and the texture is drawn at load, so roads stay editable and the
+  resolution can follow the surface.
+- **Baseline geometry is merged into one mesh per layer** (`src/engine/merge.ts`) — buildings,
+  water, green. At 1,182 buildings a mesh each is 1,182 draw calls against a budget of "a few
+  dozen". Picking survives merging: a raycast reports a face index and `idForFace` maps it back to
+  an OSM id, so the architecture's permission to drop baseline picking has not had to be used.
 - **Draco or meshopt on every asset; KTX2 for any texture.**
 
 These are a budget, not a measurement. Roadmap item 1 ends by loading a representative scene on a
