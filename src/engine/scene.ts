@@ -8,21 +8,49 @@
 
 import type { LocaleMap } from './locale';
 import type { Point2 } from './extrude';
+import { projectToLocalMetres } from './project';
 
 export type OsmId = string; // "osm/way/12345"
 
 export interface BaselineBuilding {
   id: OsmId;
   footprint: Point2[];
+  /** Courtyards. Absent on almost every building; present on OSM multipolygons. */
+  holes?: Point2[][];
   height: number;
+  kind: string;
+}
+
+/**
+ * Roads are stored as polylines and drawn to a ground-plane canvas texture, not
+ * extruded. See the performance budget in docs/architecture.md — buffered road
+ * polygons are the classic way to spend the whole triangle budget on tarmac.
+ *
+ * The document keeps the lines rather than a pre-rendered image so the texture can
+ * be redrawn at whatever resolution a surface needs, and so roads stay editable.
+ */
+export interface BaselineRoad {
+  id: OsmId;
+  /** Polyline in local metres — not a closed ring. */
+  path: Point2[];
+  kind: string;
+  /** Carriageway width in metres, for the stroke. */
+  width: number;
+}
+
+/** Water and green: flat polygons on the ground plane. */
+export interface BaselineArea {
+  id: OsmId;
+  footprint: Point2[];
+  holes?: Point2[][];
   kind: string;
 }
 
 export interface Baseline {
   buildings: BaselineBuilding[];
-  roads: unknown[];
-  water: unknown[];
-  green: unknown[];
+  roads: BaselineRoad[];
+  water: BaselineArea[];
+  green: BaselineArea[];
 }
 
 /**
@@ -129,4 +157,25 @@ export function validateScene(doc: SceneDocument): string[] {
   }
 
   return errors;
+}
+
+/**
+ * The scene's extent in local metres, derived from its GeoJSON boundary.
+ *
+ * The renderer needs this to size the ground plane, the road texture and the
+ * camera. Deriving it from the boundary rather than hard-coding numbers is what
+ * lets the clip in scripts/fetch-osm.ts move without the viewer knowing.
+ */
+export function sceneBoundsMetres(doc: SceneDocument): [number, number, number, number] {
+  const ring = (doc.boundary as { coordinates?: number[][][] })?.coordinates?.[0];
+  if (!ring?.length) return [-200, -200, 200, 200];
+
+  const origin = doc.origin as [number, number];
+  return ring.reduce<[number, number, number, number]>(
+    ([w, s, e, n], [lon, lat]) => {
+      const [x, y] = projectToLocalMetres([lat, lon], origin);
+      return [Math.min(w, x), Math.min(s, y), Math.max(e, x), Math.max(n, y)];
+    },
+    [Infinity, Infinity, -Infinity, -Infinity],
+  );
 }

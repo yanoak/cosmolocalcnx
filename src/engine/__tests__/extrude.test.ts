@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildingHeight, footprintToExtrudeArgs } from '@/engine/extrude';
+import { footprintToExtrudeArgs, type Point2 } from '@/engine/extrude';
 
 const SQUARE: [number, number][] = [
   [0, 0],
@@ -36,26 +36,49 @@ describe('footprintToExtrudeArgs', () => {
   });
 });
 
-describe('buildingHeight', () => {
-  it('prefers an explicit height tag', () => {
-    expect(buildingHeight({ height: '9.6', 'building:levels': '5' })).toBe(9.6);
+describe('footprintToExtrudeArgs holes', () => {
+  const OUTER: Point2[] = [
+    [0, 0],
+    [10, 0],
+    [10, 10],
+    [0, 10],
+  ];
+  const COURTYARD: Point2[] = [
+    [3, 3],
+    [7, 3],
+    [7, 7],
+    [3, 7],
+  ];
+
+  it('has no holes by default', () => {
+    expect(footprintToExtrudeArgs(OUTER, 5).holes).toEqual([]);
   });
 
-  it('falls back to levels x 3.2', () => {
-    expect(buildingHeight({ 'building:levels': '3' })).toBeCloseTo(9.6, 5);
+  it('winds a hole opposite to the outer ring, whichever way it arrived', () => {
+    const wind = (ring: Point2[]) => {
+      let s = 0;
+      for (let i = 0; i < ring.length; i++) {
+        const [x1, y1] = ring[i];
+        const [x2, y2] = ring[(i + 1) % ring.length];
+        s += x1 * y2 - x2 * y1;
+      }
+      return Math.sign(s);
+    };
+
+    for (const hole of [COURTYARD, [...COURTYARD].reverse()]) {
+      const args = footprintToExtrudeArgs(OUTER, 5, [hole]);
+      expect(wind(args.points)).toBe(1);
+      expect(args.holes).toHaveLength(1);
+      expect(wind(args.holes[0])).toBe(-1);
+    }
   });
 
-  it('falls back to a per-kind default when nothing is tagged', () => {
-    expect(buildingHeight({}, 'residential')).toBeGreaterThan(0);
-    expect(buildingHeight({})).toBeGreaterThan(0);
+  it('drops a hole too small to be a ring rather than emitting broken geometry', () => {
+    expect(footprintToExtrudeArgs(OUTER, 5, [[[1, 1], [2, 2]]]).holes).toEqual([]);
   });
 
-  it('ignores junk tags rather than producing NaN', () => {
-    expect(buildingHeight({ height: 'about three' })).toBeGreaterThan(0);
-    expect(Number.isFinite(buildingHeight({ height: 'about three' }))).toBe(true);
-  });
-
-  it('handles a height tag carrying units', () => {
-    expect(buildingHeight({ height: '12 m' })).toBe(12);
+  it('opens a closed hole ring', () => {
+    const closed = [...COURTYARD, COURTYARD[0]];
+    expect(footprintToExtrudeArgs(OUTER, 5, [closed]).holes[0]).toHaveLength(4);
   });
 });

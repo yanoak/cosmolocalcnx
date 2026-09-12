@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { projectToLocalMetres } from '@/engine/project';
+import { localMetresToLatLon, projectToLocalMetres, type LatLon } from '@/engine/project';
 
 // Wat Ket, east bank of the Ping.
 const ORIGIN: [number, number] = [18.7912, 99.0043];
@@ -34,5 +34,25 @@ describe('projectToLocalMetres', () => {
     const [, northY] = projectToLocalMetres([ORIGIN[0] + 0.001, ORIGIN[1]], ORIGIN);
     expect(eastX).toBeGreaterThan(0);
     expect(northY).toBeGreaterThan(0);
+  });
+});
+
+describe('localMetresToLatLon', () => {
+  const ORIGIN: LatLon = [18.7912, 99.0043];
+
+  it('round-trips a point through the projection', () => {
+    for (const point of [
+      [18.7912, 99.0043],
+      [18.8046, 99.0205],
+      [18.7641, 98.9997],
+    ] as LatLon[]) {
+      const [lat, lon] = localMetresToLatLon(projectToLocalMetres(point, ORIGIN), ORIGIN);
+      expect(lat).toBeCloseTo(point[0], 9);
+      expect(lon).toBeCloseTo(point[1], 9);
+    }
+  });
+
+  it('maps the origin to [0, 0] and back', () => {
+    expect(localMetresToLatLon([0, 0], ORIGIN)).toEqual(ORIGIN);
   });
 });

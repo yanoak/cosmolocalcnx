@@ -57,6 +57,12 @@ Thumbs.db
 *.psd
 *.substance
 
+# HDX COD-AB source archives — 175–437 MB each, and we need one polygon out of one
+# of them. scripts/extract-boundary.py pulls that polygon into
+# src/scenes/wat-ket.boundary.geojson, which IS committed. The archive is not:
+# nothing at build or run time reads it, and it is a one-command download.
+/data/hdx/
+
 # Raw Overpass / OSM responses — regenerable and large.
 # The GENERATED scene document is committed: the exhibition must not depend on Overpass
 # being up (docs/architecture.md), and the editor's output is committed too (roadmap item 4).
