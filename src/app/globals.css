@@ -47,6 +47,9 @@ button[aria-pressed='true'] { background: color-mix(in srgb, var(--ui-focus) 18%
    size at first layout, which is the standard fix. */
 .canvas-wrap { position: relative; flex: 1; min-width: 0; }
 .canvas-fill { position: absolute; inset: 0; }
+/* Diorama measures this box itself and sizes the canvas from it — see the comment
+   in Diorama.tsx. It must therefore have a definite size of its own. */
+.diorama { position: absolute; inset: 0; }
 .canvas-wrap:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: -3px; }
 
 .panel {

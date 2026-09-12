@@ -9,10 +9,22 @@ import { PALETTE, UI_TOKENS } from './theme';
  * 3D bugs do not produce stack traces, which is exactly where LLM-assisted work is
  * weakest — so this goes in on day one, per CLAUDE.md.
  */
-export function DebugOverlay({ wireframe }: { wireframe: boolean }) {
+export function DebugOverlay({
+  bounds,
+  wireframe,
+}: {
+  bounds: [number, number, number, number];
+  wireframe: boolean;
+}) {
+  const [west, south, east, north] = bounds;
+  const span = Math.max(east - west, north - south);
+  // A round number of 50 m cells that covers the scene, rather than a fixed 400 m
+  // grid that the district now runs several times past.
+  const grid = Math.ceil(span / 50) * 50;
+
   return (
     <group>
-      <axesHelper args={[20]} />
+      <axesHelper args={[50]} />
       {/* A 1 m cube in clear ground, NOT at the origin — the origin sits inside the
           temple footprint, where the cube cannot be compared against anything. If
           this does not read as a doorstep beside a shophouse, the projection or the
@@ -21,10 +33,10 @@ export function DebugOverlay({ wireframe }: { wireframe: boolean }) {
         <meshBasicMaterial color={UI_TOKENS['ui.accent']} toneMapped={false} />
         <Edges color={UI_TOKENS['ui.text']} />
       </Box>
-      {/* 10 m grid, so distances are readable without measuring. */}
+      {/* 50 m grid, so distances are readable without measuring. */}
       <gridHelper
-        args={[400, 40, PALETTE['progress.ink'], PALETTE['progress.ink']]}
-        position={[20, 0.01, 0]}
+        args={[grid, grid / 50, PALETTE['progress.ink'], PALETTE['progress.ink']]}
+        position={[(west + east) / 2, 0.01, -(south + north) / 2]}
       />
       {wireframe && <WireframeTint />}
     </group>

@@ -5,7 +5,7 @@ import { Diorama } from '@/engine/Diorama';
 import { TokenSwatches } from '@/engine/DebugOverlay';
 import { SelectPanel, type Selection } from '@/engine/SelectPanel';
 import { step } from '@/engine/ordering';
-import { validateScene, type SceneDocument } from '@/engine/scene';
+import { sceneBoundsMetres, validateScene, type SceneDocument } from '@/engine/scene';
 import scene from '@/scenes/wat-ket.json';
 
 const DOC = scene as unknown as SceneDocument;
@@ -25,6 +25,7 @@ export default function Page() {
   const stage = useRef<HTMLDivElement>(null);
 
   const buildings = DOC.baseline.buildings;
+  const bounds = useMemo(() => sceneBoundsMetres(DOC), []);
 
   // Surfaces a bad hand-edit immediately rather than rendering something wrong.
   const problems = useMemo(() => validateScene(DOC), []);
@@ -95,14 +96,17 @@ export default function Page() {
           onKeyDown={onKeyDown}
         >
           <div className="canvas-fill">
-          <Diorama
-            buildings={buildings}
-            water={DOC.baseline.water as { id: string; footprint: [number, number][] }[]}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            debug={debug}
-            wireframe={wireframe}
-          />
+            <Diorama
+              bounds={bounds}
+              buildings={buildings}
+              roads={DOC.baseline.roads}
+              water={DOC.baseline.water}
+              green={DOC.baseline.green}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              debug={debug}
+              wireframe={wireframe}
+            />
           </div>
         </div>
         <SelectPanel selection={selection} locale={locale} onClose={close} />
@@ -110,11 +114,18 @@ export default function Page() {
 
       {debug && <TokenSwatches />}
 
-      {/* ODbL requires this to be visible. One line of JSX, easy to forget until
-          someone asks. See docs/architecture.md. */}
+      {/* Two sources, two licences, and both require attribution to be VISIBLE —
+          OSM under ODbL, and the Wat Ket tambon boundary under CC BY-IGO. A few
+          lines of JSX, easy to forget until someone asks. See the licensing table
+          in README.md. */}
       <p className="attribution">
         Building footprints and street data ©{' '}
         <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, ODbL.
+        District boundary from{' '}
+        <a href="https://data.humdata.org/dataset/cod-ab-tha">
+          OCHA Thailand administrative boundaries
+        </a>
+        , CC BY-IGO.
       </p>
     </main>
   );

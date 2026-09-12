@@ -144,7 +144,29 @@ export const SURFACE_ROLES = {
 export const GROUND = {
   ground: shiftLightness(PALETTE['progress.paper'], -0.06),
   road: shiftLightness(PALETTE['progress.paper'], -0.16, -0.04),
+  /** Parks, pitches and gardens. Lifted a long way off the palette green, which is
+   *  a dark ink colour and reads as a hole in the ground when laid flat. */
+  green: shiftLightness(PALETTE['progress.green'], +0.36, -0.18),
 } as const satisfies Record<string, Hex>;
+
+/**
+ * The street hierarchy, as tones on the ground rather than as geometry.
+ *
+ * Roads are drawn into a canvas texture, so their only visual variable besides
+ * width is tone — which is why the hierarchy has to be legible here rather than in
+ * a material. Wider and darker for the roads that carry the district's shape.
+ */
+export const ROAD_TONES = {
+  major: shiftLightness(PALETTE['progress.paper'], -0.22, -0.04),
+  secondary: shiftLightness(PALETTE['progress.paper'], -0.19, -0.04),
+  street: shiftLightness(PALETTE['progress.paper'], -0.16, -0.04),
+  service: shiftLightness(PALETTE['progress.paper'], -0.13, -0.04),
+  path: shiftLightness(PALETTE['progress.paper'], -0.1, -0.04),
+} as const satisfies Record<string, Hex>;
+
+export function roadTone(kind: string): Hex {
+  return ROAD_TONES[kind as keyof typeof ROAD_TONES] ?? ROAD_TONES.street;
+}
 
 /**
  * UI tokens are DERIVED DARKER from the palette, never taken from it. The raw values
