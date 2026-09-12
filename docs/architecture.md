@@ -23,7 +23,7 @@ The renderer never knows or cares where it came from.
   "scenarios": [
     {
       "id": "commons-2045",
-      "label": { "en": "Riverside Commons", "th": "…" },
+      "label": { "en": "Riverside Commons", "th": "…" },   // locale map, not a fixed pair
       "edits": [                         // a DIFF over baseline, never a copy of it
         { "op": "add",     "asset": "kenney/market-hall", "at": [120, -40], "rot": 90 },
         { "op": "remove",  "target": "osm/way/12345" },
@@ -32,7 +32,7 @@ The renderer never knows or cares where it came from.
     }
   ],
 
-  "hotspots": [ /* id, position, label{en,th}, body{en,th}, image */ ],
+  "hotspots": [ /* id, position, label{…}, body{…}, image — same locale maps */ ],
 
   "terrain": null                        // reserved. See "Skip elevation" below. Do not implement.
 }
@@ -61,6 +61,19 @@ And switching what the visitor is looking at is trivial: render `baseline + edit
 
 **The editor is the viewer plus a layer** — same renderer components, same document, one extra mode.
 Building a second renderer for the editor is the failure mode to watch for.
+
+### Localised text is a map, not a pair
+
+Every human-readable string in the document — scenario labels, hotspot titles and bodies — is an
+object keyed by locale code, and the renderer looks up the active locale with a fallback chain. It
+is **not** a fixed `{en, th}` shape, even though English and Thai are the only locales September
+will ship.
+
+The difference costs about an hour now and is painful to retrofit once a dozen hotspots across
+several scenarios have been authored. Its value is entirely optionality: the content is already
+designed to land late, and a residency is a plausible place for a translator or a Tai Tham reader
+to appear. If one does, the only missing piece should be the words. See *Localization* in
+`docs/roadmap.md` for what is and is not in scope.
 
 ## OSM pipeline
 
@@ -98,6 +111,11 @@ Visitors load this on their own phones. These are requirements, not optimisation
 - **Roads as a canvas texture** drawn on the ground plane, not buffered polygons. Vastly less code,
   and at isometric low-poly it looks the same or better.
 - **Draco or meshopt on every asset; KTX2 for any texture.**
+
+These are a budget, not a measurement. Roadmap item 1 ends by loading a representative scene on a
+cheap Android, because the realistic failure on a low-end phone is load time and thermal
+throttling rather than WebGL support — and that distinction decides whether a second renderer is
+ever worth building. See *Device reach* in `docs/roadmap.md`.
 
 ### Skip elevation entirely
 

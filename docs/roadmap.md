@@ -6,12 +6,12 @@ Sequenced so the schema is right on day one and everything downstream is disposa
 
 | # | Work |
 |---|---|
-| 1 | **Schema + grey-box blockout.** Orthographic camera, click-to-select, panel opens. No art. |
+| 1 | **Schema + grey-box blockout.** Orthographic camera, click-to-select, panel opens. No art. Content fields are locale-generic from the first commit, not hardcoded `{en, th}`. Ends by loading it on a cheap Android — see *Device reach*. |
 | 2 | **OSM baseline generation** — a script that writes `baseline` into the scene document. Not a UI. |
 | 3 | **Scenario switching.** Two or three 2045 futures as states of one toggle. No time slider and no "today" view — see below. |
 | 4 | **Scrappy editor, one day.** Localhost only. Click ground to place, arrow keys nudge, `R` rotates, `Delete` removes, one button copies scene JSON to the clipboard. No auth, no uploads, no database. Output gets committed to the repo. |
-| 5 | **Content.** Hotspots and bilingual copy, kept in data files so the partly-formed 2045 material can land late. Each hotspot carries its own before-and-after — with no "today" view, this copy is the only thing that makes an intervention legible as a change. |
-| 6 | **Exhibition hardening.** Idle reset + attract loop, fullscreen kiosk mode, static export served locally on the laptop/projection machine, thumb-sized hit targets, QR code and short URL, ambient audio. |
+| 5 | **Content.** Hotspots and bilingual copy, kept in data files so the partly-formed 2045 material can land late. Each hotspot carries its own before-and-after — with no "today" view, this copy is the only thing that makes an intervention legible as a change. Includes the Thai typography pass: subsetted webfont, and line-breaking checked on a real phone. |
+| 6 | **Exhibition hardening.** Idle reset + attract loop, fullscreen kiosk mode, static export served locally on the laptop/projection machine, thumb-sized hit targets, QR code and short URL, ambient audio. Plus the still-render pipeline — see *Device reach*. |
 | 7 | **Buffer.** You will need all of it. |
 
 ### Cut: the time slider, and the present
@@ -32,6 +32,59 @@ What it costs: the present was the reference point that made an intervention leg
 The hotspot copy now has to carry that before-and-after itself, which raises the stakes on item 5
 rather than lowering them. And **two scenarios becomes a hard minimum** — with one, the toggle is
 dead and there is nothing to compare. See "Futures only" in `docs/architecture.md`.
+
+### Localization — bilingual now, architected for more
+
+**English and Thai is the requirement**, and it is already the assumption in the schema and in
+item 5. Nothing beyond that is scope for September.
+
+**But make the content type locale-generic on day one.** A map keyed by locale rather than a
+hardcoded `{en, th}` costs about an hour during item 1 and is genuinely painful to retrofit once a
+dozen hotspots across two or three scenarios have been written. Its entire value is that someone
+might turn up — and a month-long residency in Chiang Mai is an unusually likely place for that to
+happen. Cheap option on an uncertain event.
+
+**Lanna (Tai Tham) is the strongest idea here and the worst feature.** Tai Tham is in Unicode,
+Noto covers it, and for a piece about cosmolocalism in the Lanna heartland a script toggle *is* the
+argument, more legibly than a third scenario would be. Against that: almost nobody reads it
+fluently, it is used ceremonially and decoratively, and its complex shaping renders unreliably on
+older Android. So it is not a UI locale. If it happens, it is a deliberate gesture on a small
+surface — the title, the scene name, scenario names.
+
+**It is gated on a reader, and there isn't one.** Shipping Tai Tham unverified, in a piece arguing
+for local knowledge, to an audience that knows these streets, would be worse than not attempting
+it. Same gate for Burmese and Chinese: slots exist, content waits for a named human. Finding those
+people is a question for the residency itself, not a build task — it is in the open questions in
+the local programme notes.
+
+### Device reach — measure before building a second renderer
+
+Not to be confused with accessibility, which is a separate axis. The architecture already handles
+the important part of that by keeping hotspot copy in the DOM over the canvas rather than baked
+into WebGL, and the plan template requires a keyboard path.
+
+**Check the premise first.** WebGL 1.0 has been near-universal on phones for a decade, and the
+budget in `architecture.md` — ~100–150k triangles, a few dozen draw calls — is a light workload.
+The realistic failure on a cheap phone is not "will not run", it is "nine seconds to load on mall
+wifi, then thermal throttling". Those have far cheaper fixes than a second renderer: payload
+discipline, which is already mandated, and putting something on screen in 200 ms.
+
+**So item 1 ends on a real device.** Half a day, one cheap Android, a representative scene. That
+converts this whole question from speculation into a number, and it is the same discipline the
+grey-box test applies to the design.
+
+**Build the still-render pipeline regardless**, because it pays for itself whatever the device test
+says: high-resolution isometric stills of each scenario serve the panels on 25 Sep, the QR landing
+preview and share card, an instant loading image the 3D swaps in behind, and the emergency fallback
+already described under *Cheap insurance*. It also gives the 26–27 Sep workshops something
+participants can take away. Half a day.
+
+**No second interactive renderer before 24 Sep.** And if one is ever wanted, do not pre-render
+raster — render the *same scene document* to SVG or Canvas 2D with a painter's-algorithm isometric
+projection. Because the scene is a document, hit testing stays exact polygon picking and hotspots
+stay positioned automatically. The pre-rendered image version needs hand-maintained hit regions, an
+image set per scenario and zoom level, and hotspot coordinates kept in sync by hand — three things
+that rot the first time someone moves a building.
 
 ### The discipline
 
@@ -94,6 +147,11 @@ public use:
 - Thumbnail generation for the asset palette
 - Postgres persistence and Blob/R2 asset storage
 - Multi-scene management
+- **A 2D document renderer** — SVG or Canvas 2D driven by the same scene document, as a real engine
+  feature rather than a fallback. This one arguably helps the second-neighbourhood test: a credible
+  2D output for a district nobody has modelled is cheaper than modelling it.
+- **Chinese, Burmese or Lanna content**, if translators and a Lanna reader materialise during or
+  after the residency. The schema is ready for them from day one; only the people are missing.
 
 ### Open
 
