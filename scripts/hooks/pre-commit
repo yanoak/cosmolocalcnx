@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+#
+# Block commits that would put people's names or private document links into this
+# public repo. See the public-repo rules in CLAUDE.md.
+#
+# The patterns that actually name people live OUTSIDE the repo, in .local/denylist.txt,
+# because committing a list of names to a public repo would defeat the point. The link
+# patterns below are generic and safe to commit.
+#
+# Install (once per clone):  git config core.hooksPath scripts/hooks
+# Bypass, deliberately:      git commit --no-verify
+set -uo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+DENYLIST="$ROOT/.local/denylist.txt"
+
+# Generic patterns — private document hosts. Safe to keep in the repo.
+BUILTIN='docs\.google\.com|drive\.google\.com|app\.notion\.com|notion\.so|granola\.(so|ai)'
+
+PATTERN="$BUILTIN"
+if [[ -f "$DENYLIST" ]]; then
+  # One regex per line; blank lines and # comments ignored.
+  EXTRA="$(grep -vE '^\s*(#|$)' "$DENYLIST" | paste -sd '|' -)"
+  [[ -n "$EXTRA" ]] && PATTERN="$PATTERN|$EXTRA"
+else
+  echo "pre-commit: warning — no $DENYLIST, checking link patterns only." >&2
+  echo "            Ask Yan for it, or names will not be caught." >&2
+fi
+
+# The local notes must never be staged, gitignore or not.
+if git diff --cached --name-only | grep -qx 'docs/programme-context.md'; then
+  echo >&2
+  echo "BLOCKED: docs/programme-context.md is staged. It is local-only — never commit it." >&2
+  exit 1
+fi
+
+hits=0
+while IFS= read -r file; do
+  # -I skips binary; check the staged content, not the working tree.
+  match="$(git show ":$file" 2>/dev/null | grep -InEi "$PATTERN" || true)"
+  if [[ -n "$match" ]]; then
+    if [[ $hits -eq 0 ]]; then
+      echo >&2
+      echo "BLOCKED: staged changes contain a name or private link that must not be public." >&2
+      echo >&2
+    fi
+    while IFS= read -r line; do
+      echo "  $file:$line" >&2
+    done <<< "$match"
+    hits=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACM)
+
+if [[ $hits -ne 0 ]]; then
+  echo >&2
+  echo "Put people's names and private links in .local/programme-context.md instead, and refer" >&2
+  echo "to \"the local programme notes\" in anything committed. See CLAUDE.md." >&2
+  echo >&2
+  echo "If this is a false positive: git commit --no-verify" >&2
+  exit 1
+fi
+exit 0

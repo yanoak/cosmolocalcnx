@@ -99,7 +99,20 @@ Solo development with LLMs, over three months. The failure mode is architectural
   Google Docs or Notion pages. That material lives in `docs/programme-context.md`, which is
   gitignored and local only. Do not commit it and do not quote its contents into files that are
   committed — refer to "the local programme notes" instead. This rule exists because the file was
-  committed on 12 Sep 2026 and had to be pulled back out.
+  committed on 12 Sep 2026 and had to be pulled back out of public history.
+- **A pre-commit hook enforces the rule above**, because the rule on its own did not — it was
+  broken within the hour by the session that wrote it. `scripts/hooks/pre-commit` blocks staged
+  content matching a name or private-link pattern, and blocks `docs/programme-context.md` outright.
+  Install it once per clone:
+
+  ```sh
+  git config core.hooksPath scripts/hooks
+  ```
+
+  The name patterns live in `.local/denylist.txt`, which is gitignored — a committed list of
+  people's names would defeat the purpose. Without it the hook still catches private links but
+  warns that it cannot catch names; ask Yan for a copy. `--no-verify` bypasses it, which should be
+  rare enough to feel wrong.
 - **Three licences, not one** — code MIT, OSM-derived `baseline` data ODbL, authored 2045 content
   CC BY-SA 4.0. See the table in the README. The root `LICENSE` file stays pure MIT so GitHub
   detects it; the split is stated in the README. Never commit an asset that cannot be
