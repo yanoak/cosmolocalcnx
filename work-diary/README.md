@@ -36,6 +36,22 @@ file that does not exist is flagged rather than silently dropped.
 Work that does not deserve a plan lands under **Unplanned**. That is a normal outcome, not a
 failure to plan — a diary where nothing is ever unplanned is a diary someone is gaming.
 
+## Amending after generating
+
+`work-diary.py` writes commit hashes into the entry. **Do not `git commit --amend` after running
+it** — amending changes the hash, and the diary is left naming a commit that no longer exists.
+
+Commit the diary as its own commit instead. That commit will not appear in its own table, which is
+a one-commit lag rather than an error; the next run picks it up. A lagging table is fine; a table
+pointing at a dead hash is not.
+
+Note that `git cat-file -e <hash>` will still succeed for such a commit, because the object lingers
+unreachable until garbage collection. To check reachability properly:
+
+```sh
+git merge-base --is-ancestor <hash> HEAD
+```
+
 ## Ad hoc todo format
 
 ```markdown
