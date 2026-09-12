@@ -5,6 +5,7 @@ import {
   UI_TOKENS,
   contrastRatio,
   ramp,
+  roleForKind,
   shiftLightness,
 } from '@/engine/theme';
 
@@ -92,5 +93,22 @@ describe('shiftLightness', () => {
   it('preserves hue', () => {
     expect(shiftLightness('#ECD83B', 0.1)).toMatch(hex);
     expect(shiftLightness('#ECD83B', 0)).toBe('#ECD83B');
+  });
+});
+
+describe('roleForKind', () => {
+  it('maps inherited stock kinds to the stock ramp', () => {
+    expect(roleForKind('residential')).toBe(SURFACE_ROLES['building.stock']);
+    expect(roleForKind('commercial')).toBe(SURFACE_ROLES['building.stock']);
+  });
+
+  it('gives civic buildings their own colour', () => {
+    expect(roleForKind('civic')).toBe(SURFACE_ROLES['building.civic']);
+  });
+
+  it('falls back to stock for an unknown kind rather than throwing', () => {
+    // OSM will supply kinds nobody anticipated. A building rendering in the wrong
+    // colour is recoverable; a scene that fails to render is not.
+    expect(roleForKind('yurt')).toBe(SURFACE_ROLES['building.stock']);
   });
 });

@@ -1,0 +1,94 @@
+/* Colour tokens are injected in layout.tsx from src/engine/theme.ts.
+   Never write a hex value in this file. */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;                 /* the diorama owns the viewport */
+  background: var(--progress-paper);
+  color: var(--ui-text);
+  font: 16px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.viewer { position: relative; height: 100dvh; display: flex; flex-direction: column; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 10px 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-text) 18%, transparent);
+}
+.topbar h1 { margin: 0; font-size: 1rem; letter-spacing: 0.01em; }
+
+.controls { display: flex; gap: 8px; }
+
+/* Thumb-sized hit targets everywhere, including on desktop. */
+button {
+  min-height: 44px; min-width: 44px;
+  padding: 0 12px;
+  font: inherit; font-size: 0.875rem;
+  color: var(--ui-text);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--ui-text) 30%, transparent);
+  border-radius: 6px;
+  cursor: pointer;
+}
+button[aria-pressed='true'] { background: color-mix(in srgb, var(--ui-focus) 18%, transparent); }
+:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 2px; }
+
+.stage { position: relative; flex: 1; min-height: 0; display: flex; }
+
+/* R3F measures its parent to size the canvas. A flex child whose height is only
+   resolved by the flex pass can be measured before it settles, and the observer
+   never fires again because the size never changes afterwards — leaving a 300x150
+   default canvas. Absolute positioning inside a relative box gives it a definite
+   size at first layout, which is the standard fix. */
+.canvas-wrap { position: relative; flex: 1; min-width: 0; }
+.canvas-fill { position: absolute; inset: 0; }
+.canvas-wrap:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: -3px; }
+
+.panel {
+  background: var(--progress-paper);
+  border-top: 1px solid color-mix(in srgb, var(--ui-text) 18%, transparent);
+  padding: 12px 14px 16px;
+  max-height: 40dvh; overflow: auto;
+}
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.panel-head h2 { margin: 0; font-size: 1rem; }
+.panel dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; margin: 10px 0 0; }
+.panel dt { color: var(--ui-text-muted); font-size: 0.8125rem; }
+.panel dd { margin: 0; font-size: 0.875rem; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8125rem; }
+
+.attribution {
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  color: var(--ui-text-muted);
+  border-top: 1px solid color-mix(in srgb, var(--ui-text) 12%, transparent);
+}
+.attribution a { color: inherit; }
+
+.swatches { display: flex; gap: 0; padding: 0 14px 6px; }
+.swatches span {
+  width: 28px; height: 18px;
+  border: 1px solid color-mix(in srgb, var(--ui-text) 25%, transparent);
+  border-right-width: 0;
+}
+.swatches span:last-child { border-right-width: 1px; }
+
+/* Laptop and projection: the panel moves beside the diorama rather than over it.
+   Covering the scene matters more on a projection than on a phone. */
+@media (min-width: 768px) {
+  .stage { flex-direction: row; }
+  .panel {
+    width: 320px; flex: 0 0 320px;
+    max-height: none;
+    border-top: 0;
+    border-left: 1px solid color-mix(in srgb, var(--ui-text) 18%, transparent);
+  }
+}
+@media (max-width: 767px) {
+  .stage { flex-direction: column; }
+}

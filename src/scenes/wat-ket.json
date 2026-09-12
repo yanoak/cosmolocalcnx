@@ -1,0 +1,337 @@
+{
+  "id": "wat-ket",
+  "origin": [
+    18.7912,
+    99.0043
+  ],
+  "boundary": {
+    "type": "Polygon",
+    "coordinates": []
+  },
+  "baseline": {
+    "buildings": [
+      {
+        "id": "hand/w1",
+        "footprint": [
+          [
+            5,
+            -90
+          ],
+          [
+            28,
+            -90
+          ],
+          [
+            28,
+            -70
+          ],
+          [
+            5,
+            -70
+          ]
+        ],
+        "height": 7.0,
+        "kind": "residential"
+      },
+      {
+        "id": "hand/w2",
+        "footprint": [
+          [
+            5,
+            -62
+          ],
+          [
+            30,
+            -62
+          ],
+          [
+            30,
+            -44
+          ],
+          [
+            5,
+            -44
+          ]
+        ],
+        "height": 7.5,
+        "kind": "residential"
+      },
+      {
+        "id": "hand/w3",
+        "footprint": [
+          [
+            5,
+            -36
+          ],
+          [
+            32,
+            -36
+          ],
+          [
+            32,
+            -16
+          ],
+          [
+            5,
+            -16
+          ]
+        ],
+        "height": 9.0,
+        "kind": "commercial"
+      },
+      {
+        "id": "hand/w4",
+        "footprint": [
+          [
+            2,
+            -8
+          ],
+          [
+            34,
+            -8
+          ],
+          [
+            34,
+            26
+          ],
+          [
+            2,
+            26
+          ]
+        ],
+        "height": 14.0,
+        "kind": "civic"
+      },
+      {
+        "id": "hand/w5",
+        "footprint": [
+          [
+            5,
+            34
+          ],
+          [
+            28,
+            34
+          ],
+          [
+            28,
+            52
+          ],
+          [
+            5,
+            52
+          ]
+        ],
+        "height": 7.0,
+        "kind": "residential"
+      },
+      {
+        "id": "hand/w6",
+        "footprint": [
+          [
+            5,
+            60
+          ],
+          [
+            26,
+            60
+          ],
+          [
+            26,
+            78
+          ],
+          [
+            5,
+            78
+          ]
+        ],
+        "height": 6.5,
+        "kind": "residential"
+      },
+      {
+        "id": "hand/e1",
+        "footprint": [
+          [
+            48,
+            -88
+          ],
+          [
+            76,
+            -88
+          ],
+          [
+            76,
+            -66
+          ],
+          [
+            48,
+            -66
+          ]
+        ],
+        "height": 9.0,
+        "kind": "commercial"
+      },
+      {
+        "id": "hand/e2",
+        "footprint": [
+          [
+            48,
+            -58
+          ],
+          [
+            72,
+            -58
+          ],
+          [
+            72,
+            -40
+          ],
+          [
+            48,
+            -40
+          ]
+        ],
+        "height": 7.0,
+        "kind": "residential"
+      },
+      {
+        "id": "hand/e3",
+        "footprint": [
+          [
+            48,
+            -32
+          ],
+          [
+            70,
+            -32
+          ],
+          [
+            70,
+            -14
+          ],
+          [
+            48,
+            -14
+          ]
+        ],
+        "height": 7.5,
+        "kind": "residential"
+      },
+      {
+        "id": "hand/e4",
+        "footprint": [
+          [
+            48,
+            -6
+          ],
+          [
+            78,
+            -6
+          ],
+          [
+            78,
+            18
+          ],
+          [
+            48,
+            18
+          ]
+        ],
+        "height": 11.0,
+        "kind": "commercial"
+      },
+      {
+        "id": "hand/e5",
+        "footprint": [
+          [
+            48,
+            26
+          ],
+          [
+            71,
+            26
+          ],
+          [
+            71,
+            46
+          ],
+          [
+            48,
+            46
+          ]
+        ],
+        "height": 7.0,
+        "kind": "residential"
+      },
+      {
+        "id": "hand/e6",
+        "footprint": [
+          [
+            48,
+            54
+          ],
+          [
+            74,
+            54
+          ],
+          [
+            74,
+            74
+          ],
+          [
+            48,
+            74
+          ]
+        ],
+        "height": 8.0,
+        "kind": "residential"
+      }
+    ],
+    "roads": [],
+    "water": [
+      {
+        "id": "hand/ping",
+        "footprint": [
+          [
+            -80,
+            -130
+          ],
+          [
+            -34,
+            -130
+          ],
+          [
+            -26,
+            -40
+          ],
+          [
+            -30,
+            40
+          ],
+          [
+            -38,
+            130
+          ],
+          [
+            -84,
+            130
+          ]
+        ]
+      }
+    ],
+    "green": []
+  },
+  "scenarios": [
+    {
+      "id": "commons-2045",
+      "label": {
+        "en": "Riverside Commons",
+        "th": "ริมน้ำร่วม"
+      },
+      "edits": [],
+      "hotspots": []
+    }
+  ],
+  "hotspots": [],
+  "terrain": null
+}

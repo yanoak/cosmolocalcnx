@@ -172,3 +172,24 @@ export function cssCustomProperties(): string {
   }
   return `:root {\n${entries.join('\n')}\n}`;
 }
+
+/**
+ * The scene document names a `kind`; this is the only place kind becomes colour.
+ *
+ * Unknown kinds fall back to stock rather than throwing: OSM supplies kinds nobody
+ * anticipated, and a building in the wrong colour is recoverable where a scene that
+ * refuses to render is not.
+ */
+const KIND_TO_ROLE: Record<string, keyof typeof SURFACE_ROLES> = {
+  residential: 'building.stock',
+  commercial: 'building.stock',
+  retail: 'building.stock',
+  industrial: 'building.stock',
+  civic: 'building.civic',
+  temple: 'building.civic',
+  school: 'building.civic',
+};
+
+export function roleForKind(kind: string): Ramp {
+  return SURFACE_ROLES[KIND_TO_ROLE[kind] ?? 'building.stock'];
+}

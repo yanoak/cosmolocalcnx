@@ -65,23 +65,23 @@ buildings are individually pickable** — that assumption dies the moment mergin
 
 ## Tasks
 
-- [ ] Scaffold Next.js App Router + TypeScript; viewer at `/`, `src/engine/` for shared components
-- [ ] `SceneDocument` types from `docs/architecture.md` — locale maps, no date on edits,
+- [x] Scaffold Next.js App Router + TypeScript; viewer at `/`, `src/engine/` for shared components
+- [x] `SceneDocument` types from `docs/architecture.md` — locale maps, no date on edits,
       `wasAt` on `remove`/`replace`, hotspots carrying exactly one of `target` or `at`, hotspots at
       both scene and scenario level, `terrain: null` reserved and never implemented
-- [ ] Locale lookup helper with a fallback chain, and a locale toggle in the UI
-- [ ] A hand-written `wat-ket` scene: ~12 baseline buildings, a ground plane, the Ping as a ribbon
-- [ ] Design tokens in one file — palette, roles, ramp derivation — feeding both CSS custom
+- [x] Locale lookup helper with a fallback chain, and a locale toggle in the UI
+- [x] A hand-written `wat-ket` scene: ~12 baseline buildings, a ground plane, the Ping as a ribbon
+- [x] Design tokens in one file — palette, roles, ramp derivation — feeding both CSS custom
       properties and `THREE.Color`. See `docs/design-system.md`
-- [ ] Settle three.js colour management in the same commit as the tokens, so a DOM swatch and a
+- [x] Settle three.js colour management in the same commit as the tokens, so a DOM swatch and a
       building actually match
-- [ ] Unlit materials, ramp tone chosen per face orientation. No lights in the scene
-- [ ] Footprint + height → `ExtrudeGeometry` args — a pure function, unit-tested
-- [ ] Orthographic camera at 45° / 35.264°, `MapControls` constrained to pan and zoom
-- [ ] Click-to-select via raycast → panel opens with the object's id and kind
-- [ ] Keyboard path for selection — see below
-- [ ] Debug overlay: axes, bbox, wireframe toggle, 1 m reference cube
-- [ ] ODbL attribution line in the viewer — easy to forget until someone asks
+- [x] Unlit materials, ramp tone chosen per face orientation. No lights in the scene
+- [x] Footprint + height → `ExtrudeGeometry` args — a pure function, unit-tested
+- [x] Orthographic camera at 45° / 35.264°, `MapControls` constrained to pan and zoom
+- [x] Click-to-select via raycast → panel opens with the object's id and kind
+- [x] Keyboard path for selection — see below
+- [x] Debug overlay: axes, bbox, wireframe toggle, 1 m reference cube
+- [x] ODbL attribution line in the viewer — easy to forget until someone asks
 - [ ] **Load it on a cheap Android.** Record load time on mobile data, frame rate, and whether it
       throttles after a few minutes. This closes item 1.
 
