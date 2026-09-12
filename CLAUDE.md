@@ -93,6 +93,12 @@ Solo development with LLMs, over three months. The failure mode is architectural
   normalization, snapping, the edit-op reducer. These have numeric outputs and are testable; the
   visual layer is not.
 - **Keep the engine small and boring.** Resist abstraction until the second neighbourhood demands it.
+- **Node lives under nvm and is not on the default PATH** that tooling sees. Prefix node/npm
+  commands, or nothing resolves:
+
+  ```sh
+  export PATH="/Users/yan/.nvm/versions/node/v22.18.0/bin:$PATH"
+  ```
 - **Plans and the work diary** — see the Project management section below.
 - **This is a public repo on GitHub.** Everything committed is world-readable: no keys, no tokens,
   no venue or participant contact details. Every `.env*` file is gitignored except `.env.example`,

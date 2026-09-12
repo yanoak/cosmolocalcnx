@@ -1,6 +1,6 @@
 ---
 slug: 2026-09-12_scene-schema-greybox
-status: draft
+status: active
 started: 2026-09-12
 finished:
 ---
