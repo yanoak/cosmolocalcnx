@@ -2,10 +2,14 @@
 
 ## What this is
 
-A 3D isometric web app showing **Wat Ket district, Chiang Mai, in 2045**. Visitors see the
-neighbourhood as it is today, generated from OpenStreetMap, with speculative 2045 interventions
-layered on top. They scrub a time slider, switch between alternative futures, and tap things to
-read about them.
+A 3D isometric web app showing **Wat Ket district, Chiang Mai, in 2045**. Visitors switch between
+two or three arguable futures for the neighbourhood and tap things to read about them.
+
+The present is never shown. Each future is built as a diff over an OpenStreetMap baseline of the
+real neighbourhood — so the streets, the river and most of the building stock are the ones Wat Ket
+actually has — but that baseline is a substrate, not a view. There is no "today" state to switch
+to. Several futures invite argument; a future measured against the present invites a verdict on
+whether it is an improvement, which is a different and smaller question.
 
 Built for the **Nomad Futures Lab** exhibition, one strand of Cosmo Local CNX September 2026.
 See `docs/programme-context.md` for who that is and why it exists.
@@ -52,8 +56,7 @@ a local static export so a venue wifi failure cannot take the installation down.
 viewer plus a layer.**
 
 Everything good falls out of this: re-importing OSM never destroys placement work, a second 2045
-scenario is nearly free, undo is popping an op stack, and the time slider is just "apply 0→100% of
-the edit list". Full schema in `docs/architecture.md`.
+scenario is nearly free, and undo is popping an op stack. Full schema in `docs/architecture.md`.
 
 If you ever find yourself building a second renderer for the editor, stop — that is the failure mode.
 
@@ -68,6 +71,12 @@ Do not build these before 24 Sep, however reasonable they sound in isolation:
   you inspect, not a world you traverse. If a character is wanted later: click-to-move, fixed camera.
 - **No auth, no uploads, no database, no admin panel.** Week one's editor is localhost-only and
   copies scene JSON to the clipboard, which gets committed to the repo.
+- **No time slider, and no "today" view.** Cut 12 Sep 2026. The toggle switches between 2045
+  futures only; the present is never a visitor-facing state. Edits therefore carry no date and
+  their order means nothing temporally, and no scene state is ever partially applied. The
+  `baseline` stays in the schema as the substrate every scenario diffs against — rendering it
+  alone is a development view, never something a visitor can reach. See "Futures only" in
+  `docs/architecture.md`.
 
 ## Working conventions
 

@@ -31,6 +31,11 @@ renderer and the importer can be wrong independently.
 Debug overlay goes in at the same time, per `CLAUDE.md` — axes, bounding boxes, wireframe toggle,
 1 m reference cube. It is twenty lines and it is how scale bugs become legible.
 
+Note on what day one renders: this plan draws the `baseline` alone, because no scenario exists yet.
+That is a **development view only**. The viewer ships showing 2045 scenarios and nothing else — see
+"Futures only" in `docs/architecture.md` — so do not let the baseline-only path harden into a
+visitor-reachable state.
+
 ## Tasks
 
 - [ ] Scaffold the Next.js App Router + TypeScript project; viewer at `/`, `src/engine/` for shared
@@ -70,7 +75,8 @@ including the phone-width check, since the QR surface is the binding constraint.
 ## Out of scope
 
 The non-goals in `CLAUDE.md` apply in full: no terrain, no avatar, no auth or uploads or database.
-Also not in this plan — OSM import (item 2), the time slider (item 3), the editor (item 4), any art.
+Also not in this plan — OSM import (item 2), scenario switching (item 3), the editor (item 4),
+any art.
 
 ## Open questions
 

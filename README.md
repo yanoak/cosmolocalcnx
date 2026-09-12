@@ -1,8 +1,9 @@
 # cosmolocalcnx
 
-A 3D isometric web app showing **Wat Ket district, Chiang Mai, in 2045** — the neighbourhood as it
-is today, generated from OpenStreetMap, with speculative 2045 interventions layered on top. Visitors
-scrub a time slider, switch between alternative futures, and tap things to read about them.
+A 3D isometric web app showing **Wat Ket district, Chiang Mai, in 2045** — two or three arguable
+futures for the neighbourhood, which visitors switch between and tap to read about. Each is built
+over an OpenStreetMap baseline of the real district, so the streets, the river and most of the
+building stock are the ones Wat Ket actually has. The present itself is never shown.
 
 Built for the **Nomad Futures Lab** exhibition at Pantip Plaza, Chiang Mai, opening **24 September
 2026**, as part of Cosmo Local CNX September 2026.

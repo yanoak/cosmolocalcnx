@@ -8,11 +8,30 @@ Sequenced so the schema is right on day one and everything downstream is disposa
 |---|---|
 | 1 | **Schema + grey-box blockout.** Orthographic camera, click-to-select, panel opens. No art. |
 | 2 | **OSM baseline generation** — a script that writes `baseline` into the scene document. Not a UI. |
-| 3 | **Scenario + time-slider mechanics.** The 2026 ↔ 2045 crossfade. |
+| 3 | **Scenario switching.** Two or three 2045 futures as states of one toggle. No time slider and no "today" view — see below. |
 | 4 | **Scrappy editor, one day.** Localhost only. Click ground to place, arrow keys nudge, `R` rotates, `Delete` removes, one button copies scene JSON to the clipboard. No auth, no uploads, no database. Output gets committed to the repo. |
-| 5 | **Content.** Hotspots and bilingual copy, kept in data files so the partly-formed 2045 material can land late. |
+| 5 | **Content.** Hotspots and bilingual copy, kept in data files so the partly-formed 2045 material can land late. Each hotspot carries its own before-and-after — with no "today" view, this copy is the only thing that makes an intervention legible as a change. |
 | 6 | **Exhibition hardening.** Idle reset + attract loop, fullscreen kiosk mode, static export served locally on the laptop/projection machine, thumb-sized hit targets, QR code and short URL, ambient audio. |
 | 7 | **Buffer.** You will need all of it. |
+
+### Cut: the time slider, and the present
+
+Both dropped on 12 Sep 2026. The viewer shows **2045 futures only** — two or three of them, as
+states of one toggle. No continuous scrub, and no "today" state a visitor can select.
+
+What this simplifies: edits need no date or ordering semantics, there is no partially-applied scene
+state to render, nothing has to animate between two versions of a building, and each state's
+geometry can be merged once ahead of time and swapped whole.
+
+What it does not change: **edits stay a diff over an immutable baseline.** That rule was never
+mainly about the slider — it is about re-import safety, a second scenario being nearly free, and
+undo being a pop off an op stack. All three survive intact, and the baseline still does the work of
+making 2045 Wat Ket recognisably Wat Ket. It is simply never rendered on its own.
+
+What it costs: the present was the reference point that made an intervention legible as a change.
+The hotspot copy now has to carry that before-and-after itself, which raises the stakes on item 5
+rather than lowering them. And **two scenarios becomes a hard minimum** — with one, the toggle is
+dead and there is nothing to compare. See "Futures only" in `docs/architecture.md`.
 
 ### The discipline
 

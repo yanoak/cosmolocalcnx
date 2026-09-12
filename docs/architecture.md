@@ -53,8 +53,9 @@ futures, not one predicted one. Several futures invite argument; one invites con
 **Undo/redo is nearly free.** Edits are an append-only op list, so undo is popping a stack.
 `zustand` + `zundo` gets there in an hour.
 
-And the 2026 ↔ 2045 time slider becomes trivial: apply 0→100% of the edit list, or crossfade
-`baseline` against `baseline + edits`.
+And switching what the visitor is looking at is trivial: render `baseline + edits` for whichever
+2045 is selected. No partially-applied state, and `baseline` alone is never a visitor-facing view
+— see "Futures only" below.
 
 ### Corollary
 
@@ -121,10 +122,11 @@ a projector's aspect is mostly frustum and zoom, not layout. But:
 
 A fixed isometric diorama you inspect — not a world you traverse.
 
-- **Time slider**, 2026 ↔ 2045. The single most legible way to show a possible future, and nearly
-  free given the document model. Build this first.
-- **Scenario toggle**, two or three different 2045s.
+- **Scenario toggle** — two or three different 2045s as states of one control. This is the primary
+  interaction: the visitor compares futures against each other. Build it first, and never ship it
+  with only one scenario in it.
 - **8–12 hotspots.** Resist going to 30.
+- **No time slider and no "today" state.** Both cut on 12 Sep 2026. Consequences below.
 - **No free-roam avatar.** It fails at public exhibitions: strangers do not know the controls, they
   clip into geometry, the camera ends up inside a wall, and the next visitor arrives at a
   broken-looking screen. WASD is also meaningless on a phone. If a character is wanted, use
@@ -133,6 +135,46 @@ A fixed isometric diorama you inspect — not a world you traverse.
 
 Isometric is an orthographic camera at 45° around Y and ~35.264° down. `drei`'s `MapControls`,
 constrained, handles pan and zoom.
+
+### Futures only
+
+Two cuts made on 12 Sep 2026, in order: the time slider, then the "today" view.
+
+The scene has a small number of discrete states — **one per 2045 scenario, and nothing else**. The
+toggle moves between them. There is no continuous scrub, no partially-applied scene, and no state
+showing the present.
+
+**`baseline` stays in the schema and stays essential.** It is what every scenario diffs against,
+and it is why 2045 Wat Ket is recognisably Wat Ket rather than a generic block of invention — the
+streets, the river and most of the building stock are the real ones. It is a substrate, not a view.
+Rendering it alone is a development and editor concern; the public viewer must never expose it as
+a state a visitor can select.
+
+What the two cuts remove from the schema and the renderer:
+
+- **Edits need no date and no ordering semantics.** The `edits` array stays an append-only op list
+  for undo's sake, but its order carries no meaning about *when* something happens.
+- **There is no intermediate state to render**, so nothing has to interpolate or crossfade between
+  two versions of a building.
+- **Merging gets much easier.** The perf budget requires merging baseline buildings into a handful
+  of geometries, which sits badly with a `remove` op that targets one building inside a merge.
+  With a fixed, small set of states, each state's geometry can simply be merged once ahead of time
+  and swapped whole. This is the cheapest resolution of that tension and it is only available
+  because the states are discrete.
+
+What "futures only" costs, and how to pay it back: the present was the reference point that made
+each intervention legible as a *change*. Without it, a visitor who does not know Wat Ket sees only
+a plausible-looking neighbourhood and cannot tell what was done to it. The interventions must
+therefore carry their own before-and-after, and the hotspot copy is where that lands — each
+hotspot says what is there now and what replaced it. This is a content requirement, not a
+rendering one, and it should shape how the 2045 material is written.
+
+**Two scenarios is the minimum.** With one, the toggle is dead, nothing can be compared, and the
+whole methodological argument for this piece collapses into a single prediction. If only one
+scenario is ready by 24 Sep, that is a schedule emergency, not a soft landing.
+
+Still open: whether switching states hard-cuts or gets a short transition. That is a presentation
+choice with no schema consequence, so it can wait until there is something on screen to judge.
 
 ## Asset strategy
 
