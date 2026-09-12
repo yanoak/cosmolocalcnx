@@ -157,6 +157,45 @@ Also not here: scenario edits over this baseline (item 3), the editor (item 4), 
       triangle count per building? The boundary is the editorial lever; the geometry is the
       technical one.
 
+## Reference — everything needed to start cold
+
+Recorded so this plan can be picked up without the session that wrote it.
+
+**HDX dataset:** `cod-ab-tha`, "Thailand - Subnational Administrative Boundaries", OCHA FISS,
+last updated 2026-01-26, **CC BY-IGO**. Metadata:
+`https://data.humdata.org/api/3/action/package_show?id=cod-ab-tha`
+
+Resource download URLs (all under `https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/`):
+
+| Format | Size | Resource id |
+|---|---|---|
+| Geodatabase | 175 MB | `ccbf3740-0638-48ea-b612-cdb61ef5462c/download/tha_admin_boundaries.gdb.zip` |
+| SHP | 377 MB | `10dde461-b781-4904-9559-7deb3e960913/download/tha_admin_boundaries.shp.zip` |
+| GeoJSON | 437 MB | `89a09f13-7b83-458a-9531-4f2418613065/download/tha_admin_boundaries.geojson.zip` |
+| XLSX (names and P-codes, no geometry) | 1.9 MB | `a925b917-01ae-48c4-9279-7efe680a6b11/download/tha_admin_boundaries.xlsx` |
+
+**State of the P-code lookup:** `Wat Ket` and `วัดเกต` are both confirmed present in the XLSX shared
+strings, so the unit exists. The P-code itself was **not** pinned down — the ad-hoc XLSX cell parse
+used to find it was fragile and abandoned. Use a real reader (`openpyxl`) rather than regex over
+the sheet XML. The XLSX is the cheap way in: find the P-code there, then filter the big archive by
+code rather than by name.
+
+**Reconnaissance bbox** used for the building counts, in Overpass order
+`south,west,north,east`: `18.784,98.996,18.800,99.014` — about 3.4 km², deliberately larger than
+the scene should end up. The scene `origin` is `[18.7912, 99.0043]`.
+
+**Counting query shape** — `out count;` per named set is much cheaper than fetching elements:
+
+```
+[out:json][timeout:90];
+( way["building"](BBOX); relation["building"](BBOX); )->.all;
+.all out count;
+```
+
+**Checked and found empty**, so do not spend time re-checking: `boundary=administrative` relations
+matching Wat Ket in the area, `place=suburb|quarter|neighbourhood` polygons, `waterway=riverbank`
+ways, and `is_in(18.7912,99.0043)` for enclosing admin boundaries. OSM has no Wat Ket polygon.
+
 ## Outcome
 
 _Not started._
