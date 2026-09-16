@@ -200,6 +200,12 @@ the code they describe, never left untracked.
 - **Commits that advance a plan carry a `Plan:` trailer** naming that plan's slug, e.g.
   `Plan: 2026-09-13_scene-schema-greybox`. This is the only link between a commit and the thinking
   behind it, and the diary's commit table is generated from it — so it cannot drift.
+
+  **No blank line between `Plan:` and any other trailer.** Git recognises only the *last*
+  contiguous `Key: value` block as trailers, so a blank line before `Co-Authored-By:` leaves
+  `Plan:` present, correct and invisible to `%(trailers)` — the commit looks right and silently
+  lands under "Unplanned". This ate eleven commits on 16 Sep 2026 before anyone noticed. Check with
+  `git log -1 --pretty=format:'%(trailers:key=Plan,valueonly)'`.
 - **Keep a daily work diary.** Run `./scripts/work-diary.py` at the start of each day: it creates
   `work-diary/YYYY-MM-DD.md` and regenerates that day's plans and commits. Write the tasks section
   first thing and do not rewrite it later; keep the work log as you go; note decisions and
