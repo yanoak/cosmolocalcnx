@@ -38,7 +38,33 @@ button {
 button[aria-pressed='true'] { background: color-mix(in srgb, var(--ui-focus) 18%, transparent); }
 :focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 2px; }
 
+/* The register chips: one control, three stops on the rail. Segmented rather than
+   separate buttons, because they are positions on one axis and not three options. */
+.registers { display: flex; }
+.registers button {
+  border-radius: 0;
+  border-right-width: 0;
+  padding: 0 10px;
+}
+.registers button:first-child { border-radius: 6px 0 0 6px; }
+.registers button:last-child { border-radius: 0 6px 6px 0; border-right-width: 1px; }
+
 .stage { position: relative; flex: 1; min-height: 0; display: flex; }
+
+/* What the visitor is looking at, under the diorama. Sits over the canvas rather
+   than taking layout, so the stage keeps every pixel it can — the projector and a
+   phone in portrait both need the height more than the caption does. */
+.register-caption {
+  position: absolute;
+  left: 16px; right: 16px; bottom: 12px;
+  margin: 0;
+  max-width: 34rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--ui-text);
+  text-wrap: balance;
+  pointer-events: none;
+}
 
 /* R3F measures its parent to size the canvas. A flex child whose height is only
    resolved by the flex pass can be measured before it settles, and the observer

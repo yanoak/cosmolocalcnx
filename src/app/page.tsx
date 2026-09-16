@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Diorama } from '@/engine/Diorama';
+import type { RegisterId } from '@/engine/registers';
 import { TokenSwatches } from '@/engine/DebugOverlay';
 import { SelectPanel, type Selection } from '@/engine/SelectPanel';
 import { step } from '@/engine/ordering';
@@ -37,19 +38,80 @@ const HERO_IDS: ReadonlySet<string> = new Set(
     .filter((t): t is string => typeof t === 'string' && t !== ''),
 );
 
+/** Where each register chip sits on the rail. registers.ts pins these exactly. */
+const RAIL: Record<RegisterId, number> = { region: 0, district: 0.5, block: 1 };
+
 /**
- * Day one renders `baseline` alone, which is a DEVELOPMENT view.
+ * 2026 is an ON-RAMP, not a state you can select.
  *
- * The viewer ships showing 2045 scenarios and nothing else — there is no "today"
- * state a visitor can select. Do not let this path harden into one. Scenario
- * switching is roadmap item 3. See "Futures only" in docs/architecture.md.
+ * The piece opens on the circle, descends to Wat Ket as it is now, and hands over
+ * to the 2045 futures. The present does the job it was cut for doing — establishing
+ * what is actually there — but the comparison control still holds only futures, so
+ * the piece asks "which of these?" rather than "is this an improvement?".
+ *
+ * This is NOT the time slider cut on 12 Sep 2026. There are two discrete states and
+ * one one-way transition between them; edits carry no date, no scene state is ever
+ * partially applied, and scene.ts's FORBIDDEN_EDIT_FIELDS guard is untouched.
+ * `era === 'now'` is literally "apply zero edits", which is what this file has
+ * rendered since day one. Going back to 2026 happens only on an idle reset, never
+ * by zooming out — that would make the rail a scrub, which IS the cut feature.
+ *
+ * Until roadmap item 3 lands there is one scenario with an empty edit list, so the
+ * two eras render identically and only the caption changes. The machinery is here
+ * so that item 3 is a rendering change and not an architectural one.
  */
+type Era = 'now' | 'futures';
+
+/** How long the diorama sits in 2026 before the futures take over. */
+const ON_RAMP_HOLD_MS = 1100;
+
+const REGISTER_LABELS: Record<RegisterId, string> = {
+  region: 'Asia',
+  district: 'Wat Ket',
+  block: 'Street',
+};
 export default function Page() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [locale, setLocale] = useState('en');
   const [debug, setDebug] = useState(false);
   const [wireframe, setWireframe] = useState(false);
   const stage = useRef<HTMLDivElement>(null);
+
+  const hasRegion = REGION !== null;
+  const [active, setActive] = useState<RegisterId>(hasRegion ? 'region' : 'district');
+  const [goTo, setGoTo] = useState<number | null>(null);
+  const [era, setEra] = useState<Era>(hasRegion ? 'now' : 'futures');
+
+  /**
+   * The on-ramp. Also the attract loop's return path (roadmap item 6) — they are
+   * the same journey, which is most of why this was affordable.
+   */
+  useEffect(() => {
+    if (!hasRegion) return;
+    const descend = window.setTimeout(() => setGoTo(RAIL.district), 700);
+    return () => window.clearTimeout(descend);
+  }, [hasRegion]);
+
+  const onArrive = useCallback(() => {
+    setGoTo(null);
+    // A beat in 2026 before the futures take over, so the present registers as a
+    // place rather than as a loading state.
+    window.setTimeout(() => setEra((e) => (e === 'now' ? 'futures' : e)), ON_RAMP_HOLD_MS);
+  }, []);
+
+  /** Any deliberate input takes control: the visitor is driving, not watching. */
+  const takeControl = useCallback(() => {
+    setGoTo(null);
+    setEra('futures');
+  }, []);
+
+  const jumpTo = useCallback(
+    (register: RegisterId) => {
+      setEra('futures');
+      setGoTo(RAIL[register]);
+    },
+    [],
+  );
 
   const buildings = DOC.baseline.buildings;
   const bounds = useMemo(() => sceneBoundsMetres(DOC), []);
@@ -84,8 +146,11 @@ export default function Page() {
       if (e.key === 'Escape') close();
       if (e.key.toLowerCase() === 'd') setDebug((v) => !v);
       if (e.key.toLowerCase() === 'w') setWireframe((v) => !v);
+      if (e.key === '1' && hasRegion) jumpTo('region');
+      if (e.key === '2') jumpTo('district');
+      if (e.key === '3') jumpTo('block');
     },
-    [buildings, close],
+    [buildings, close, hasRegion, jumpTo],
   );
 
   return (
@@ -93,6 +158,21 @@ export default function Page() {
       <div className="topbar">
         <h1>Wat Ket 2045</h1>
         <div className="controls">
+          {hasRegion && (
+            <div className="registers" role="group" aria-label="Scale">
+              {(['region', 'district', 'block'] as const).map((id, i) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={active === id}
+                  aria-keyshortcuts={String(i + 1)}
+                  onClick={() => jumpTo(id)}
+                >
+                  {REGISTER_LABELS[id]}
+                </button>
+              ))}
+            </div>
+          )}
           <button
             type="button"
             aria-pressed={locale === 'th'}
@@ -121,6 +201,8 @@ export default function Page() {
           role="application"
           aria-label="Wat Ket diorama. Arrow keys move between buildings, Enter opens details, Escape closes."
           onKeyDown={onKeyDown}
+          onPointerDown={takeControl}
+          onWheel={takeControl}
         >
           <div className="canvas-fill">
             <Diorama
@@ -135,9 +217,21 @@ export default function Page() {
               wireframe={wireframe}
               region={REGION}
               heroIds={HERO_IDS}
+              openAt={hasRegion ? 'region' : 'district'}
+              goTo={goTo}
+              onArrive={onArrive}
+              onRegisterChange={setActive}
             />
           </div>
         </div>
+        <p className="register-caption" aria-live="polite">
+          {active === 'region'
+            ? '4.10 billion people live inside this circle — half of everyone. Wat Ket is 280 km from its centre.'
+            : era === 'now'
+              ? 'Wat Ket, 2026.'
+              : 'Wat Ket, 2045.'}
+        </p>
+
         <SelectPanel selection={selection} locale={locale} onClose={close} />
       </div>
 

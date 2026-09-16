@@ -2,7 +2,7 @@
 
 import { MapControls } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { aeqdForward } from './aeqd';
 import { Buildings } from './Buildings';
@@ -10,12 +10,14 @@ import { isometricFit, type Bounds } from './camera';
 import { DebugOverlay } from './DebugOverlay';
 import { Ground, GroundAreas } from './Ground';
 import { RegionPlane } from './RegionPlane';
+import { easeInOutCubic, tweenZoom } from './tween';
 import {
   districtTransform,
   regionScale,
   registerState,
   stageFit,
   stockTint,
+  tToZoom,
   zoomLadder,
   type RegisterId,
 } from './registers';
@@ -103,6 +105,86 @@ function RedrawOnVisible() {
       window.removeEventListener('pageshow', redraw);
     };
   }, [invalidate]);
+
+  return null;
+}
+
+/**
+ * Moves the camera along the rail over time, for jumps the visitor did not make
+ * with their fingers: a register chip, and the on-ramp that plays the whole rail
+ * on load.
+ *
+ * Deliberately NOT `useFrame`. A useFrame callback runs on every frame the scene
+ * renders for any reason, and would have to decide each time whether a tween is in
+ * progress; a self-terminating rAF that asks for exactly the frames it needs is
+ * both simpler and cheaper. The cleanup is not optional — a tween surviving unmount
+ * is a leaked rAF that keeps waking the GPU, which over a nine-hour exhibition day
+ * is precisely the failure `frameloop="demand"` was chosen to prevent.
+ */
+function ZoomTween({
+  to,
+  ladder,
+  durationMs = 900,
+  onArrive,
+}: {
+  /** Target position on the rail, or null for "stay where the visitor left it". */
+  to: number | null;
+  ladder: ReturnType<typeof zoomLadder>;
+  durationMs?: number;
+  onArrive?: () => void;
+}) {
+  const camera = useThree((s) => s.camera) as THREE.OrthographicCamera;
+  const invalidate = useThree((s) => s.invalidate);
+  const controls = useThree((s) => s.controls) as { update?: () => void } | null;
+  const raf = useRef<number | null>(null);
+  const arrived = useRef(onArrive);
+  arrived.current = onArrive;
+
+  useEffect(() => {
+    if (to === null) return;
+
+    const destination = tToZoom(to, ladder);
+    const from = camera.zoom;
+
+    const settle = () => {
+      camera.zoom = destination;
+      camera.updateProjectionMatrix();
+      controls?.update?.();
+      invalidate();
+      arrived.current?.();
+    };
+
+    // A visitor who has asked for less motion gets the destination, not the
+    // journey. The piece still works; it just does not swoop.
+    const reduced =
+      typeof matchMedia === 'function' &&
+      matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced || from === destination || durationMs <= 0) {
+      settle();
+      return;
+    }
+
+    const started = performance.now();
+    const step = (now: number) => {
+      const u = Math.min(1, (now - started) / durationMs);
+      camera.zoom = tweenZoom(from, destination, easeInOutCubic(u));
+      camera.updateProjectionMatrix();
+      controls?.update?.();
+      invalidate();
+      if (u < 1) {
+        raf.current = requestAnimationFrame(step);
+      } else {
+        raf.current = null;
+        arrived.current?.();
+      }
+    };
+    raf.current = requestAnimationFrame(step);
+
+    return () => {
+      if (raf.current !== null) cancelAnimationFrame(raf.current);
+      raf.current = null;
+    };
+  }, [to, ladder, camera, invalidate, controls, durationMs]);
 
   return null;
 }
@@ -246,6 +328,10 @@ export function Diorama({
   wireframe,
   region,
   heroIds,
+  openAt = 'district',
+  goTo = null,
+  onArrive,
+  onRegisterChange,
 }: {
   bounds: Bounds;
   buildings: BaselineBuilding[];
@@ -258,14 +344,28 @@ export function Diorama({
   wireframe: boolean;
   region?: RegionSource | null;
   heroIds?: ReadonlySet<string>;
+  /** Where the rail starts on mount. The on-ramp opens at the circle. */
+  openAt?: RegisterId;
+  /** Rail position to travel to, or null to leave the visitor where they are. */
+  goTo?: number | null;
+  onArrive?: () => void;
+  onRegisterChange?: (active: RegisterId) => void;
 }) {
   const [stage, size] = useMeasuredStage();
   const ready = !!size && size.width > 0 && size.height > 0;
 
   const [registers, setRegisters] = useState<{ active: RegisterId; railed: boolean }>({
-    active: 'district',
+    active: openAt,
     railed: false,
   });
+
+  const report = useCallback(
+    (next: { active: RegisterId; railed: boolean }) => {
+      setRegisters(next);
+      onRegisterChange?.(next.active);
+    },
+    [onRegisterChange],
+  );
 
   const regionGroup = useRef<THREE.Group>(null);
   const districtGroup = useRef<THREE.Group>(null);
@@ -309,15 +409,24 @@ export function Diorama({
     [fit],
   );
 
+  /**
+   * Memoised on the geometry alone, deliberately. `openAt` is read once on mount
+   * and must not re-enter this: R3F re-applies the camera prop whenever its
+   * identity changes, so letting it change would snap the visitor back to the top
+   * of the rail mid-gesture.
+   */
+  const openAtRef = useRef(openAt);
   const camera = useMemo(() => {
     const staged = stageFit(bounds, radiusKm * k, fit);
+    const ladderForOpen = zoomLadder(fit.zoom, { hasRegion: !!region });
     return {
       position: staged.position,
-      zoom: staged.zoom,
+      zoom:
+        openAtRef.current === 'region' && region ? ladderForOpen.region : staged.zoom,
       near: staged.near,
       far: staged.far,
     };
-  }, [bounds, radiusKm, k, fit]);
+  }, [bounds, radiusKm, k, fit, region]);
 
   const heroes = heroIds ?? EMPTY_HEROES;
 
@@ -341,6 +450,8 @@ export function Diorama({
           <color attach="background" args={[PALETTE['progress.paper']]} />
 
           <RedrawOnVisible />
+
+          <ZoomTween to={goTo} ladder={ladder} onArrive={onArrive} />
 
           {region && (
             <>
@@ -371,7 +482,7 @@ export function Diorama({
                   markerMaterial,
                   stockMaterial,
                 }}
-                onChange={setRegisters}
+                onChange={report}
               />
             </>
           )}
