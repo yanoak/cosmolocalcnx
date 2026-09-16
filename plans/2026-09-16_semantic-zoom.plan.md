@@ -113,14 +113,20 @@ affordable inside the week.
 
 ## Tasks
 
-- [ ] `aeqd.ts` + test — the anchor lands first; everything is downstream of that number
-- [ ] `registers.ts` + test — the rail, the bands, the frame transforms. No rendering yet
-- [ ] Ground mipmap fix + hero/stock emphasis driven by `detail`  ← **Checkpoint A ships here**
-- [ ] `tween.ts` / `useZoomTween`, register chips, `era` state, the on-ramp
-- [ ] `scripts/build-region.py` + the committed artefact + the fifth licence
-- [ ] `region.ts` + test, `Region.tsx`, schema + validation
-- [ ] `Diorama.tsx` wiring, `RegisterDriver`, the crossfade  ← **Checkpoint B ships here**
-- [ ] Docs: the reversal, the carve-out, the `minZoom` change
+- [x] `aeqd.ts` + test — the anchor lands first; everything is downstream of that number
+- [x] `registers.ts` + test — the rail, the bands, the frame transforms. No rendering yet
+- [x] Hero/stock emphasis driven by `detail`  ← **Checkpoint A ships here**. The planned Ground
+      mipmap fix was dropped: three.js already defaults `generateMipmaps: true` and
+      `minFilter: LinearMipmapLinearFilter`, so there was no bug and the change would have been a
+      no-op.
+- [x] `tween.ts` + `ZoomTween`, register chips, `era` state, the on-ramp
+- [x] `scripts/build-region.py` + the committed artefact + the fifth licence
+- [x] `region.ts` + test, `RegionPlane.tsx`, schema + validation
+- [x] `Diorama.tsx` wiring, `RegisterDriver`, the crossfade  ← **Checkpoint B ships here**
+- [x] Docs: the reversal, the carve-out, the `minZoom` change
+- [x] **Added mid-session:** city dataset, always-on labels, cell pick (`cities.ts`)
+- [x] **Added mid-session:** Cosmo Local brand system + IBM Plex Sans Thai
+- [ ] Verify the crossfade in a foreground browser — blocked, see the diary
 
 ## UI mockups (ASCII)
 
