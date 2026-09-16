@@ -4,17 +4,17 @@
     "blue": "reserved for a land mask",
     "channels": "r*256+g",
     "gamma": 3.0,
-    "max": 24500370.65136498,
+    "max": 13509518.603887131,
     "units": "people per cell"
   },
   "grid": {
     "bboxKm": [
-      -20015.1,
-      -20015.1,
-      20015.1,
-      20015.1
+      -12000.0,
+      -12000.0,
+      12000.0,
+      12000.0
     ],
-    "cellKm": 39.091992,
+    "cellKm": 23.4375,
     "size": 1024
   },
   "projection": {
@@ -24,7 +24,7 @@
     ],
     "earthRadiusKm": 6371.0088,
     "kind": "aeqd",
-    "radiusKm": 20015.1
+    "radiusKm": 12000.0
   },
   "source": {
     "attribution": "European Commission JRC, Global Human Settlement Layer",
@@ -34,8 +34,8 @@
   },
   "stats": {
     "cells": 1048576,
-    "populated": 163814,
+    "populated": 175327,
     "tilesUsed": 346,
-    "totalInside": 8191966468.346906
+    "totalInside": 7141630213.638995
   }
 }

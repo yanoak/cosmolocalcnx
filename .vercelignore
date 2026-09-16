@@ -1,0 +1,24 @@
+# What the build does NOT need to see.
+#
+# Vercel uploads the working directory, and .gitignore is not reliably honoured —
+# without this file the 750 MB of GHS-POP tiles and GeoNames dumps under data/ get
+# sent to the build, which fails the upload outright. Everything the app needs was
+# already distilled into src/scenes/ by scripts/build-region.py and committed.
+
+# Source rasters and dumps. Distilled outputs are committed; these are not.
+data/
+
+# Build artefacts — Vercel builds from source.
+.next/
+out/
+node_modules/
+
+# Local-only, and never to leave this machine.
+.local/
+docs/references/
+docs/programme-context.md
+
+# Scratch
+*.log
+__pycache__/
+*.pyc

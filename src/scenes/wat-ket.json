@@ -14394,8 +14394,8 @@
     "meta": "regions/aeqd_21.000_100.290_r3437_n512.json",
     "label": { "en": "Half of everyone", "th": "ครึ่งหนึ่งของมนุษยชาติ" },
     "world": {
-      "field": "regions/aeqd_21.000_100.290_r20015_n1024.png",
-      "meta": "regions/aeqd_21.000_100.290_r20015_n1024.json"
+      "field": "regions/aeqd_21.000_100.290_r12000_n1024.png",
+      "meta": "regions/aeqd_21.000_100.290_r12000_n1024.json"
     }
   }
 }

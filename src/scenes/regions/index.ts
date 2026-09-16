@@ -14,8 +14,8 @@
 import fieldUrl from './aeqd_21.000_100.290_r3437_n512.png';
 import meta from './aeqd_21.000_100.290_r3437_n512.json';
 import cityFile from './aeqd_21.000_100.290_r3437.cities.json';
-import worldUrl from './aeqd_21.000_100.290_r20015_n1024.png';
-import worldMeta from './aeqd_21.000_100.290_r20015_n1024.json';
+import worldUrl from './aeqd_21.000_100.290_r12000_n1024.png';
+import worldMeta from './aeqd_21.000_100.290_r12000_n1024.json';
 import type { CityFile } from '@/engine/cities';
 import type { RegionMeta } from '@/engine/region';
 

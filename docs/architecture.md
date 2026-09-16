@@ -397,39 +397,65 @@ India, eastern China, Java and Korea legibly.
 
 ### The world outside the circle
 
-**Two fields, not one.** A second, much larger plane sits under the first in the same projection:
-the whole planet at 1024 cells (39 km), against the circle's 512 cells (13 km).
+**Two fields, not one.** A second, larger plane sits under the first in the same projection: 12,000
+km at 1024 cells (23 km), against the circle's 3,437 km at 512 cells (13 km).
 
-One grid cannot serve both. A single raster covering the planet at 13 km would be enormous; one
-coarse enough to ship would throw away the detail the hero view depends on. So each field is at the
-resolution its job needs, and the seam between them falls exactly under the rim stroke that is
-drawn there anyway.
+One grid cannot serve both. A single raster covering that reach at 13 km would be enormous; one
+coarse enough to ship would throw away the detail the hero view depends on. Each field is at the
+resolution its job needs, and the seam falls exactly under the rim stroke drawn there anyway.
 
 **This is not decoration — it is what makes the claim falsifiable.** A circle that fills the frame
 is a picture of Asia. `REGION_MARGIN` (1.7) frames the register on rather more than the circle, so
-the visitor sees a world around it and can weigh "half of humanity lives inside this circle"
-against a visible outside. Pulling back further reaches the whole planet; that changes no register,
-because `t` is already clamped at 0 and the crossfade is long finished.
+a visitor can weigh "half of humanity lives inside this circle" against a visible outside. Pulling
+back further reaches the whole 12,000 km field; that changes no register, because `t` is already
+clamped at 0 and the crossfade is long finished.
 
 The outside uses the same ramp blended toward the ground rather than its own colours — it is the
 same quantity measured the same way, and separate colours would imply otherwise.
 
-**The arithmetic, which is now a test:**
+#### Why the world stops at 12,000 km
+
+Azimuthal equidistant preserves distance from the centre, not area, and the area error grows with
+distance:
+
+| Extent | Area inflation | Share of the 4.10 bn outside |
+|---|---|---|
+| The circle (3,437 km) | **1.02×** — effectively true | — |
+| 10,000 km | 1.23× | 64% |
+| **12,000 km — chosen** | **1.36×** | **75%** |
+| 20,015 km (the antipode) | 2.47× | 100% |
+
+Inside the circle AEQD is area-true to 2%, so the hero view is honest. A full-world field inflates
+the far ring by 2.47×, and the bias runs the wrong way: the same people spread over inflated land
+make the outside look emptier than it is, which **overstates the circle's claim**. 12,000 km keeps
+the error at 1.36× and cuts off before the rim smearing, at the cost of the Americas and a quarter
+of the outside population.
+
+**Web Mercator was considered and is disqualified**, notwithstanding that pudding.cool's Population
+Mountains used it via Mapbox on the same GHSL data. They rendered individual cities at high zoom,
+where Mercator distortion is nil. Here, a 3,437 km geodesic circle plots in Mercator as an egg —
+and the claim depends on it being a circle. Area inflation reaching 8.5× at Greenland's latitude is
+the second, independent disqualification for a piece about where people are.
+
+**Lambert azimuthal equal-area was the real alternative** and was rejected on balance. Being
+azimuthal, it would keep the circle a true circle *and* make areas exact. But distances stop being
+linear, so the distance rings compress and "Karachi, 3,433 km" loses its visual meaning — and the
+printed A0 in the same room is azimuthal equidistant. The screen and the wall disagreeing in front
+of a visitor is worse than 1.36×.
+
+**The arithmetic, which is a test:**
 
 | | |
 |---|---|
-| Inside the circle | 4,090,724,518 — **49.94%** |
-| Outside it | 4,101,241,951 — 50.06% |
-| World total | 8,191,966,468 |
+| Inside the circle | 4,090,724,518 — **49.94%** of the world |
+| Within the 12,000 km field | 7,141,630,214 |
+| True world total (GHS-POP E2025) | 8,191,966,468 |
 
-The world total matches GHS-POP E2025's stated 8.192 billion to five significant figures, from a
-completely independent scatter of 346 tiles. Note the honest wrinkle: on this dataset the original
-2013 claim is a **dead heat, marginally the other way** — there are very slightly more people
-outside than in. The caption says "4.09 billion inside, 4.10 billion everywhere else" rather than
-rounding in the circle's favour.
-
-One piece of luck: the antipode of 21.00°N 100.29°E is in open ocean off Peru, so a full-world
-azimuthal equidistant puts its worst distortion where there is nothing to distort.
+The full-world scatter matched GHS-POP's stated 8.192 billion to five significant figures before
+the cap was applied, from an independent pass over 346 tiles. Note the honest wrinkle: on this
+dataset the original 2013 claim is a **dead heat, marginally the other way** — very slightly more
+people live outside than in. The caption says "4.09 billion inside, 4.10 billion everywhere else"
+rather than rounding in the circle's favour.
 
 ### Cities
 

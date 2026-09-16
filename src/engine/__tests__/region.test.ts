@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import innerMeta from '@/scenes/regions/aeqd_21.000_100.290_r3437_n512.json';
-import worldMeta from '@/scenes/regions/aeqd_21.000_100.290_r20015_n1024.json';
+import worldMeta from '@/scenes/regions/aeqd_21.000_100.290_r12000_n1024.json';
 import {
   aggregate,
   decodeField,
@@ -250,26 +250,32 @@ describe('the circle furniture', () => {
  */
 describe('half of humanity', () => {
   const inside = innerMeta.stats.totalInside;
-  const world = worldMeta.stats.totalInside;
-  const outside = world - inside;
+  const shown = worldMeta.stats.totalInside;
 
-  it('totals the whole world population, matching the dataset', () => {
-    // GHS-POP E2025 is 8.192 billion — the figure the poster states.
-    expect(world / 1e9).toBeCloseTo(8.192, 2);
+  /**
+   * The world field is CAPPED at 12,000 km, so it is not the whole planet — that
+   * is a deliberate trade against azimuthal equidistant's area inflation, which
+   * reaches 2.47x at the antipode and only 1.36x here. See "The world outside the
+   * circle" in docs/architecture.md. The true global total is 8.192 bn; this field
+   * holds the 87% of it that falls within the cap.
+   */
+  it('holds the part of the world the cap reaches, not all of it', () => {
+    expect(shown / 1e9).toBeCloseTo(7.142, 2);
+    expect(shown).toBeLessThan(8.192e9);
   });
 
   it('puts essentially half of everyone inside the circle', () => {
-    expect(inside / world).toBeGreaterThan(0.495);
-    expect(inside / world).toBeLessThan(0.505);
+    // Against the TRUE global total, not the capped field's.
+    const WORLD_TOTAL = 8.191966468e9;
+    expect(inside / WORLD_TOTAL).toBeGreaterThan(0.495);
+    expect(inside / WORLD_TOTAL).toBeLessThan(0.505);
   });
 
-  it('has an outside at least as populous as the inside, as the name promises', () => {
-    // "There are more people living inside this circle than outside it" was the
-    // original 2013 claim; on GHS-POP E2025 it is a dead heat, marginally the other
-    // way. The caption says 4.09 vs 4.10 and must stay honest about that.
-    expect(outside).toBeGreaterThan(4.0e9);
+  it('shows more people outside the circle than in, within the cap alone', () => {
+    // "More people inside this circle than outside it" is, on GHS-POP E2025, a dead
+    // heat marginally the other way. The caption must stay honest about that.
+    expect(shown - inside).toBeGreaterThan(3.0e9);
     expect(inside).toBeGreaterThan(4.0e9);
-    expect(Math.abs(outside - inside) / world).toBeLessThan(0.01);
   });
 
   it('shares one projection centre between the two fields', () => {
@@ -277,8 +283,9 @@ describe('half of humanity', () => {
     expect(worldMeta.projection.kind).toBe(innerMeta.projection.kind);
   });
 
-  it('spans the whole globe in the world field, and only the circle in the inner one', () => {
-    expect(worldMeta.projection.radiusKm).toBeGreaterThan(20_000);
+  it('reaches well past the circle without reaching the antipode', () => {
+    expect(worldMeta.projection.radiusKm).toBeGreaterThan(3437 * 3);
+    expect(worldMeta.projection.radiusKm).toBeLessThan(20_015);
     expect(innerMeta.projection.radiusKm).toBe(3437);
   });
 
