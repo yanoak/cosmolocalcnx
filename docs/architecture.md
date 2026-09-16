@@ -264,7 +264,10 @@ A fixed isometric diorama you inspect — not a world you traverse.
   interaction: the visitor compares futures against each other. Build it first, and never ship it
   with only one scenario in it.
 - **8–12 hotspots.** Resist going to 30.
-- **No time slider and no "today" state.** Both cut on 12 Sep 2026. Consequences below.
+- **No time slider.** Cut 12 Sep 2026. The "today" state was cut with it and then partly
+  reinstated on 16 Sep as a one-way **on-ramp** — see "Registers" below. There is still no control
+  a visitor can use to select the present.
+- **Semantic zoom is the primary gesture.** Three registers on one rail. See "Registers" below.
 - **No free-roam avatar.** It fails at public exhibitions: strangers do not know the controls, they
   clip into geometry, the camera ends up inside a wall, and the next visitor arrives at a
   broken-looking screen. WASD is also meaningless on a phone. If a character is wanted, use
@@ -285,8 +288,9 @@ showing the present.
 **`baseline` stays in the schema and stays essential.** It is what every scenario diffs against,
 and it is why 2045 Wat Ket is recognisably Wat Ket rather than a generic block of invention — the
 streets, the river and most of the building stock are the real ones. It is a substrate, not a view.
-Rendering it alone is a development and editor concern; the public viewer must never expose it as
-a state a visitor can select.
+Rendering it alone was a development and editor concern until 16 Sep 2026, when the on-ramp made
+it visitor-*reachable*. It is still never visitor-*selectable*: there is no control that returns to
+it. See "Futures only, and the 2026 on-ramp" under Registers.
 
 What the two cuts remove from the schema and the renderer:
 
@@ -313,6 +317,126 @@ scenario is ready by 24 Sep, that is a schedule emergency, not a soft landing.
 
 Still open: whether switching states hard-cuts or gets a short transition. That is a presentation
 choice with no schema consequence, so it can wait until there is something on screen to judge.
+
+## Registers — semantic zoom
+
+Added 16 Sep 2026. The scene has **three registers** the visitor moves between with one gesture:
+
+```
+ t=0 ──────────────────────────────────────────────── t=1
+ REGION            DISTRICT                    BLOCK
+ the circle        Wat Ket                     a shophouse
+ 4.10 bn people    2.98 km²                    one doorstep
+```
+
+The far end is the **Valeriepieris circle** — centred 21.00°N 100.29°E with a 3,437 km radius, it
+contains 50% of the world's population. **Wat Ket sits 279.98 km from that centre, 8.15% of the
+radius.** That is the cosmolocal argument made geographically rather than in copy, and it only
+lands if the visitor can travel between the scales instead of reading about it.
+
+### Three registers, two coordinate frames
+
+| Register | Frame | Unit | Magnitude |
+|---|---|---|---|
+| REGION | `region` | **kilometre** | ±3,437 |
+| DISTRICT | `district` | metre | ±1,600 |
+| BLOCK | `district` | metre | ±1,600 |
+
+DISTRICT and BLOCK are the same geometry in the same frame and differ only in what is emphasised,
+so there is exactly **one handover to build, not two**. That asymmetry is most of why this was
+affordable.
+
+The 2,500:1 scale gap never enters the scene graph, because the two frames are **siblings, never
+nested**: the region group carries a scale in stage-units-per-kilometre and the district sits
+beside it. float32 is a non-issue — `3437.0` in kilometres resolves finer than `1600.0` in metres.
+
+**One orthographic camera serves both.** An ortho camera's `zoom` is pixels per stage unit, so a
+group with a scale is mathematically identical to a second camera, and it keeps `MapControls`,
+depth, raycasting and `onPointerMissed` all bound to one thing. Do not add a second camera; drei's
+`makeDefault` binds to one anyway.
+
+### The rail is derived, never controlled
+
+Everything comes from one scalar `t ∈ [0,1]`, computed from live camera zoom in `registers.ts`.
+Two consequences worth stating:
+
+- **The crossfade needs no animation clock.** Every pinch already produces a frame, so
+  `frameloop="demand"` is untouched and the handover costs nothing when nobody is touching the
+  screen. Only jumps the visitor did not make with their fingers — a register chip, the on-ramp —
+  are tweened, on a self-terminating rAF outside R3F.
+- **`districtTransform(0)` is the exact identity.** Whenever no handover is happening, the render
+  is bit-for-bit what it was before registers existed. That is a test, and it is what made this
+  safe to ship in pieces.
+
+`minZoom` changed meaning: it was "out to twice the district" and is now the whole circle — or
+still twice the district for a scene with no `region`, which is what a second neighbourhood has
+until someone runs `npm run build:region`.
+
+### The population field is not terrain
+
+`terrain` stays `null`, permanently, and `validateScene` keeps asserting it. The region field is
+**people per cell in a different coordinate frame**, committed as a two-channel PNG. The
+resemblance to a heightmap is exactly how elevation would creep back in, so the distinction is
+laboured in the script, the module and the sidecar.
+
+September renders it **flat**. December extrudes it into columns, and needs no new data to do so:
+the grid is 512 cells and population is additive, so 256 and 128 are exact block-sums off it. Cell
+size is a runtime decision forever.
+
+Two encoding decisions that are not obvious:
+
+- **Two 8-bit channels, not a 16-bit PNG.** `createImageBitmap` and `getImageData` both hand back
+  8-bit clamped RGBA, so a browser silently truncates the low byte. A 16-bit file would pass a unit
+  test in node and be wrong only in production.
+- **Cube-root compression.** Population spans six orders of magnitude per cell; linear 16-bit
+  erases inhabited Himalayan and Pacific cells to zero, which in a piece about where people are is
+  a legibility loss rather than a rounding error.
+
+Blue is reserved for a land mask and currently unused — at this density the population alone traces
+India, eastern China, Java and Korea legibly.
+
+### Cities
+
+`build-region.py` also writes every city over 100,000 inside the circle. A spatially-separated
+selection carries a permanent label; pointing at a cell names what is in it.
+
+**Label selection is not "the biggest N".** The eight most populous cities in this circle are seven
+Chinese ones and Ho Chi Minh City, which would stack eight labels in one corner and leave India,
+Indonesia and Japan unnamed. Greedy-by-population subject to a minimum separation fixes it, and
+that separation is **tuned**: at 18% of the radius the rule excluded Delhi, because Lahore is
+410 km away with a slightly larger GeoNames figure. The expected names are pinned in a test.
+
+The unit is a **cell, not a city**, because a 13 km cell routinely holds two — Dhaka and
+Narayanganj, Shenzhen and Dongguan — and naming only the largest misreports the patch.
+
+Our rim distances agree with the printed A0 to within 13 km on every city it names, and to within
+1 km on four of them. That agreement is a test.
+
+### Futures only, and the 2026 on-ramp
+
+Reversed on 16 Sep 2026, carefully. The piece now **opens on the circle, descends to Wat Ket as it
+is now, and hands over to the 2045 futures.**
+
+This is *not* the time slider cut on 12 Sep, and the difference is the whole point:
+
+| Cut on 12 Sep | The on-ramp |
+|---|---|
+| Continuous scrub 2026→2045 | Two discrete states, one one-way transition |
+| Edits carry dates | Edits carry no date. `era: 'now'` is zero edits applied |
+| Scene partially applied at intermediate positions | Never. Both states fully resolved and merged ahead of time |
+| "Today" as a toggle state inviting a verdict | 2026 is passed *through*, once |
+
+**`FORBIDDEN_EDIT_FIELDS` is untouched** and every test around it still passes. Returning to 2026
+happens only on an idle reset, never by zooming out — that would make the rail a scrub, which *is*
+the cut feature.
+
+The carve-out to the "futures only" rule, stated precisely: **`baseline` alone is now
+visitor-reachable but never visitor-selectable.** It is the room you walk through, not a door you
+can open. The comparison control still holds only futures, so the piece keeps asking "which of
+these?" rather than "is this an improvement?".
+
+The on-ramp and the attract loop (roadmap item 6) are the same machinery, which is most of why this
+fit in the week.
 
 ## Asset strategy
 

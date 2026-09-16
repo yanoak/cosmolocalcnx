@@ -30,6 +30,29 @@ The September build is scaffolding. Expect to rewrite the renderer and the edito
 December. What must survive is the scene schema, the asset library, and the authored content —
 see `docs/roadmap.md`.
 
+## Semantic zoom is the spine
+
+Added 16 Sep 2026. Three **registers** on one rail, moved through with one gesture:
+
+```
+ t=0 ──────────────────────────────────────────────── t=1
+ REGION            DISTRICT                    BLOCK
+ the circle        Wat Ket                     a shophouse
+ 4.10 bn people    2.98 km²                    one doorstep
+```
+
+The outermost is the **Valeriepieris circle** — 21.00°N 100.29°E, radius 3,437 km, containing half
+of humanity. **Wat Ket sits 279.98 km from its centre, 8.15% of the radius.** That number is the
+piece's argument made geographically, and `src/engine/__tests__/aeqd.test.ts` pins it.
+
+Three registers but only **two coordinate frames** — district and block are the same geometry
+differing in emphasis, so there is one handover, not two. The frames are siblings, never nested,
+and the region is authored in kilometres, which is what keeps the 2,500:1 gap out of the scene
+graph. One orthographic camera serves both.
+
+This came out of item 4's budget (the scrappy editor), which is the only week-one item whose
+deadline is not the 24th. Items 3 and 5 were protected.
+
 ## Three delivery surfaces
 
 This is the biggest constraint in the project. It is not one kiosk:
@@ -75,12 +98,20 @@ Do not build these before 24 Sep, however reasonable they sound in isolation:
   copies scene JSON to the clipboard, which gets committed to the repo. This survived the workshop
   question: participant work on 26–27 Sep is exported, merged and redeployed overnight rather than
   written live, so the exhibition still accumulates without a save endpoint. Decided 12 Sep 2026.
-- **No time slider, and no "today" view.** Cut 12 Sep 2026. The toggle switches between 2045
-  futures only; the present is never a visitor-facing state. Edits therefore carry no date and
-  their order means nothing temporally, and no scene state is ever partially applied. The
-  `baseline` stays in the schema as the substrate every scenario diffs against — rendering it
-  alone is a development view, never something a visitor can reach. See "Futures only" in
-  `docs/architecture.md`.
+- **No time slider.** Cut 12 Sep 2026 and still cut. Edits carry no date, their order means
+  nothing temporally, and no scene state is ever partially applied. `validateScene` enforces this
+  at the data level via `FORBIDDEN_EDIT_FIELDS`.
+
+  **The "today" view was cut with it and partly reinstated on 16 Sep 2026 as a one-way on-ramp.**
+  The piece opens on the circle, descends to Wat Ket as it is now, and hands over to the 2045
+  futures. `baseline` alone is therefore visitor-*reachable* but never visitor-*selectable* —
+  it is the room you walk through, not a door you can open. The comparison control still holds
+  only futures, so the piece asks "which of these?" rather than "is this an improvement?".
+  Returning to 2026 happens only on an idle reset. See "Registers" in `docs/architecture.md`.
+
+- **No extruded population columns before 24 Sep.** The region register renders flat. The
+  committed field is already shaped for the December extrusion — 512 cells, and population is
+  additive so 256 and 128 are exact block-sums off it.
 
 ## Working conventions
 
@@ -121,8 +152,10 @@ Solo development with LLMs, over three months. The failure mode is architectural
   people's names would defeat the purpose. Without it the hook still catches private links but
   warns that it cannot catch names; ask Yan for a copy. `--no-verify` bypasses it, which should be
   rare enough to feel wrong.
-- **Four licences, not one** — code MIT, OSM-derived `baseline` data ODbL, authored 2045 content
-  CC BY-SA 4.0, and the HDX tambon boundary CC BY-IGO. See the table in the README. The root `LICENSE` file stays pure MIT so GitHub
+- **Six licences, not one** — code MIT, OSM-derived `baseline` data ODbL, authored 2045 content
+  CC BY-SA 4.0, the HDX tambon boundary CC BY-IGO, the GHS-POP population field CC BY 4.0, and
+  GeoNames city names CC BY 4.0. **Four of the six require visible credit** and all four live in
+  the viewer's footer. See the table in the README. The root `LICENSE` file stays pure MIT so GitHub
   detects it; the split is stated in the README. Never commit an asset that cannot be
   redistributed — fetch it with a script instead.
 - **Assets live in the repo, not Git LFS.** The optimised `.glb`/`.gltf` and their textures are
@@ -134,10 +167,19 @@ Solo development with LLMs, over three months. The failure mode is architectural
   reason as everything else here: the exhibition must not depend on Overpass being up. The same
   goes for the 377 MB HDX boundary archive: `scripts/extract-boundary.py` distils it to one
   committed polygon and the archive stays out of the repo.
-- **Regenerating data is `npm run fetch:osm` and `npm run fetch:elevation`.** Neither is needed to
-  run the app. A re-run with the same cache must produce a **byte-identical** scene document — if
-  it does not, the height synthesis has stopped being deterministic and every downstream placement
-  judgement is unstable.
+- **The name hook has one known false positive**, in the city file
+  `src/scenes/regions/*.cities.json` that `scripts/build-region.py` writes. Exactly one of its
+  2,220 GeoNames entries — a district of Bangkok — contains a token that is both a common Thai
+  given name and a common Thai place-name element, so a denylist pattern matches it and no
+  anchoring can fix it. Regenerating that file needs `--no-verify` with the reason in the commit
+  message; check the link patterns separately first. **Do not write the offending name into any
+  committed file**, including this one, or every future commit that touches it is blocked too.
+
+- **Regenerating data is `npm run fetch:osm`, `npm run fetch:elevation` and
+  `npm run build:region`.** None is needed to run the app. A re-run against the same cached
+  source must produce a **byte-identical** output — if it does not, the height synthesis or the
+  population scatter has stopped being deterministic, and every downstream placement judgement is
+  unstable.
 - Update this file when a decision is made, so the next session inherits it. The diary is the trail;
   this file and `docs/` are the source of truth.
 
@@ -171,7 +213,9 @@ the code they describe, never left untracked.
 - `docs/programme-context.md` — the exhibition, the people, the audience. **Local only, never
   committed** — see the public-repo note in Working conventions.
 - `docs/architecture.md` — scene schema, OSM pipeline, perf budget, asset strategy
-- `docs/design-system.md` — palette from the 1967 PROGRESS cover, role tokens, unlit materials
+- `docs/design-system.md` — the Cosmo Local CNX brand palette, role tokens, unlit materials,
+  IBM Plex Sans Thai. Replaced the 1967 PROGRESS palette on 16 Sep 2026 because the exhibition
+  has print and signage the screen has to match.
 - `docs/roadmap.md` — the week-one cut line and the path to December
 - `plans/` — one file per piece of substantial work: goal, approach, tasks, outcome
 - `work-diary/` — the daily record: plan of attack, what shipped, plans and their commits, decisions

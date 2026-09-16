@@ -13,11 +13,32 @@ Sequenced so the schema is right on day one and everything downstream is disposa
 | 5 | **Content.** Hotspots and bilingual copy, kept in data files so the partly-formed 2045 material can land late. Each hotspot carries its own before-and-after — with no "today" view, this copy is the only thing that makes an intervention legible as a change. Includes the Thai typography pass: subsetted webfont, and line-breaking checked on a real phone. |
 | 6 | **Exhibition hardening.** Idle reset + attract loop, fullscreen kiosk mode, static export served locally on the laptop/projection machine, thumb-sized hit targets, QR code and short URL, ambient audio. Plus the still-render pipeline — see *Device reach*. |
 | 7 | **Buffer.** You will need all of it. |
+| 8 | **Semantic zoom** — added 16 Sep 2026, out of item 4's budget. Three registers on one rail, the Valeriepieris circle as the outermost, and the 2026 on-ramp. See "Registers" in `docs/architecture.md`. |
+
+### Added 16 Sep 2026: semantic zoom, and the cost of it
+
+Three registers on one rail — the circle, the district, the block — with the Valeriepieris circle
+as the outermost. It is the piece's cosmolocal argument made geographically: Wat Ket sits 280 km
+from the centre of a circle containing half of humanity.
+
+**This came out of item 4, the scrappy editor**, which is the only outstanding item whose deadline
+is not the 24th: workshop output lands 26–27 Sep and is merged overnight, so the editor can be
+built during the exhibition week. Items 3 and 5 were explicitly protected — a second scenario and
+hotspot copy are what make the piece an argument, and semantic zoom is what makes it land.
+
+The population mountains (extruded columns, pudding.cool style) are **December**. The committed
+field is already shaped for them and needs no new data.
 
 ### Cut: the time slider, and the present
 
 Both dropped on 12 Sep 2026. The viewer shows **2045 futures only** — two or three of them, as
 states of one toggle. No continuous scrub, and no "today" state a visitor can select.
+
+**Partly reversed on 16 Sep 2026**, and only partly: 2026 is now an *on-ramp*. The piece opens on
+the circle, descends to Wat Ket as it is now, and hands over to the futures. There is still no
+control that selects the present, edits still carry no date, and no scene state is ever partially
+applied. The time slider stays cut. See "Registers" in `docs/architecture.md` for the table of what
+differs.
 
 What this simplifies: edits need no date or ordering semantics, there is no partially-applied scene
 state to render, nothing has to animate between two versions of a building, and each state's
