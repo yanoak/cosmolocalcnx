@@ -1,20 +1,40 @@
 'use client';
 
 import { MapControls } from '@react-three/drei';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import * as THREE from 'three';
+import { aeqdForward } from './aeqd';
 import { Buildings } from './Buildings';
 import { isometricFit, type Bounds } from './camera';
 import { DebugOverlay } from './DebugOverlay';
 import { Ground, GroundAreas } from './Ground';
+import { RegionPlane } from './RegionPlane';
+import {
+  districtTransform,
+  regionScale,
+  registerState,
+  stageFit,
+  stockTint,
+  zoomLadder,
+  type RegisterId,
+} from './registers';
+import type { RegionMeta } from './region';
 import type { BaselineArea, BaselineBuilding, BaselineRoad } from './scene';
-import { PALETTE } from './theme';
+import { PALETTE, UI_TOKENS } from './theme';
 
 export type { Bounds };
 
 interface Size {
   width: number;
   height: number;
+}
+
+export interface RegionSource {
+  url: string;
+  meta: RegionMeta;
+  /** The scene's lat/lon origin, so the anchor can be projected onto the circle. */
+  origin: [number, number];
 }
 
 /**
@@ -88,11 +108,130 @@ function RedrawOnVisible() {
 }
 
 /**
+ * Turns camera zoom into the state of every register, once per frame.
+ *
+ * Mutates three.js objects DIRECTLY and sets React state only when the active
+ * register changes. Setting state per frame would re-render, which invalidates,
+ * which renders — the exact loop `frameloop="demand"` exists to avoid, and it would
+ * cost the battery budget the whole diorama was designed around.
+ *
+ * Note what is NOT here: a clock. The crossfade is a pure function of zoom, and
+ * every pinch already produces a frame, so the handover costs nothing when nobody
+ * is touching the screen.
+ */
+function RegisterDriver({
+  ladder,
+  sigma,
+  districtCentre,
+  anchorStage,
+  heroCount,
+  refs,
+  onChange,
+}: {
+  ladder: ReturnType<typeof zoomLadder>;
+  sigma: number;
+  districtCentre: [number, number];
+  anchorStage: [number, number];
+  heroCount: number;
+  refs: {
+    region: React.RefObject<THREE.Group | null>;
+    district: React.RefObject<THREE.Group | null>;
+    regionMaterial: React.RefObject<THREE.MeshBasicMaterial | null>;
+    markerMaterial: React.RefObject<THREE.MeshBasicMaterial | null>;
+    stockMaterial: React.RefObject<THREE.MeshBasicMaterial | null>;
+  };
+  onChange: (next: { active: RegisterId; railed: boolean }) => void;
+}) {
+  const controls = useThree((s) => s.controls) as { enablePan?: boolean } | null;
+  const last = useRef<{ active: RegisterId; railed: boolean } | null>(null);
+
+  useFrame(({ camera }) => {
+    const zoom = (camera as THREE.OrthographicCamera).zoom;
+    const state = registerState(zoom, ladder);
+
+    const transform = districtTransform(state.collapse, districtCentre, anchorStage, sigma);
+    const district = refs.district.current;
+    if (district) {
+      district.scale.setScalar(transform.scale);
+      district.position.set(...transform.position);
+      district.visible = state.districtOpacity > 0.001;
+    }
+
+    const region = refs.region.current;
+    if (region) region.visible = state.regionOpacity > 0.001;
+
+    if (refs.regionMaterial.current) refs.regionMaterial.current.opacity = state.regionOpacity;
+    if (refs.markerMaterial.current) refs.markerMaterial.current.opacity = state.markerOpacity;
+
+    if (refs.stockMaterial.current) {
+      const tint = stockTint(state.detail, heroCount);
+      refs.stockMaterial.current.color.setRGB(tint, tint, tint);
+    }
+
+    // Pan is meaningless mid-handover — the camera target is being driven along the
+    // rail — and a visitor who pans there ends up looking at empty ocean.
+    if (controls && typeof controls.enablePan === 'boolean') {
+      controls.enablePan = !state.railed;
+    }
+
+    if (last.current?.active !== state.active || last.current?.railed !== state.railed) {
+      last.current = { active: state.active, railed: state.railed };
+      onChange(last.current);
+    }
+  });
+
+  return null;
+}
+
+/**
+ * The "you are here" ring, at the scene origin's true place on the circle.
+ *
+ * A ring rather than a dot: at this scale a filled dot is indistinguishable from a
+ * dense city, and the one thing this marker must not be is data. It is a mesh
+ * rather than part of the texture so it stays crisp at any zoom, and so it can fade
+ * in on its own schedule as the diorama shrinks onto it.
+ */
+function AnchorMarker({
+  at,
+  radiusKm,
+  materialRef,
+}: {
+  at: [number, number];
+  radiusKm: number;
+  materialRef: React.RefObject<THREE.MeshBasicMaterial | null>;
+}) {
+  // Sized against the circle, so it reads the same whatever radius a scene uses.
+  const outer = radiusKm / 70;
+  return (
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[at[0], 0.5, -at[1]]}
+      raycast={() => null}
+    >
+      <ringGeometry args={[outer * 0.62, outer, 32]} />
+      <meshBasicMaterial
+        ref={materialRef}
+        color={UI_TOKENS['ui.accent']}
+        toneMapped={false}
+        transparent
+        depthWrite={false}
+        opacity={0}
+      />
+    </mesh>
+  );
+}
+
+/**
  * A fixed isometric diorama you inspect, not a world you traverse.
  *
  * Orthographic camera on the (1, 1, 1) diagonal. MapControls constrained to pan and
  * zoom, never rotate: touch is the primary input and a visitor who rotates the
- * camera into a wall leaves a broken screen for the next person. See
+ * camera into a wall leaves a broken screen for the next person.
+ *
+ * Since semantic zoom, ONE camera serves two coordinate frames — district metres
+ * and region kilometres — because an orthographic camera's zoom is pixels per stage
+ * unit, so a group with a scale is exactly equivalent to a second camera and keeps
+ * MapControls, depth and picking all bound to one thing. See registers.ts and
  * docs/architecture.md.
  */
 export function Diorama({
@@ -105,6 +244,8 @@ export function Diorama({
   onSelect,
   debug,
   wireframe,
+  region,
+  heroIds,
 }: {
   bounds: Bounds;
   buildings: BaselineBuilding[];
@@ -115,9 +256,22 @@ export function Diorama({
   onSelect: (id: string | null) => void;
   debug: boolean;
   wireframe: boolean;
+  region?: RegionSource | null;
+  heroIds?: ReadonlySet<string>;
 }) {
   const [stage, size] = useMeasuredStage();
   const ready = !!size && size.width > 0 && size.height > 0;
+
+  const [registers, setRegisters] = useState<{ active: RegisterId; railed: boolean }>({
+    active: 'district',
+    railed: false,
+  });
+
+  const regionGroup = useRef<THREE.Group>(null);
+  const districtGroup = useRef<THREE.Group>(null);
+  const regionMaterial = useRef<THREE.MeshBasicMaterial>(null);
+  const markerMaterial = useRef<THREE.MeshBasicMaterial>(null);
+  const stockMaterial = useRef<THREE.MeshBasicMaterial>(null);
 
   /**
    * Memoised on the only two things that may move the camera, and that is
@@ -130,20 +284,53 @@ export function Diorama({
     [bounds, size],
   );
 
-  const camera = useMemo(
-    () => ({ position: fit.position, zoom: fit.zoom, near: fit.near, far: fit.far }),
+  const radiusKm = region?.meta.projection.radiusKm ?? 0;
+
+  /** Stage units per kilometre — the one constant absorbing the 2,500:1 scale gap. */
+  const k = useMemo(
+    () => (region ? regionScale(bounds, radiusKm) : 1),
+    [region, bounds, radiusKm],
+  );
+
+  const ladder = useMemo(
+    () => zoomLadder(fit.zoom, { hasRegion: !!region }),
+    [fit.zoom, region],
+  );
+
+  /** The scene origin's place on the circle, in stage units. North flips to -Z. */
+  const anchorStage = useMemo<[number, number]>(() => {
+    if (!region) return [0, 0];
+    const [east, north] = aeqdForward(region.origin, region.meta.projection.centre);
+    return [east * k, -north * k];
+  }, [region, k]);
+
+  const districtCentre = useMemo<[number, number]>(
+    () => [fit.target[0], fit.target[2]],
     [fit],
   );
+
+  const camera = useMemo(() => {
+    const staged = stageFit(bounds, radiusKm * k, fit);
+    return {
+      position: staged.position,
+      zoom: staged.zoom,
+      near: staged.near,
+      far: staged.far,
+    };
+  }, [bounds, radiusKm, k, fit]);
+
+  const heroes = heroIds ?? EMPTY_HEROES;
 
   return (
     <div ref={stage} className="diorama">
       {ready && (
         <Canvas
           orthographic
-          // Nothing in this scene animates: it is a diorama, not a game. Rendering
-          // on demand rather than every frame is most of a phone's battery and
-          // thermal budget back, and thermal throttling over a long exhibition day
-          // is the realistic failure mode.
+          // Nothing in this scene animates by itself: it is a diorama, not a game.
+          // The register crossfade is a pure function of camera zoom, so it needs no
+          // clock — every pinch already produces a frame. Rendering on demand is
+          // most of a phone's battery and thermal budget back, and thermal
+          // throttling over a long exhibition day is the realistic failure mode.
           frameloop="demand"
           // A definite size, measured above, rather than R3F's own observer.
           style={{ width: size.width, height: size.height }}
@@ -155,28 +342,76 @@ export function Diorama({
 
           <RedrawOnVisible />
 
-          <Ground bounds={bounds} roads={roads} />
-          <GroundAreas water={water} green={green} />
-          <Buildings
-            buildings={buildings}
-            selectedId={selectedId}
-            onSelect={onSelect}
-            wireframe={wireframe}
-          />
+          {region && (
+            <>
+              <group ref={regionGroup} scale={k} visible={false}>
+                <RegionPlane
+                  url={region.url}
+                  meta={region.meta}
+                  anchor={aeqdForward(region.origin, region.meta.projection.centre)}
+                  materialRef={regionMaterial}
+                />
+                <AnchorMarker
+                  at={[anchorStage[0] / k, -anchorStage[1] / k]}
+                  radiusKm={radiusKm}
+                  materialRef={markerMaterial}
+                />
+              </group>
 
-          {debug && <DebugOverlay bounds={bounds} wireframe={wireframe} />}
+              <RegisterDriver
+                ladder={ladder}
+                sigma={k / 1000}
+                districtCentre={districtCentre}
+                anchorStage={anchorStage}
+                heroCount={heroes.size}
+                refs={{
+                  region: regionGroup,
+                  district: districtGroup,
+                  regionMaterial,
+                  markerMaterial,
+                  stockMaterial,
+                }}
+                onChange={setRegisters}
+              />
+            </>
+          )}
+
+          {/* The district. The outer group is driven by the handover; the inner one
+              pre-centres the geometry so that shrinking happens about the middle
+              rather than dragging the scene off toward the origin. At collapse 0 the
+              two cancel exactly, which is why today's framing is untouched. */}
+          <group ref={districtGroup}>
+            <group position={[-districtCentre[0], 0, -districtCentre[1]]}>
+              <Ground bounds={bounds} roads={roads} />
+              <GroundAreas water={water} green={green} />
+              <Buildings
+                buildings={buildings}
+                selectedId={selectedId}
+                onSelect={onSelect}
+                wireframe={wireframe}
+                heroIds={heroes}
+                pickable={!registers.railed && registers.active !== 'region'}
+                stockMaterialRef={stockMaterial}
+              />
+              {debug && <DebugOverlay bounds={bounds} wireframe={wireframe} />}
+            </group>
+          </group>
 
           <MapControls
             makeDefault
             enableRotate={false}
             target={fit.target}
             // Relative to the fitted zoom, so the limits mean the same thing on a
-            // phone and a projector: out to twice the district, in to a courtyard.
-            minZoom={fit.zoom * 0.5}
-            maxZoom={fit.zoom * 40}
+            // phone and a projector. The outer end used to be twice the district;
+            // it is now the whole circle, or twice the district for a scene that
+            // has no region field.
+            minZoom={ladder.region * 0.95}
+            maxZoom={ladder.block}
           />
         </Canvas>
       )}
     </div>
   );
 }
+
+const EMPTY_HEROES: ReadonlySet<string> = new Set();

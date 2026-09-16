@@ -139,8 +139,8 @@ export function fieldToRgba(
   size: number,
   max: number,
   stops: readonly string[] = POPULATION_RAMP,
-): Uint8ClampedArray {
-  const out = new Uint8ClampedArray(size * size * 4);
+): Uint8ClampedArray<ArrayBuffer> {
+  const out = new Uint8ClampedArray(new ArrayBuffer(size * size * 4));
   const denominator = Math.log10(max + 1);
 
   for (let i = 0; i < field.length; i++) {
@@ -163,8 +163,11 @@ export interface RegionContext {
   lineTo(x: number, y: number): void;
   stroke(): void;
   fill(): void;
-  strokeStyle: string;
-  fillStyle: string;
+  /** The DOM's own union, so a real CanvasRenderingContext2D is assignable — a
+   *  mutable property is invariant, and narrowing this to `string` rejects one.
+   *  Same reasoning as `StrokeContext` in roads.ts. */
+  strokeStyle: string | CanvasGradient | CanvasPattern;
+  fillStyle: string | CanvasGradient | CanvasPattern;
   lineWidth: number;
   globalAlpha: number;
 }

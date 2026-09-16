@@ -6,9 +6,36 @@ import { TokenSwatches } from '@/engine/DebugOverlay';
 import { SelectPanel, type Selection } from '@/engine/SelectPanel';
 import { step } from '@/engine/ordering';
 import { sceneBoundsMetres, validateScene, type SceneDocument } from '@/engine/scene';
+import { REGION_ASSETS } from '@/scenes/regions';
 import scene from '@/scenes/wat-ket.json';
 
 const DOC = scene as unknown as SceneDocument;
+
+/**
+ * The region register's committed field, resolved from the path the document names.
+ *
+ * Absent is a valid state, not a broken one — a scene with no population field has
+ * two registers instead of three. See RegionRef in scene.ts.
+ */
+const REGION = (() => {
+  const ref = DOC.region;
+  const asset = ref ? REGION_ASSETS[ref.field] : undefined;
+  return asset ? { ...asset, origin: DOC.origin as [number, number] } : null;
+})();
+
+/**
+ * The buildings a hotspot points at, which the district register emphasises.
+ *
+ * Deliberately derived rather than stored: the set of buildings worth emphasising
+ * and the set somebody wrote a panel about are the same set, and deriving it means
+ * they cannot drift. Empty until item 5's content lands, which switches the
+ * emphasis off rather than dimming everything.
+ */
+const HERO_IDS: ReadonlySet<string> = new Set(
+  [...DOC.hotspots, ...DOC.scenarios.flatMap((s) => s.hotspots)]
+    .map((h) => h.target)
+    .filter((t): t is string => typeof t === 'string' && t !== ''),
+);
 
 /**
  * Day one renders `baseline` alone, which is a DEVELOPMENT view.
@@ -106,6 +133,8 @@ export default function Page() {
               onSelect={setSelectedId}
               debug={debug}
               wireframe={wireframe}
+              region={REGION}
+              heroIds={HERO_IDS}
             />
           </div>
         </div>
@@ -114,10 +143,10 @@ export default function Page() {
 
       {debug && <TokenSwatches />}
 
-      {/* Two sources, two licences, and both require attribution to be VISIBLE —
-          OSM under ODbL, and the Wat Ket tambon boundary under CC BY-IGO. A few
-          lines of JSX, easy to forget until someone asks. See the licensing table
-          in README.md. */}
+      {/* Three sources whose licences require attribution to be VISIBLE — OSM under
+          ODbL, the Wat Ket tambon boundary under CC BY-IGO, and the region
+          register's population field under CC BY 4.0. A few lines of JSX, easy to
+          forget until someone asks. See the licensing table in README.md. */}
       <p className="attribution">
         Building footprints and street data ©{' '}
         <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, ODbL.
@@ -125,7 +154,11 @@ export default function Page() {
         <a href="https://data.humdata.org/dataset/cod-ab-tha">
           OCHA Thailand administrative boundaries
         </a>
-        , CC BY-IGO.
+        , CC BY-IGO. Population from{' '}
+        <a href="https://human-settlement.emergency.copernicus.eu/">
+          GHS-POP, European Commission JRC
+        </a>
+        , CC BY 4.0.
       </p>
     </main>
   );

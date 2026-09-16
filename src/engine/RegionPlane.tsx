@@ -15,6 +15,10 @@ import { UI_TOKENS } from './theme';
 /**
  * The REGION register: a flat plane carrying half of humanity.
  *
+ * Named for the plane rather than the register because `region.ts` beside it holds
+ * the maths. Two files differing only in casing is fine on macOS and two different
+ * files on the Linux box Vercel builds on, which is a build that fails only in CI.
+ *
  * FLAT is a September decision, not a permanent one. The committed field is people
  * per cell and December extrudes it into columns; drawing it into a texture in the
  * meantime costs two draw calls, needs no shader, and gets the argument on screen
@@ -60,7 +64,7 @@ function useRegionField(url: string, meta: RegionMeta) {
   return field;
 }
 
-export const Region = forwardRef<
+export const RegionPlane = forwardRef<
   THREE.Mesh,
   {
     url: string;
@@ -69,7 +73,7 @@ export const Region = forwardRef<
     anchor: [number, number];
     materialRef?: React.RefObject<THREE.MeshBasicMaterial | null>;
   }
->(function Region({ url, meta, anchor, materialRef }, ref) {
+>(function RegionPlane({ url, meta, anchor, materialRef }, ref) {
   const field = useRegionField(url, meta);
   const radiusKm = meta.projection.radiusKm;
 
