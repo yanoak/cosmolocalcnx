@@ -63,6 +63,11 @@ Thumbs.db
 # nothing at build or run time reads it, and it is a one-command download.
 /data/hdx/
 
+# GHS-POP population tiles — the source for the REGION register's height field.
+# ~50 tiles at ~5 MB each. scripts/build-region.py distils them to one committed
+# PNG plus a sidecar; nothing at build or run time reads the tiles themselves.
+/data/ghsl/
+
 # Raw Overpass / OSM responses — regenerable and large.
 # The GENERATED scene document is committed: the exhibition must not depend on Overpass
 # being up (docs/architecture.md), and the editor's output is committed too (roadmap item 4).

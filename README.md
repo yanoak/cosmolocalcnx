@@ -56,7 +56,7 @@ a single polygon; the 377 MB source archive is not. See the docstring in
 
 ## Licensing
 
-This repository contains four kinds of thing under four different licences. A single blanket
+This repository contains five kinds of thing under five different licences. A single blanket
 licence would misstate the terms, because OpenStreetMap's is share-alike and cannot be
 relicensed.
 
@@ -66,9 +66,14 @@ relicensed.
 | **OSM-derived data** — building footprints, roads, water and landuse in any scene document's `baseline` | [ODbL](https://opendatacommons.org/licenses/odbl/), © OpenStreetMap contributors |
 | **Authored content** — the 2045 scenarios, hotspot text, images, and the Wat Ket scene's speculative layer | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 | **Administrative boundary** — `src/scenes/wat-ket.boundary.geojson`, the Wat Ket tambon polygon | [CC BY-IGO](https://creativecommons.org/licenses/by/3.0/igo/), OCHA Field Information Services Section |
+| **Population field** — `src/scenes/regions/*.png`, the REGION register's gridded population | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), European Commission JRC, Global Human Settlement Layer |
 
 Elevation samples in `src/scenes/*.elevation.json` come from SRTM, which is public domain
 (NASA/USGS) and needs no attribution.
+
+**Three of the five require visible credit**, and all three are in the viewer's footer: OpenStreetMap
+for ODbL, OCHA for the boundary, and the JRC for the population field. Forgetting one is easy and
+noticing it is somebody else's job, so the footer is the single place they live.
 
 Third-party 3D assets keep their own licences, recorded alongside them in the asset library.
 Anything that cannot be redistributed is not committed — it gets fetched by a script instead.

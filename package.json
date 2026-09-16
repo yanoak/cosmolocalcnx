@@ -10,7 +10,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "fetch:osm": "tsx scripts/fetch-osm.ts",
-    "fetch:elevation": "tsx scripts/fetch-elevation.ts"
+    "fetch:elevation": "tsx scripts/fetch-elevation.ts",
+    "build:region": "python3 scripts/build-region.py"
   },
   "devDependencies": {
     "@types/node": "22.20.2",
