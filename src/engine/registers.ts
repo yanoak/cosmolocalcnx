@@ -83,6 +83,9 @@ export const DEFAULT_REGION_OUT = 8;
 /** How far in the block register reaches. Unchanged from the original MapControls cap. */
 export const DEFAULT_BLOCK_IN = 40;
 
+/** How dark the stock goes at district scale. Tuned by eye; 0 would be a silhouette. */
+const STOCK_TINT_FLOOR = 0.62;
+
 /** Pixels per stage unit at each anchor. `district` is today's isometricFit zoom. */
 export interface ZoomLadder {
   region: number;
@@ -216,6 +219,25 @@ export function registerState(zoom: number, ladder: ZoomLadder): RegisterState {
     detail: smoothstep(BANDS.detailFrom, BANDS.detailTo, t),
     railed: collapse > 0 && collapse < 1,
   };
+}
+
+/**
+ * How far the ordinary building stock recedes so the hero buildings read.
+ *
+ * Returns a multiplier for the stock material's colour, which three.js multiplies
+ * into the vertex colours — so this needs no shader and no second palette. At
+ * district scale the stock drops back and the buildings that carry content stand
+ * out; zooming in returns everything to full strength, because at block scale the
+ * visitor is looking at individual buildings and dimming most of them is just a
+ * dimmer scene.
+ *
+ * **With no heroes there is no emphasis.** Until hotspots are authored, every
+ * building is stock, and dimming all of them would produce a murky diorama rather
+ * than a legible one. So the effect switches itself off rather than degrading.
+ */
+export function stockTint(detail: number, heroCount: number): number {
+  if (heroCount <= 0) return 1;
+  return STOCK_TINT_FLOOR + (1 - STOCK_TINT_FLOOR) * clamp01(detail);
 }
 
 /**

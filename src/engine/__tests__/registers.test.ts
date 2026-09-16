@@ -7,6 +7,7 @@ import {
   registerState,
   smoothstep,
   stageFit,
+  stockTint,
   tToZoom,
   zoomLadder,
   zoomToT,
@@ -262,5 +263,35 @@ describe('smoothstep', () => {
   it('survives a zero-width band', () => {
     expect(smoothstep(0.5, 0.5, 0.4)).toBe(0);
     expect(smoothstep(0.5, 0.5, 0.6)).toBe(1);
+  });
+});
+
+describe('stockTint', () => {
+  /**
+   * Until hotspots are authored every building is stock, and dimming all of them
+   * would produce a murky diorama rather than a legible one.
+   */
+  it('switches itself off entirely when nothing is a hero', () => {
+    for (const detail of [0, 0.25, 0.5, 0.75, 1]) {
+      expect(stockTint(detail, 0)).toBe(1);
+    }
+  });
+
+  it('recedes the stock at district scale and restores it at block scale', () => {
+    expect(stockTint(0, 8)).toBeLessThan(1);
+    expect(stockTint(1, 8)).toBe(1);
+  });
+
+  it('is monotone in detail, so the stock never brightens on the way in', () => {
+    let previous = -1;
+    for (let i = 0; i <= 50; i++) {
+      const tint = stockTint(i / 50, 8);
+      expect(tint).toBeGreaterThanOrEqual(previous);
+      previous = tint;
+    }
+  });
+
+  it('never goes to a silhouette, however far out the visitor is', () => {
+    expect(stockTint(-5, 8)).toBeGreaterThan(0.5);
   });
 });
