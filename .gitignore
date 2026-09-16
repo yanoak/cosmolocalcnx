@@ -63,6 +63,10 @@ Thumbs.db
 # nothing at build or run time reads it, and it is a one-command download.
 /data/hdx/
 
+# Python bytecode from the one-off distillation scripts.
+__pycache__/
+*.pyc
+
 # GHS-POP population tiles — the source for the REGION register's height field.
 # ~50 tiles at ~5 MB each. scripts/build-region.py distils them to one committed
 # PNG plus a sidecar; nothing at build or run time reads the tiles themselves.
