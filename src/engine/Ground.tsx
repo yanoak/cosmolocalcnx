@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { mergeAreas } from './merge';
 import { drawRoads, roadTextureLayout } from './roads';
 import type { BaselineArea, BaselineRoad } from './scene';
-import { GROUND, PALETTE, roadTone } from './theme';
+import { GROUND, SURFACE_ROLES, roadTone } from './theme';
 
 export type Bounds = [number, number, number, number];
 
@@ -72,7 +72,7 @@ export function GroundAreas({ water, green }: { water: BaselineArea[]; green: Ba
       // Green first, so a pond inside a park reads as water rather than being
       // painted over by it.
       { key: 'green', merged: mergeAreas(green, GROUND.green), y: -0.015 },
-      { key: 'water', merged: mergeAreas(water, PALETTE['progress.blue']), y: -0.01 },
+      { key: 'water', merged: mergeAreas(water, SURFACE_ROLES.water.side), y: -0.01 },
     ],
     [water, green],
   );

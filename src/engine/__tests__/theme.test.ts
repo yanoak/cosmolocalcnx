@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  GROUND,
   PALETTE,
   SURFACE_ROLES,
   UI_TOKENS,
@@ -13,8 +14,8 @@ const hex = /^#[0-9A-F]{6}$/;
 
 describe('ramp', () => {
   it('derives a lighter top and a darker shade from one base', () => {
-    const r = ramp('#ECD83B');
-    expect(r.side).toBe('#ECD83B');
+    const r = ramp('#FFC72C');
+    expect(r.side).toBe('#FFC72C');
     expect(contrastRatio(r.top, '#000000')).toBeGreaterThan(
       contrastRatio(r.side, '#000000'),
     );
@@ -24,13 +25,13 @@ describe('ramp', () => {
   });
 
   it('keeps every tone a valid hex', () => {
-    for (const tone of Object.values(ramp('#677FA2'))) {
+    for (const tone of Object.values(ramp('#6E4FD3'))) {
       expect(tone).toMatch(hex);
     }
   });
 
   it('is deterministic — same input, same output', () => {
-    expect(ramp('#DA627A')).toEqual(ramp('#DA627A'));
+    expect(ramp('#B7A7E8')).toEqual(ramp('#B7A7E8'));
   });
 
   it('does not blow past black or white at the extremes', () => {
@@ -42,12 +43,12 @@ describe('ramp', () => {
 describe('contrastRatio', () => {
   it('is 21:1 for black on white and 1:1 for a colour on itself', () => {
     expect(contrastRatio('#000000', '#FFFFFF')).toBeCloseTo(21, 1);
-    expect(contrastRatio('#ECD83B', '#ECD83B')).toBeCloseTo(1, 5);
+    expect(contrastRatio('#FFC72C', '#FFC72C')).toBeCloseTo(1, 5);
   });
 
   it('is symmetric', () => {
-    expect(contrastRatio('#1E2F49', '#E4E0D6')).toBeCloseTo(
-      contrastRatio('#E4E0D6', '#1E2F49'),
+    expect(contrastRatio('#2B184C', '#F7F4EE')).toBeCloseTo(
+      contrastRatio('#F7F4EE', '#2B184C'),
       5,
     );
   });
@@ -56,20 +57,17 @@ describe('contrastRatio', () => {
 describe('UI tokens', () => {
   // The whole reason UI text is derived rather than taken from the palette.
   // Visitors read this standing in a bright mall, on a phone, at arm's length.
-  it('every text token clears 4.5:1 on paper', () => {
+  it('every text token clears 4.5:1 on the ground', () => {
     for (const [name, value] of Object.entries(UI_TOKENS)) {
-      const r = contrastRatio(value, PALETTE['progress.paper']);
-      expect(r, `${name} (${value}) on paper`).toBeGreaterThanOrEqual(4.5);
+      const r = contrastRatio(value, GROUND.ground);
+      expect(r, `${name} (${value}) on ground`).toBeGreaterThanOrEqual(4.5);
     }
   });
 
-  it('the raw palette would NOT pass — which is why we derive', () => {
-    expect(
-      contrastRatio(PALETTE['progress.yellow'], PALETTE['progress.paper']),
-    ).toBeLessThan(4.5);
-    expect(
-      contrastRatio(PALETTE['progress.rose'], PALETTE['progress.paper']),
-    ).toBeLessThan(4.5);
+  it('the raw brand accents would NOT pass — which is why the accent is derived', () => {
+    // Orange and yellow are surface colours in this palette, never text colours.
+    expect(contrastRatio(PALETTE['cosmo.orange'], GROUND.ground)).toBeLessThan(4.5);
+    expect(contrastRatio(PALETTE['cosmo.yellow'], GROUND.ground)).toBeLessThan(4.5);
   });
 });
 
@@ -91,8 +89,8 @@ describe('surface roles', () => {
 
 describe('shiftLightness', () => {
   it('preserves hue', () => {
-    expect(shiftLightness('#ECD83B', 0.1)).toMatch(hex);
-    expect(shiftLightness('#ECD83B', 0)).toBe('#ECD83B');
+    expect(shiftLightness('#FFC72C', 0.1)).toMatch(hex);
+    expect(shiftLightness('#FFC72C', 0)).toBe('#FFC72C');
   });
 });
 

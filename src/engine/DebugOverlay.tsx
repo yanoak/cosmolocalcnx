@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Edges } from '@react-three/drei';
-import { PALETTE, UI_TOKENS } from './theme';
+import { PALETTE, PALETTE_EXTENDED, UI_TOKENS } from './theme';
 
 /**
  * Twenty lines that turn "looks wrong" into "is 100x too big".
@@ -35,7 +35,7 @@ export function DebugOverlay({
       </Box>
       {/* 50 m grid, so distances are readable without measuring. */}
       <gridHelper
-        args={[grid, grid / 50, PALETTE['progress.ink'], PALETTE['progress.ink']]}
+        args={[grid, grid / 50, UI_TOKENS['ui.focus'], UI_TOKENS['ui.focus']]}
         position={[(west + east) / 2, 0.01, -(south + north) / 2]}
       />
       {wireframe && <WireframeTint />}
@@ -59,7 +59,7 @@ function WireframeTint() {
 export function TokenSwatches() {
   return (
     <div className="swatches" aria-label="Design token swatches, for colour checking">
-      {Object.entries(PALETTE).map(([name, value]) => (
+      {Object.entries({ ...PALETTE, ...PALETTE_EXTENDED }).map(([name, value]) => (
         <span key={name} title={`${name} ${value}`} style={{ background: value }} />
       ))}
     </div>

@@ -23,7 +23,7 @@ import {
 } from './registers';
 import type { RegionMeta } from './region';
 import type { BaselineArea, BaselineBuilding, BaselineRoad } from './scene';
-import { PALETTE, UI_TOKENS } from './theme';
+import { PALETTE_EXTENDED, UI_TOKENS } from './theme';
 
 export type { Bounds };
 
@@ -447,7 +447,7 @@ export function Diorama({
           // Clicking past every building clears the selection.
           onPointerMissed={() => onSelect(null)}
         >
-          <color attach="background" args={[PALETTE['progress.paper']]} />
+          <color attach="background" args={[PALETTE_EXTENDED['cosmo.offWhite']]} />
 
           <RedrawOnVisible />
 

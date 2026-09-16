@@ -10,14 +10,39 @@
 
 export type Hex = `#${string}`;
 
-/** Layer 1 — raw palette, white-balanced from the 1967 PROGRESS cover. */
+/**
+ * Layer 1 — the Cosmo Local CNX brand palette, taken verbatim from the brand
+ * concept. These are SPECIFIED values, not sampled ones: they are not rounded, not
+ * white-balanced and not adjusted, because somebody else owns this system and the
+ * exhibition has print and signage that must match the screen exactly.
+ *
+ * The brand weights them 55% purple, 15% lilac, 10% orange, 10% yellow, 10%
+ * neutral. The role table below is where that weighting actually happens — the
+ * building stock is the purple family because it is most of the scene, and orange
+ * is reserved for the few things that should interrupt.
+ */
 export const PALETTE = {
-  'progress.green': '#375D51',
-  'progress.yellow': '#ECD83B',
-  'progress.rose': '#DA627A',
-  'progress.blue': '#677FA2',
-  'progress.ink': '#446DA7',
-  'progress.paper': '#E4E0D6',
+  'cosmo.purple': '#2B184C',
+  'cosmo.violet': '#6E4FD3',
+  'cosmo.lilac': '#B7A7E8',
+  'cosmo.orange': '#FF8A00',
+  'cosmo.yellow': '#FFC72C',
+  'cosmo.white': '#F7F4EE',
+} as const satisfies Record<string, Hex>;
+
+/** Secondary and neutral ranges. Used by roles, never referenced directly. */
+export const PALETTE_EXTENDED = {
+  'cosmo.deepViolet': '#4C2A8A',
+  'cosmo.softLilac': '#DCCEF6',
+  'cosmo.teal': '#038C84',
+  'cosmo.skyBlue': '#6DB3E7',
+  'cosmo.coral': '#FF7D6E',
+  'cosmo.lime': '#A9D44A',
+  'cosmo.charcoal': '#1F1F1F',
+  'cosmo.slate': '#555B66',
+  'cosmo.coolGray': '#A9AFB8',
+  'cosmo.softGray': '#E4E7EB',
+  'cosmo.offWhite': '#FCFAF6',
 } as const satisfies Record<string, Hex>;
 
 // ---------------------------------------------------------------- colour maths
@@ -134,19 +159,26 @@ export function ramp(base: string): Ramp {
  * scenario proposes.
  */
 export const SURFACE_ROLES = {
-  'building.stock': ramp(PALETTE['progress.yellow']),
-  'building.intervention': ramp(PALETTE['progress.rose']),
-  'building.civic': ramp(PALETTE['progress.green']),
-  water: ramp(PALETTE['progress.blue']),
+  // The inherited stock is most of the scene, so it carries the brand's dominant
+  // family. Lilac rather than the full violet: 1,182 buildings at full saturation
+  // is a wall, not a neighbourhood.
+  'building.stock': ramp(PALETTE['cosmo.lilac']),
+  // Orange is the brand's interrupt colour and interventions are the thing that
+  // should interrupt. This is the one role a visitor must read without being told.
+  'building.intervention': ramp(PALETTE['cosmo.orange']),
+  'building.civic': ramp(PALETTE_EXTENDED['cosmo.teal']),
+  water: ramp(PALETTE_EXTENDED['cosmo.skyBlue']),
 } as const satisfies Record<string, Ramp>;
 
 /** Flat ground surfaces — no ramp, they are only ever seen from above. */
 export const GROUND = {
-  ground: shiftLightness(PALETTE['progress.paper'], -0.06),
-  road: shiftLightness(PALETTE['progress.paper'], -0.16, -0.04),
-  /** Parks, pitches and gardens. Lifted a long way off the palette green, which is
-   *  a dark ink colour and reads as a hole in the ground when laid flat. */
-  green: shiftLightness(PALETTE['progress.green'], +0.36, -0.18),
+  /** Warm White, straight from the brand. The page behind it is Off White, so the
+   *  diorama's ground reads as a surface laid on a page rather than as the page. */
+  ground: PALETTE['cosmo.white'],
+  road: shiftLightness(PALETTE['cosmo.white'], -0.1, +0.02),
+  /** Parks, pitches and gardens. Pulled well off the brand's lime, which at full
+   *  strength reads as highlighter rather than grass when laid flat. */
+  green: shiftLightness(PALETTE_EXTENDED['cosmo.lime'], +0.16, -0.3),
 } as const satisfies Record<string, Hex>;
 
 /**
@@ -157,11 +189,11 @@ export const GROUND = {
  * a material. Wider and darker for the roads that carry the district's shape.
  */
 export const ROAD_TONES = {
-  major: shiftLightness(PALETTE['progress.paper'], -0.22, -0.04),
-  secondary: shiftLightness(PALETTE['progress.paper'], -0.19, -0.04),
-  street: shiftLightness(PALETTE['progress.paper'], -0.16, -0.04),
-  service: shiftLightness(PALETTE['progress.paper'], -0.13, -0.04),
-  path: shiftLightness(PALETTE['progress.paper'], -0.1, -0.04),
+  major: shiftLightness(PALETTE['cosmo.white'], -0.2, +0.02),
+  secondary: shiftLightness(PALETTE['cosmo.white'], -0.17, +0.02),
+  street: shiftLightness(PALETTE['cosmo.white'], -0.14, +0.02),
+  service: shiftLightness(PALETTE['cosmo.white'], -0.11, +0.02),
+  path: shiftLightness(PALETTE['cosmo.white'], -0.08, +0.02),
 } as const satisfies Record<string, Hex>;
 
 export function roadTone(kind: string): Hex {
@@ -183,10 +215,10 @@ export function roadTone(kind: string): Hex {
  */
 export const POPULATION_RAMP = [
   GROUND.ground,
-  shiftLightness(PALETTE['progress.blue'], +0.22, -0.1),
-  PALETTE['progress.blue'],
-  shiftLightness(PALETTE['progress.ink'], -0.1),
-  shiftLightness(PALETTE['progress.rose'], -0.22),
+  PALETTE['cosmo.lilac'],
+  PALETTE['cosmo.violet'],
+  PALETTE['cosmo.purple'],
+  PALETTE['cosmo.orange'],
 ] as const satisfies readonly Hex[];
 
 /** Linear interpolation along a ramp. `t` outside [0,1] clamps to an end stop. */
@@ -212,16 +244,19 @@ export function sampleRamp(stops: readonly string[], t: number): [number, number
  * audience reads this standing in a bright mall on their own phone. A test enforces it.
  */
 export const UI_TOKENS = {
-  'ui.text': shiftLightness(PALETTE['progress.ink'], -0.26),
-  'ui.text.muted': shiftLightness(PALETTE['progress.ink'], -0.14),
-  'ui.accent': shiftLightness(PALETTE['progress.rose'], -0.18),
-  'ui.focus': shiftLightness(PALETTE['progress.green'], -0.02),
+  /** Cosmo Purple is already a text-weight colour; it needs no derivation. */
+  'ui.text': PALETTE['cosmo.purple'],
+  'ui.text.muted': PALETTE_EXTENDED['cosmo.slate'],
+  /** Orange at full strength is 2.2:1 on Warm White — fine as a surface, illegible
+   *  as text. Darkened until it clears 4.5:1, which is why this is derived. */
+  'ui.accent': shiftLightness(PALETTE['cosmo.orange'], -0.24),
+  'ui.focus': PALETTE['cosmo.violet'],
 } as const satisfies Record<string, Hex>;
 
 /** Flattened to CSS custom properties, so the DOM and the canvas read one source. */
 export function cssCustomProperties(): string {
   const entries: string[] = [];
-  for (const [name, value] of Object.entries(PALETTE)) {
+  for (const [name, value] of Object.entries({ ...PALETTE, ...PALETTE_EXTENDED })) {
     entries.push(`  --${name.replace(/\./g, '-')}: ${value};`);
   }
   for (const [name, value] of Object.entries(UI_TOKENS)) {
