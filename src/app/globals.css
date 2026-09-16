@@ -70,6 +70,39 @@ button[aria-pressed='true'] { background: color-mix(in srgb, var(--ui-focus) 18%
   text-wrap: balance;
   pointer-events: none;
 }
+.register-caption p { margin: 0; }
+.city-readout strong { font-weight: 600; }
+.city-readout span { color: var(--ui-text-muted); }
+
+/* City labels sit in the DOM over the canvas, never baked into WebGL — the same
+   rule the hotspot copy follows, and what keeps them selectable, translatable and
+   readable by a screen reader. */
+.city-label { pointer-events: none; }
+.city-label-text {
+  display: inline-block;
+  transform: translate(8px, -50%);
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ui-text);
+  /* A halo rather than a plate: a filled background would hide the population
+     underneath, which is the thing the label is pointing at. */
+  text-shadow:
+    0 0 3px var(--cosmo-white), 0 0 3px var(--cosmo-white),
+    0 0 6px var(--cosmo-white), 0 0 6px var(--cosmo-white);
+}
+/* The rim cities carry the circle's size, so they are the ones worth emphasising. */
+.city-label-text.is-rim { color: var(--ui-accent); font-weight: 600; }
+.city-label-text::before {
+  content: '';
+  position: absolute;
+  left: -8px; top: 50%;
+  width: 4px; height: 4px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: currentColor;
+}
 
 /* R3F measures its parent to size the canvas. A flex child whose height is only
    resolved by the flex pass can be measured before it settles, and the observer

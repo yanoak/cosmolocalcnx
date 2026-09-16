@@ -72,6 +72,11 @@ __pycache__/
 # PNG plus a sidecar; nothing at build or run time reads the tiles themselves.
 /data/ghsl/
 
+# GeoNames city dump — the source for the REGION register's labels.
+# build-region.py distils it to one committed JSON; nothing reads the dump at
+# build or run time.
+/data/geonames/
+
 # Raw Overpass / OSM responses — regenerable and large.
 # The GENERATED scene document is committed: the exhibition must not depend on Overpass
 # being up (docs/architecture.md), and the editor's output is committed too (roadmap item 4).

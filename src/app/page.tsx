@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Diorama } from '@/engine/Diorama';
+import { cellAt, citiesInCell, nearestCity, type City } from '@/engine/cities';
 import type { RegisterId } from '@/engine/registers';
+import { pickLabels } from '@/engine/cities';
 import { TokenSwatches } from '@/engine/DebugOverlay';
 import { SelectPanel, type Selection } from '@/engine/SelectPanel';
 import { step } from '@/engine/ordering';
@@ -21,7 +23,16 @@ const DOC = scene as unknown as SceneDocument;
 const REGION = (() => {
   const ref = DOC.region;
   const asset = ref ? REGION_ASSETS[ref.field] : undefined;
-  return asset ? { ...asset, origin: DOC.origin as [number, number] } : null;
+  if (!asset) return null;
+  return {
+    url: asset.url,
+    meta: asset.meta,
+    origin: DOC.origin as [number, number],
+    cities: asset.cities.cities,
+    // Selected once at module scope: the choice depends only on committed data, so
+    // recomputing it per render would be work a phone does for no reason.
+    labels: pickLabels(asset.cities.cities, asset.meta.projection.radiusKm),
+  };
 })();
 
 /**
@@ -105,13 +116,42 @@ export default function Page() {
     setEra('futures');
   }, []);
 
-  const jumpTo = useCallback(
-    (register: RegisterId) => {
-      setEra('futures');
-      setGoTo(RAIL[register]);
-    },
-    [],
-  );
+  /**
+   * What the visitor is pointing at on the circle.
+   *
+   * A cell rather than a city, because the question a bright patch prompts is
+   * "what is that?" and the honest answer is sometimes two cities — Dhaka and
+   * Narayanganj share a 13 km cell, as do Shenzhen and Dongguan. Naming only the
+   * largest would misreport the patch.
+   */
+  const [pickedCell, setPickedCell] = useState<[number, number] | null>(null);
+  const [pickedKm, setPickedKm] = useState<[number, number] | null>(null);
+
+  const onPickCell = useCallback((km: [number, number]) => {
+    if (!REGION) return;
+    const cell = cellAt(km, REGION.meta.projection.radiusKm, REGION.meta.grid.size);
+    setPickedKm(km);
+    setPickedCell(cell);
+  }, []);
+
+  const pickedCities: City[] = useMemo(() => {
+    if (!REGION || !pickedCell) return [];
+    const { radiusKm } = REGION.meta.projection;
+    const found = citiesInCell(REGION.cities, pickedCell, radiusKm, REGION.meta.grid.size);
+    if (found.length > 0) return found;
+    // A near miss still answers. A tap that silently does nothing reads as broken.
+    const near = pickedKm ? nearestCity(REGION.cities, pickedKm, 120) : null;
+    return near ? [near.city] : [];
+  }, [pickedCell, pickedKm]);
+
+  const jumpTo = useCallback((register: RegisterId) => {
+    setEra('futures');
+    setGoTo(RAIL[register]);
+    if (register !== 'region') {
+      setPickedCell(null);
+      setPickedKm(null);
+    }
+  }, []);
 
   const buildings = DOC.baseline.buildings;
   const bounds = useMemo(() => sceneBoundsMetres(DOC), []);
@@ -221,26 +261,45 @@ export default function Page() {
               goTo={goTo}
               onArrive={onArrive}
               onRegisterChange={setActive}
+              onPickCell={onPickCell}
+              highlight={pickedCell}
             />
           </div>
         </div>
-        <p className="register-caption" aria-live="polite">
-          {active === 'region'
-            ? '4.10 billion people live inside this circle — half of everyone. Wat Ket is 280 km from its centre.'
-            : era === 'now'
-              ? 'Wat Ket, 2026.'
-              : 'Wat Ket, 2045.'}
-        </p>
+        <div className="register-caption" aria-live="polite">
+          {active === 'region' ? (
+            pickedCities.length > 0 ? (
+              <p className="city-readout">
+                <strong>{pickedCities.map((c) => c.name).join(' · ')}</strong>{' '}
+                <span>
+                  {pickedCities
+                    .reduce((total, c) => total + c.population, 0)
+                    .toLocaleString()}{' '}
+                  people ·{' '}
+                  {Math.round(Math.hypot(...(pickedKm ?? [0, 0]))).toLocaleString()} km from
+                  the centre
+                </span>
+              </p>
+            ) : (
+              <p>
+                4.10 billion people live inside this circle — half of everyone. Wat Ket is
+                280 km from its centre.
+              </p>
+            )
+          ) : (
+            <p>{era === 'now' ? 'Wat Ket, 2026.' : 'Wat Ket, 2045.'}</p>
+          )}
+        </div>
 
         <SelectPanel selection={selection} locale={locale} onClose={close} />
       </div>
 
       {debug && <TokenSwatches />}
 
-      {/* Three sources whose licences require attribution to be VISIBLE — OSM under
+      {/* Four sources whose licences require attribution to be VISIBLE — OSM under
           ODbL, the Wat Ket tambon boundary under CC BY-IGO, and the region
-          register's population field under CC BY 4.0. A few lines of JSX, easy to
-          forget until someone asks. See the licensing table in README.md. */}
+          register's population field and city names under CC BY 4.0. A few lines of
+          JSX, easy to forget until someone asks. See the table in README.md. */}
       <p className="attribution">
         Building footprints and street data ©{' '}
         <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, ODbL.
@@ -252,7 +311,8 @@ export default function Page() {
         <a href="https://human-settlement.emergency.copernicus.eu/">
           GHS-POP, European Commission JRC
         </a>
-        , CC BY 4.0.
+        , CC BY 4.0. City names from <a href="https://www.geonames.org/">GeoNames</a>, CC BY
+        4.0.
       </p>
     </main>
   );

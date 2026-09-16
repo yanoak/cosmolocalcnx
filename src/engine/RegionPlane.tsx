@@ -1,5 +1,7 @@
 'use client';
 
+import { Html } from '@react-three/drei';
+import type { ThreeEvent } from '@react-three/fiber';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import {
@@ -10,6 +12,7 @@ import {
   regionTextureLayout,
   type RegionMeta,
 } from './region';
+import { cellAt, cellCentreKm, distanceFromCentreKm, type City } from './cities';
 import { UI_TOKENS } from './theme';
 
 /**
@@ -72,8 +75,18 @@ export const RegionPlane = forwardRef<
     /** The scene origin's position on the circle, in km east/north of its centre. */
     anchor: [number, number];
     materialRef?: React.RefObject<THREE.MeshBasicMaterial | null>;
+    /** Cities that carry a permanent label. Already selected — see cities.ts. */
+    labels?: readonly City[];
+    /** True only while the region owns the screen, so it never swallows a tap. */
+    interactive?: boolean;
+    onPickCell?: (km: [number, number]) => void;
+    /** The cell to outline, if any. */
+    highlight?: [number, number] | null;
   }
->(function RegionPlane({ url, meta, anchor, materialRef }, ref) {
+>(function RegionPlane(
+  { url, meta, anchor, materialRef, labels = [], interactive = false, onPickCell, highlight },
+  ref,
+) {
   const field = useRegionField(url, meta);
   const radiusKm = meta.projection.radiusKm;
 
@@ -121,18 +134,37 @@ export const RegionPlane = forwardRef<
   // A CanvasTexture holds GPU memory until it is told not to.
   useEffect(() => () => texture?.dispose(), [texture]);
 
+  const gridSize = meta.grid.size;
+
+  const highlightCentre = useMemo(
+    () => (highlight ? cellCentreKm(highlight, radiusKm, gridSize) : null),
+    [highlight, radiusKm, gridSize],
+  );
+  const cellKm = (2 * radiusKm) / gridSize;
+
   if (!texture) return null;
 
+  const pick = (e: ThreeEvent<MouseEvent>) => {
+    if (!interactive || !onPickCell) return;
+    e.stopPropagation();
+    // The plane is centred on the circle and laid flat, so the hit point IS the
+    // position in kilometres — no inverse projection needed.
+    onPickCell([e.point.x, -e.point.z]);
+  };
+
   return (
+    <>
     <mesh
       ref={ref}
       rotation={[-Math.PI / 2, 0, 0]}
       // Under the district's ground plane by an unambiguous margin, so nothing
       // z-fights while both registers are resident through the handover.
       position={[0, -0.5, 0]}
-      // The region is scenery, never a target. Only hotspots and placed objects are
-      // pickable, and a plane this size would swallow every tap in the scene.
-      raycast={() => null}
+      // Pickable ONLY while the region owns the screen. A plane this size would
+      // otherwise swallow every tap meant for a building.
+      raycast={interactive ? undefined : () => null}
+      onClick={pick}
+      onPointerMove={pick}
     >
       <planeGeometry args={[radiusKm * 2, radiusKm * 2]} />
       <meshBasicMaterial
@@ -146,5 +178,43 @@ export const RegionPlane = forwardRef<
         opacity={0}
       />
     </mesh>
+
+    {highlightCentre && (
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[highlightCentre[0], 0.4, -highlightCentre[1]]}
+        raycast={() => null}
+      >
+        {/* A ring, not a filled square: the cell's own colour IS the datum, and
+            painting over it would hide the thing being asked about. */}
+        <ringGeometry args={[cellKm * 0.62, cellKm * 0.78, 4, 1, Math.PI / 4]} />
+        <meshBasicMaterial color={UI_TOKENS['ui.accent']} toneMapped={false} />
+      </mesh>
+    )}
+
+    {labels.map((city) => (
+      <Html
+        key={`${city.name}-${city.km[0]}-${city.km[1]}`}
+        position={[city.km[0], 0.6, -city.km[1]]}
+        center={false}
+        // Text lives in the DOM over the canvas, never baked into WebGL — the same
+        // rule the hotspot copy follows, and what keeps it selectable, translatable
+        // and readable by a screen reader.
+        className="city-label"
+        zIndexRange={[20, 10]}
+        style={{ pointerEvents: 'none' }}
+      >
+        <span
+          className={
+            distanceFromCentreKm(city) >= radiusKm * 0.93
+              ? 'city-label-text is-rim'
+              : 'city-label-text'
+          }
+        >
+          {city.name}
+        </span>
+      </Html>
+    ))}
+    </>
   );
 });

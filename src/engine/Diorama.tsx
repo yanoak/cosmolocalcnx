@@ -21,6 +21,7 @@ import {
   zoomLadder,
   type RegisterId,
 } from './registers';
+import type { City } from './cities';
 import type { RegionMeta } from './region';
 import type { BaselineArea, BaselineBuilding, BaselineRoad } from './scene';
 import { PALETTE_EXTENDED, UI_TOKENS } from './theme';
@@ -37,6 +38,10 @@ export interface RegionSource {
   meta: RegionMeta;
   /** The scene's lat/lon origin, so the anchor can be projected onto the circle. */
   origin: [number, number];
+  /** Every city over the threshold inside the circle, biggest first. */
+  cities: City[];
+  /** The subset that carries a permanent label. */
+  labels: City[];
 }
 
 /**
@@ -332,6 +337,8 @@ export function Diorama({
   goTo = null,
   onArrive,
   onRegisterChange,
+  onPickCell,
+  highlight = null,
 }: {
   bounds: Bounds;
   buildings: BaselineBuilding[];
@@ -350,6 +357,9 @@ export function Diorama({
   goTo?: number | null;
   onArrive?: () => void;
   onRegisterChange?: (active: RegisterId) => void;
+  /** A position on the circle, in km, that the visitor pointed at. */
+  onPickCell?: (km: [number, number]) => void;
+  highlight?: [number, number] | null;
 }) {
   const [stage, size] = useMeasuredStage();
   const ready = !!size && size.width > 0 && size.height > 0;
@@ -461,6 +471,10 @@ export function Diorama({
                   meta={region.meta}
                   anchor={aeqdForward(region.origin, region.meta.projection.centre)}
                   materialRef={regionMaterial}
+                  labels={registers.active === 'region' ? region.labels : EMPTY_LABELS}
+                  interactive={registers.active === 'region' && !registers.railed}
+                  onPickCell={onPickCell}
+                  highlight={highlight}
                 />
                 <AnchorMarker
                   at={[anchorStage[0] / k, -anchorStage[1] / k]}
@@ -526,3 +540,4 @@ export function Diorama({
 }
 
 const EMPTY_HEROES: ReadonlySet<string> = new Set();
+const EMPTY_LABELS: City[] = [];

@@ -48,6 +48,7 @@ import tifffile
 
 REPO = Path(__file__).resolve().parent.parent
 TILE_DIR = REPO / "data" / "ghsl" / "tiles"
+CITY_DIR = REPO / "data" / "geonames"
 OUT_DIR = REPO / "src" / "scenes" / "regions"
 
 # ---------------------------------------------------------------------------
@@ -85,6 +86,29 @@ GRID = 512
 # Himalayan and Pacific cells to zero, which in a piece about where people are is a
 # legibility loss rather than a rounding error.
 STORAGE_GAMMA = 3.0
+
+# ---------------------------------------------------------------------------
+# Cities.
+#
+# The poster labels the handful of cities sitting on the circle's rim, which is its
+# argument in miniature: Karachi, Changchun, Surabaya and Fukuoka are all ~3,430 km
+# out. The app can be more expansive, so this ships every city over the threshold
+# inside the circle and lets the viewer decide which to label and which to reveal on
+# demand.
+#
+# 100,000 gives ~2,220 cities inside the circle at ~120 KB, which is enough that
+# almost every bright cell in the field has a name attached. Lowering it to 50,000
+# nearly doubles the file for places that are not legible at 13 km per cell anyway.
+#
+# ENGLISH NAMES ONLY for now. GeoNames ships localised names in a separate 200 MB
+# dump; for a bilingual piece the Thai names matter, but the always-on labels are a
+# dozen cities and hand-authoring those beats a second large download. Revisit if
+# the label set grows.
+# ---------------------------------------------------------------------------
+
+GEONAMES_URL = "https://download.geonames.org/export/dump/cities15000.zip"
+GEONAMES_FILE = "cities15000.txt"
+MIN_POPULATION = 100_000
 
 GHSL_BASE = (
     "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/"
@@ -250,6 +274,66 @@ def accumulate(tif: Path, centre, radius_km, acc: np.ndarray) -> float:
     return float(weights.sum())
 
 
+def build_cities(centre, radius_km: float, min_population: int) -> list[dict]:
+    """
+    Every city over the threshold inside the circle, projected onto it.
+
+    Stores only what cannot be recomputed: name, country, population, and the AEQD
+    position. Distance from the centre and which grid cell a city falls in are both
+    one line of arithmetic in the viewer, and storing them would be a second source
+    of truth that goes stale the moment GRID changes.
+    """
+    source = CITY_DIR / GEONAMES_FILE
+    if not source.exists():
+        print(
+            f"error: {source.relative_to(REPO)} is missing. Download it first "
+            f"(it is gitignored):\n\n"
+            f"    mkdir -p {CITY_DIR.relative_to(REPO)} && \\\n"
+            f"      curl -L -o {(CITY_DIR / 'cities15000.zip').relative_to(REPO)} "
+            f"'{GEONAMES_URL}' && \\\n"
+            f"      unzip -o -d {CITY_DIR.relative_to(REPO)} "
+            f"{(CITY_DIR / 'cities15000.zip').relative_to(REPO)}\n",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+    cities: list[dict] = []
+    with source.open(encoding="utf-8") as handle:
+        for line in handle:
+            fields = line.rstrip("\n").split("\t")
+            if len(fields) < 15:
+                continue
+            try:
+                lat, lon, population = float(fields[4]), float(fields[5]), int(fields[14])
+            except ValueError:
+                continue
+            if population < min_population:
+                continue
+
+            distance = _great_circle_km(centre, (lat, lon))
+            if distance > radius_km:
+                continue
+
+            bearing = _bearing_deg(centre, (lat, lon))
+            theta = bearing * DEG
+            cities.append(
+                {
+                    "name": fields[1],
+                    "country": fields[8],
+                    "population": population,
+                    "km": [
+                        round(distance * math.sin(theta), 2),
+                        round(distance * math.cos(theta), 2),
+                    ],
+                }
+            )
+
+    # Descending population, so the viewer can take the top N for always-on labels
+    # without sorting 2,000 entries on a phone at load.
+    cities.sort(key=lambda c: (-c["population"], c["name"]))
+    return cities
+
+
 def write_png(path: Path, rgb: np.ndarray) -> None:
     """
     A PNG writer, by hand, in about twenty lines.
@@ -290,6 +374,7 @@ def main() -> int:
         help="lat,lon of the circle. Defaults to the Valeriepieris centre.",
     )
     parser.add_argument("--radius-km", type=float, default=VALERIEPIERIS_RADIUS_KM)
+    parser.add_argument("--min-population", type=int, default=MIN_POPULATION)
     args = parser.parse_args()
 
     scene_path = REPO / args.scene
@@ -367,6 +452,31 @@ def main() -> int:
     write_png(png_path, rgb)
     identical = previous is not None and previous == png_path.read_bytes()
 
+    # Cities are a property of the CIRCLE, not of the grid, so they are named
+    # without the cell count — changing GRID must not orphan them.
+    cities = build_cities(centre, radius_km, args.min_population)
+    city_stem = f"aeqd_{centre[0]:.3f}_{centre[1]:.3f}_r{int(round(radius_km))}"
+    city_path = OUT_DIR / f"{city_stem}.cities.json"
+    city_lines = ",\n".join(
+        "    " + json.dumps(c, ensure_ascii=False, sort_keys=True) for c in cities
+    )
+    city_path.write_text(
+        "{\n"
+        '  "_comment": "Cities inside the circle, for the REGION register\'s labels. '
+        'Positions are km east/north of the circle centre in the same azimuthal '
+        'equidistant frame as the population field. Sorted by population, descending.",\n'
+        f'  "minPopulation": {args.min_population},\n'
+        f'  "count": {len(cities)},\n'
+        '  "source": {\n'
+        '    "dataset": "GeoNames cities15000",\n'
+        f'    "url": "{GEONAMES_URL}",\n'
+        '    "license": "CC BY 4.0",\n'
+        '    "attribution": "GeoNames"\n'
+        '  },\n'
+        '  "cities": [\n' + city_lines + "\n  ]\n}\n",
+        encoding="utf-8",
+    )
+
     cell_km = (2 * radius_km) / GRID
     meta = {
         "_comment": (
@@ -412,13 +522,33 @@ def main() -> int:
     print(f"Populated   {populated:,} cells of {GRID * GRID:,}")
     print(f"Inside      {inside_total:,.0f} people")
     print(f"Peak cell   {pmax:,.0f} people")
+    print(f"Cities      {len(cities):,} over {args.min_population:,} inside the circle")
+    if cities:
+        biggest = cities[0]
+        rim = min(cities, key=lambda c: abs(math.hypot(*c["km"]) - radius_km))
+        print(f"            largest {biggest['name']} ({biggest['population']:,})")
+        print(f"            nearest the rim {rim['name']}, "
+              f"{math.hypot(*rim['km']):,.0f} km out")
     print(f"Wrote       {png_path.relative_to(REPO)} "
           f"({png_path.stat().st_size / 1024:.0f} KB)")
     print(f"            {meta_path.relative_to(REPO)}")
+    print(f"            {city_path.relative_to(REPO)} "
+          f"({city_path.stat().st_size / 1024:.0f} KB)")
     if previous is not None:
         print("            " + ("(byte-identical to the previous run)" if identical
                                 else "!! BYTES CHANGED since the previous run"))
     return 0
+
+
+def _bearing_deg(a, b) -> float:
+    """Initial bearing from a to b, degrees clockwise from north. Mirrors aeqd.ts."""
+    lat1, lon1 = a
+    lat2, lon2 = b
+    p1, p2 = lat1 * DEG, lat2 * DEG
+    dl = (lon2 - lon1) * DEG
+    y = math.sin(dl) * math.cos(p2)
+    x = math.cos(p1) * math.sin(p2) - math.sin(p1) * math.cos(p2) * math.cos(dl)
+    return (math.atan2(y, x) / DEG + 360) % 360
 
 
 def _great_circle_km(a, b) -> float:
