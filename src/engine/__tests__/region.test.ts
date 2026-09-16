@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import innerMeta from '@/scenes/regions/aeqd_21.000_100.290_r3437_n512.json';
+import worldMeta from '@/scenes/regions/aeqd_21.000_100.290_r20015_n1024.json';
 import {
   aggregate,
   decodeField,
@@ -235,5 +237,52 @@ describe('the circle furniture', () => {
 
     expect(calls.filter((c) => c === 'stroke')).toHaveLength(1);
     expect(calls.some((c) => c.startsWith('arc(') && c.endsWith(',16)'))).toBe(true);
+  });
+});
+
+/**
+ * The claim the whole piece rests on, pinned against the committed fields.
+ *
+ * Two independently built rasters — one clipped to the circle at 13 km cells, one
+ * spanning the planet at 39 km — have to agree with each other AND with the printed
+ * A0 in the same room. If they ever stop agreeing, the caption on screen is a
+ * falsehood that nothing else in the codebase would notice.
+ */
+describe('half of humanity', () => {
+  const inside = innerMeta.stats.totalInside;
+  const world = worldMeta.stats.totalInside;
+  const outside = world - inside;
+
+  it('totals the whole world population, matching the dataset', () => {
+    // GHS-POP E2025 is 8.192 billion — the figure the poster states.
+    expect(world / 1e9).toBeCloseTo(8.192, 2);
+  });
+
+  it('puts essentially half of everyone inside the circle', () => {
+    expect(inside / world).toBeGreaterThan(0.495);
+    expect(inside / world).toBeLessThan(0.505);
+  });
+
+  it('has an outside at least as populous as the inside, as the name promises', () => {
+    // "There are more people living inside this circle than outside it" was the
+    // original 2013 claim; on GHS-POP E2025 it is a dead heat, marginally the other
+    // way. The caption says 4.09 vs 4.10 and must stay honest about that.
+    expect(outside).toBeGreaterThan(4.0e9);
+    expect(inside).toBeGreaterThan(4.0e9);
+    expect(Math.abs(outside - inside) / world).toBeLessThan(0.01);
+  });
+
+  it('shares one projection centre between the two fields', () => {
+    expect(worldMeta.projection.centre).toEqual(innerMeta.projection.centre);
+    expect(worldMeta.projection.kind).toBe(innerMeta.projection.kind);
+  });
+
+  it('spans the whole globe in the world field, and only the circle in the inner one', () => {
+    expect(worldMeta.projection.radiusKm).toBeGreaterThan(20_000);
+    expect(innerMeta.projection.radiusKm).toBe(3437);
+  });
+
+  it('keeps the inner field finer than the world field', () => {
+    expect(innerMeta.grid.cellKm).toBeLessThan(worldMeta.grid.cellKm);
   });
 });

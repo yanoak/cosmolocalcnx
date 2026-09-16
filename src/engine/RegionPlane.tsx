@@ -13,7 +13,7 @@ import {
   type RegionMeta,
 } from './region';
 import { cellAt, cellCentreKm, distanceFromCentreKm, type City } from './cities';
-import { UI_TOKENS } from './theme';
+import { POPULATION_RAMP, POPULATION_RAMP_OUTSIDE, UI_TOKENS } from './theme';
 
 /**
  * The REGION register: a flat plane carrying half of humanity.
@@ -67,6 +67,117 @@ function useRegionField(url: string, meta: RegionMeta) {
   return field;
 }
 
+/**
+ * Paint a decoded field into a texture, with optional furniture drawn over it.
+ *
+ * Shared by the circle and the world planes so the two cannot drift in how they
+ * upscale, colour-manage or dispose. The only differences between them are the ramp
+ * and whether anything is drawn on top.
+ */
+function useFieldTexture(
+  field: Float32Array | null,
+  meta: RegionMeta,
+  stops: readonly string[],
+  furniture?: (ctx: CanvasRenderingContext2D, layout: ReturnType<typeof regionTextureLayout>) => void,
+): THREE.CanvasTexture | null {
+  const radiusKm = meta.projection.radiusKm;
+
+  const texture = useMemo(() => {
+    if (!field) return null;
+
+    const { size } = meta.grid;
+    const layout = regionTextureLayout(radiusKm);
+
+    // The field at its own resolution, then scaled up smoothly. Hard cells would be
+    // an honest picture of the grid and a worse picture of Asia; the information
+    // here is the shape of where people are, not the lattice it arrived on.
+    const source = document.createElement('canvas');
+    source.width = size;
+    source.height = size;
+    const sourceCtx = source.getContext('2d');
+    if (!sourceCtx) return null;
+    sourceCtx.putImageData(
+      new ImageData(fieldToRgba(field, size, meta.encoding.max, stops), size, size),
+      0,
+      0,
+    );
+
+    const canvas = document.createElement('canvas');
+    canvas.width = layout.size;
+    canvas.height = layout.size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, 0, 0, layout.size, layout.size);
+    furniture?.(ctx, layout);
+
+    const map = new THREE.CanvasTexture(canvas);
+    // Authored in sRGB against an unlit material, exactly like the road texture —
+    // declare it or every tone lands wrong against its token.
+    map.colorSpace = THREE.SRGBColorSpace;
+    map.anisotropy = 4;
+    return map;
+    // `furniture` is a fresh closure every render and must not re-bake a 2048px
+    // texture; the things it actually depends on are all listed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [field, meta, radiusKm, stops]);
+
+  useEffect(() => () => texture?.dispose(), [texture]);
+
+  return texture;
+}
+
+/**
+ * The world outside the circle.
+ *
+ * A second, much larger plane under the first, in the same projection and the same
+ * frame — so the circle lands on it exactly where it belongs and the seam falls
+ * under the rim stroke that is drawn there anyway.
+ *
+ * Its own field, because one grid cannot serve both: a single raster covering the
+ * planet at the circle's 13 km resolution would be enormous, and one coarse enough
+ * to ship would throw away the detail the hero view depends on. Two fields, each
+ * at the resolution its job needs.
+ */
+const WorldPlane = forwardRef<
+  THREE.Mesh,
+  {
+    url: string;
+    meta: RegionMeta;
+    materialRef?: React.RefObject<THREE.MeshBasicMaterial | null>;
+  }
+>(function WorldPlane({ url, meta, materialRef }, ref) {
+  const field = useRegionField(url, meta);
+  const texture = useFieldTexture(field, meta, POPULATION_RAMP_OUTSIDE);
+  const radiusKm = meta.projection.radiusKm;
+
+  if (!texture) return null;
+
+  return (
+    <mesh
+      ref={ref}
+      rotation={[-Math.PI / 2, 0, 0]}
+      // Under the circle plane by an unambiguous margin.
+      position={[0, -0.8, 0]}
+      // Context, never a target. The cities file covers the circle only, so a tap
+      // out here has nothing to answer with.
+      raycast={() => null}
+    >
+      <planeGeometry args={[radiusKm * 2, radiusKm * 2]} />
+      <meshBasicMaterial
+        ref={materialRef}
+        map={texture}
+        toneMapped={false}
+        transparent
+        depthWrite={false}
+        opacity={0}
+      />
+    </mesh>
+  );
+});
+
 export const RegionPlane = forwardRef<
   THREE.Mesh,
   {
@@ -82,54 +193,32 @@ export const RegionPlane = forwardRef<
     onPickCell?: (km: [number, number]) => void;
     /** The cell to outline, if any. */
     highlight?: [number, number] | null;
+    /** The world outside the circle. Absent is valid — the circle alone still works. */
+    world?: { url: string; meta: RegionMeta } | null;
+    worldMaterialRef?: React.RefObject<THREE.MeshBasicMaterial | null>;
   }
 >(function RegionPlane(
-  { url, meta, anchor, materialRef, labels = [], interactive = false, onPickCell, highlight },
+  {
+    url,
+    meta,
+    anchor,
+    materialRef,
+    labels = [],
+    interactive = false,
+    onPickCell,
+    highlight,
+    world,
+    worldMaterialRef,
+  },
   ref,
 ) {
   const field = useRegionField(url, meta);
   const radiusKm = meta.projection.radiusKm;
 
-  const texture = useMemo(() => {
-    if (!field) return null;
-
-    const { size } = meta.grid;
-    const layout = regionTextureLayout(radiusKm);
-
-    // The field at its own resolution, then scaled up smoothly. 13 km cells drawn
-    // hard would be an honest picture of the data and a worse picture of Asia; the
-    // information here is the shape of where people are, not the grid it arrived on.
-    const source = document.createElement('canvas');
-    source.width = size;
-    source.height = size;
-    const sourceCtx = source.getContext('2d');
-    if (!sourceCtx) return null;
-    sourceCtx.putImageData(
-      new ImageData(fieldToRgba(field, size, meta.encoding.max), size, size),
-      0,
-      0,
-    );
-
-    const canvas = document.createElement('canvas');
-    canvas.width = layout.size;
-    canvas.height = layout.size;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(source, 0, 0, layout.size, layout.size);
-
+  const texture = useFieldTexture(field, meta, POPULATION_RAMP, (ctx, layout) => {
     drawCircle(ctx, layout, UI_TOKENS['ui.text']);
     drawAnchor(ctx, layout, anchor, UI_TOKENS['ui.accent']);
-
-    const map = new THREE.CanvasTexture(canvas);
-    // Authored in sRGB against an unlit material, exactly like the road texture —
-    // declare it or every tone lands wrong against its token.
-    map.colorSpace = THREE.SRGBColorSpace;
-    map.anisotropy = 4;
-    return map;
-  }, [field, meta, radiusKm, anchor]);
+  });
 
   // A CanvasTexture holds GPU memory until it is told not to.
   useEffect(() => () => texture?.dispose(), [texture]);
@@ -154,6 +243,10 @@ export const RegionPlane = forwardRef<
 
   return (
     <>
+    {world && (
+      <WorldPlane url={world.url} meta={world.meta} materialRef={worldMaterialRef} />
+    )}
+
     <mesh
       ref={ref}
       rotation={[-Math.PI / 2, 0, 0]}

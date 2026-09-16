@@ -32,6 +32,7 @@ const REGION = (() => {
     // Selected once at module scope: the choice depends only on committed data, so
     // recomputing it per render would be work a phone does for no reason.
     labels: pickLabels(asset.cities.cities, asset.meta.projection.radiusKm),
+    world: asset.world,
   };
 })();
 
@@ -282,8 +283,11 @@ export default function Page() {
               </p>
             ) : (
               <p>
-                4.10 billion people live inside this circle — half of everyone. Wat Ket is
-                280 km from its centre.
+                <strong>4.09 billion people live inside this circle. 4.10 billion live
+                everywhere else.</strong>{' '}
+                <span>
+                  Wat Ket is 280 km from its centre — 8% of the way to the rim.
+                </span>
               </p>
             )
           ) : (

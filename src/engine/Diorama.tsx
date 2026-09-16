@@ -17,6 +17,7 @@ import {
   registerState,
   stageFit,
   stockTint,
+  worldMinZoom,
   tToZoom,
   zoomLadder,
   type RegisterId,
@@ -42,6 +43,8 @@ export interface RegionSource {
   cities: City[];
   /** The subset that carries a permanent label. */
   labels: City[];
+  /** The world outside the circle. Absent is valid. */
+  world?: { url: string; meta: RegionMeta } | null;
 }
 
 /**
@@ -224,6 +227,7 @@ function RegisterDriver({
     region: React.RefObject<THREE.Group | null>;
     district: React.RefObject<THREE.Group | null>;
     regionMaterial: React.RefObject<THREE.MeshBasicMaterial | null>;
+    worldMaterial: React.RefObject<THREE.MeshBasicMaterial | null>;
     markerMaterial: React.RefObject<THREE.MeshBasicMaterial | null>;
     stockMaterial: React.RefObject<THREE.MeshBasicMaterial | null>;
   };
@@ -248,6 +252,9 @@ function RegisterDriver({
     if (region) region.visible = state.regionOpacity > 0.001;
 
     if (refs.regionMaterial.current) refs.regionMaterial.current.opacity = state.regionOpacity;
+    // The world fades with the circle rather than on its own schedule: they are one
+    // surface in two resolutions, and fading them apart would show the seam.
+    if (refs.worldMaterial.current) refs.worldMaterial.current.opacity = state.regionOpacity;
     if (refs.markerMaterial.current) refs.markerMaterial.current.opacity = state.markerOpacity;
 
     if (refs.stockMaterial.current) {
@@ -380,6 +387,7 @@ export function Diorama({
   const regionGroup = useRef<THREE.Group>(null);
   const districtGroup = useRef<THREE.Group>(null);
   const regionMaterial = useRef<THREE.MeshBasicMaterial>(null);
+  const worldMaterial = useRef<THREE.MeshBasicMaterial>(null);
   const markerMaterial = useRef<THREE.MeshBasicMaterial>(null);
   const stockMaterial = useRef<THREE.MeshBasicMaterial>(null);
 
@@ -426,8 +434,11 @@ export function Diorama({
    * of the rail mid-gesture.
    */
   const openAtRef = useRef(openAt);
+  /** The outermost thing in the scene — the world if there is one, else the circle. */
+  const outerRadiusKm = region?.world?.meta.projection.radiusKm ?? radiusKm;
+
   const camera = useMemo(() => {
-    const staged = stageFit(bounds, radiusKm * k, fit);
+    const staged = stageFit(bounds, outerRadiusKm * k, fit);
     const ladderForOpen = zoomLadder(fit.zoom, { hasRegion: !!region });
     return {
       position: staged.position,
@@ -436,7 +447,7 @@ export function Diorama({
       near: staged.near,
       far: staged.far,
     };
-  }, [bounds, radiusKm, k, fit, region]);
+  }, [bounds, outerRadiusKm, k, fit, region]);
 
   const heroes = heroIds ?? EMPTY_HEROES;
 
@@ -475,6 +486,8 @@ export function Diorama({
                   interactive={registers.active === 'region' && !registers.railed}
                   onPickCell={onPickCell}
                   highlight={highlight}
+                  world={region.world ?? null}
+                  worldMaterialRef={worldMaterial}
                 />
                 <AnchorMarker
                   at={[anchorStage[0] / k, -anchorStage[1] / k]}
@@ -493,6 +506,7 @@ export function Diorama({
                   region: regionGroup,
                   district: districtGroup,
                   regionMaterial,
+                  worldMaterial,
                   markerMaterial,
                   stockMaterial,
                 }}
@@ -528,9 +542,13 @@ export function Diorama({
             target={fit.target}
             // Relative to the fitted zoom, so the limits mean the same thing on a
             // phone and a projector. The outer end used to be twice the district;
-            // it is now the whole circle, or twice the district for a scene that
-            // has no region field.
-            minZoom={ladder.region * 0.95}
+            // it is now the whole planet where a world field exists, the circle
+            // where only that exists, and twice the district for a scene with
+            // neither. Pulling back past the region anchor changes no register —
+            // `t` is already clamped at 0 — so this is reach, not a new state.
+            minZoom={
+              region ? worldMinZoom(ladder, radiusKm, outerRadiusKm) : ladder.region * 0.95
+            }
             maxZoom={ladder.block}
           />
         </Canvas>

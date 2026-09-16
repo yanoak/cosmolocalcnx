@@ -221,6 +221,33 @@ export const POPULATION_RAMP = [
   PALETTE['cosmo.orange'],
 ] as const satisfies readonly Hex[];
 
+/** Blend two colours. `amount` is how far from `a` toward `b`. */
+export function mix(a: string, b: string, amount: number): Hex {
+  const t = amount < 0 ? 0 : amount > 1 ? 1 : amount;
+  const [ar, ag, ab] = toRgb(a);
+  const [br, bg, bb] = toRgb(b);
+  return toHex([ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t]);
+}
+
+/**
+ * The same ramp, for the world OUTSIDE the circle.
+ *
+ * Every stop blended toward the ground, NOT lightened. Lightening overshoots at the
+ * pale end — the lilac came out brighter than the ground itself, so sparse
+ * population outside the circle read as a hole punched in the map. Blending toward
+ * the ground cannot do that: it is monotone toward "empty" by construction.
+ *
+ * The same hues at lower contrast rather than a different scale, because the
+ * outside is the same quantity measured the same way and separate colours would
+ * imply otherwise. It recedes so the circle stays the subject, but a visitor
+ * comparing the Ganges plain with the Rhine is comparing like with like.
+ *
+ * Derived from POPULATION_RAMP rather than written out, so the two cannot drift.
+ */
+export const POPULATION_RAMP_OUTSIDE = POPULATION_RAMP.map((stop) =>
+  mix(stop, GROUND.ground, 0.55),
+) as readonly Hex[];
+
 /** Linear interpolation along a ramp. `t` outside [0,1] clamps to an end stop. */
 export function sampleRamp(stops: readonly string[], t: number): [number, number, number] {
   if (stops.length === 0) return [0, 0, 0];

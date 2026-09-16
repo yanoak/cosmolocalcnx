@@ -136,6 +136,14 @@ export interface RegionRef {
   /** Sidecar JSON: grid, encoding, stats, source. */
   meta: string;
   label?: LocaleMap;
+  /**
+   * The world outside the circle, same projection, larger radius.
+   *
+   * Optional, and the register works without it — but the circle's claim is not
+   * weighable without it. "Half of humanity lives inside this circle" needs a
+   * visible outside to be a claim rather than a picture of Asia.
+   */
+  world?: { field: string; meta: string } | null;
 }
 
 /**

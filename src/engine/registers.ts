@@ -80,6 +80,21 @@ const HANDOVER = {
 /** How much wider than the district the region sits. Tuned by eye; see the plan. */
 export const DEFAULT_REGION_OUT = 8;
 
+/**
+ * How much more than the circle the region register frames.
+ *
+ * 1 would fit the circle exactly to the screen, which is what it did until the
+ * world field existed — and it made the claim unfalsifiable. "Half of humanity
+ * lives inside this circle" is only a claim a visitor can weigh if they can SEE
+ * that there is a world outside it and that the world outside is emptier. A circle
+ * that fills the frame is just a picture of Asia.
+ *
+ * At 1.7 the circle occupies about 60% of the shorter screen axis, with Europe,
+ * east Africa, Australia and the open Pacific around it. The visitor can keep
+ * pulling back from there to the whole planet — see `worldMinZoom`.
+ */
+export const REGION_MARGIN = 1.7;
+
 /** How far in the block register reaches. Unchanged from the original MapControls cap. */
 export const DEFAULT_BLOCK_IN = 40;
 
@@ -260,12 +275,33 @@ export function regionScale(
   districtBounds: Bounds,
   radiusKm: number,
   regionOut: number = DEFAULT_REGION_OUT,
+  margin: number = REGION_MARGIN,
 ): number {
   const [west, south, east, north] = districtBounds;
   const spanX = Math.max(1, east - west);
   const spanZ = Math.max(1, north - south);
   if (!(radiusKm > 0)) return 1;
-  return (regionOut * (spanX + spanZ)) / (4 * radiusKm);
+  return (regionOut * (spanX + spanZ)) / (4 * radiusKm * Math.max(1e-6, margin));
+}
+
+/**
+ * How far out MapControls may go, so the whole planet is reachable.
+ *
+ * Returns a zoom, not a factor, and it is relative to the region anchor rather than
+ * absolute so it means the same on a phone and a projector. Pulling back past the
+ * region anchor does not change register — `t` is already clamped at 0 and the
+ * crossfade is long finished — so this adds reach without adding a state.
+ */
+export function worldMinZoom(
+  ladder: ZoomLadder,
+  radiusKm: number,
+  worldRadiusKm: number,
+  margin: number = REGION_MARGIN,
+): number {
+  if (!(worldRadiusKm > 0) || !(radiusKm > 0)) return ladder.region * 0.95;
+  const framed = radiusKm * margin;
+  if (worldRadiusKm <= framed) return ladder.region * 0.95;
+  return ladder.region * (framed / worldRadiusKm);
 }
 
 /**

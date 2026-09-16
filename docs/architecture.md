@@ -395,6 +395,42 @@ Two encoding decisions that are not obvious:
 Blue is reserved for a land mask and currently unused — at this density the population alone traces
 India, eastern China, Java and Korea legibly.
 
+### The world outside the circle
+
+**Two fields, not one.** A second, much larger plane sits under the first in the same projection:
+the whole planet at 1024 cells (39 km), against the circle's 512 cells (13 km).
+
+One grid cannot serve both. A single raster covering the planet at 13 km would be enormous; one
+coarse enough to ship would throw away the detail the hero view depends on. So each field is at the
+resolution its job needs, and the seam between them falls exactly under the rim stroke that is
+drawn there anyway.
+
+**This is not decoration — it is what makes the claim falsifiable.** A circle that fills the frame
+is a picture of Asia. `REGION_MARGIN` (1.7) frames the register on rather more than the circle, so
+the visitor sees a world around it and can weigh "half of humanity lives inside this circle"
+against a visible outside. Pulling back further reaches the whole planet; that changes no register,
+because `t` is already clamped at 0 and the crossfade is long finished.
+
+The outside uses the same ramp blended toward the ground rather than its own colours — it is the
+same quantity measured the same way, and separate colours would imply otherwise.
+
+**The arithmetic, which is now a test:**
+
+| | |
+|---|---|
+| Inside the circle | 4,090,724,518 — **49.94%** |
+| Outside it | 4,101,241,951 — 50.06% |
+| World total | 8,191,966,468 |
+
+The world total matches GHS-POP E2025's stated 8.192 billion to five significant figures, from a
+completely independent scatter of 346 tiles. Note the honest wrinkle: on this dataset the original
+2013 claim is a **dead heat, marginally the other way** — there are very slightly more people
+outside than in. The caption says "4.09 billion inside, 4.10 billion everywhere else" rather than
+rounding in the circle's favour.
+
+One piece of luck: the antipode of 21.00°N 100.29°E is in open ocean off Peru, so a full-world
+azimuthal equidistant puts its worst distortion where there is nothing to distort.
+
 ### Cities
 
 `build-region.py` also writes every city over 100,000 inside the circle. A spatially-separated

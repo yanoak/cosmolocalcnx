@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isometricFit, type Bounds, type Viewport } from '../camera';
 import {
   DEFAULT_REGION_OUT,
+  REGION_MARGIN,
   districtTransform,
   regionScale,
   registerState,
@@ -9,6 +10,7 @@ import {
   stageFit,
   stockTint,
   tToZoom,
+  worldMinZoom,
   zoomLadder,
   zoomToT,
 } from '../registers';
@@ -80,21 +82,33 @@ describe('regionScale', () => {
    * axis under an isometric orthographic camera, so the ratio of their fits is
    * exactly regionOut on every aspect ratio.
    */
-  it('sits the circle at exactly regionOut times the district, on every surface', () => {
+  it('frames the circle PLUS its margin at exactly regionOut times the district, on every surface', () => {
     const k = regionScale(WAT_KET, VALERIEPIERIS_RADIUS_KM);
 
     for (const viewport of [PHONE, LAPTOP, PROJECTOR]) {
       const districtFit = isometricFit(WAT_KET, viewport).zoom;
 
-      // The region disc, expressed in stage units, fitted the same way.
-      const discStage = VALERIEPIERIS_RADIUS_KM * k * 2;
+      // What the region register actually frames is the circle times the margin.
+      const framedStage = VALERIEPIERIS_RADIUS_KM * REGION_MARGIN * k * 2;
       const regionFit = isometricFit(
-        [-discStage / 2, -discStage / 2, discStage / 2, discStage / 2],
+        [-framedStage / 2, -framedStage / 2, framedStage / 2, framedStage / 2],
         viewport,
       ).zoom;
 
       expect(districtFit / regionFit).toBeCloseTo(DEFAULT_REGION_OUT, 9);
     }
+  });
+
+  /**
+   * The claim is unfalsifiable if the circle fills the frame. A visitor can only
+   * weigh "half of humanity lives inside this circle" against a visible outside.
+   */
+  it('leaves room around the circle rather than letting it fill the frame', () => {
+    expect(REGION_MARGIN).toBeGreaterThan(1);
+    const k = regionScale(WAT_KET, VALERIEPIERIS_RADIUS_KM);
+    const tight = regionScale(WAT_KET, VALERIEPIERIS_RADIUS_KM, DEFAULT_REGION_OUT, 1);
+    expect(k).toBeLessThan(tight);
+    expect(k * REGION_MARGIN).toBeCloseTo(tight, 9);
   });
 
   it('derives from the bounds rather than hard-coding Wat Ket', () => {
@@ -293,5 +307,44 @@ describe('stockTint', () => {
 
   it('never goes to a silhouette, however far out the visitor is', () => {
     expect(stockTint(-5, 8)).toBeGreaterThan(0.5);
+  });
+});
+
+describe('worldMinZoom', () => {
+  const ladder = ladderFor(LAPTOP);
+  const WORLD = 20015.1;
+
+  it('pulls back far enough to fit the whole planet', () => {
+    const zoom = worldMinZoom(ladder, VALERIEPIERIS_RADIUS_KM, WORLD);
+    expect(zoom).toBeLessThan(ladder.region);
+    // The framed circle is radius * margin; the world is that much wider again.
+    expect(ladder.region / zoom).toBeCloseTo(
+      WORLD / (VALERIEPIERIS_RADIUS_KM * REGION_MARGIN),
+      6,
+    );
+  });
+
+  /** Pulling back past the anchor must not change register — t is already 0. */
+  it('stays inside the region register however far out it goes', () => {
+    const zoom = worldMinZoom(ladder, VALERIEPIERIS_RADIUS_KM, WORLD);
+    const state = registerState(zoom, ladder);
+    expect(state.t).toBe(0);
+    expect(state.active).toBe('region');
+    expect(state.railed).toBe(false);
+    expect(state.regionOpacity).toBe(1);
+  });
+
+  it('falls back to the circle framing when there is no world field', () => {
+    expect(worldMinZoom(ladder, VALERIEPIERIS_RADIUS_KM, 0)).toBeCloseTo(
+      ladder.region * 0.95,
+      9,
+    );
+  });
+
+  it('never zooms OUT for a world smaller than the frame', () => {
+    expect(worldMinZoom(ladder, VALERIEPIERIS_RADIUS_KM, 100)).toBeCloseTo(
+      ladder.region * 0.95,
+      9,
+    );
   });
 });

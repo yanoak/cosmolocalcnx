@@ -79,7 +79,7 @@ DEG = math.pi / 180.0
 # again, and neither does a change of mind about how coarse the mountains should be.
 # ---------------------------------------------------------------------------
 
-GRID = 512
+DEFAULT_GRID = 512
 
 # Store the cube root rather than the count. Population spans six orders of
 # magnitude per cell; linear 16-bit quantisation erases genuinely inhabited
@@ -148,6 +148,15 @@ def circle_envelope(centre: tuple[float, float], radius_km: float):
     lat_min = max(-90.0, (lat_c * DEG - ang) / DEG)
     lat_max = min(90.0, (lat_c * DEG + ang) / DEG)
 
+    # A cap of a quarter-circumference or more reaches a pole, and past a pole every
+    # longitude is inside it. Falling through to the formula below would be wrong in
+    # the worst way: sin(ang) heads back toward ZERO as the cap approaches the whole
+    # globe, so a world-sized radius would report a narrow strip and fetch almost no
+    # tiles. Caught by build-region's own totals — half a world of people went
+    # missing — but it would have looked like a plausible map.
+    if ang >= math.pi / 2 or lat_max >= 90.0 or lat_min <= -90.0:
+        return lat_min, lat_max, -180.0, 180.0
+
     denom = math.cos(lat_c * DEG)
     if denom <= 0 or math.sin(ang) / denom >= 1:
         return lat_min, lat_max, -180.0, 180.0
@@ -200,7 +209,7 @@ def fetch_tile(tile: str) -> Path | None:
     return tif if tif.exists() else None
 
 
-def accumulate(tif: Path, centre, radius_km, acc: np.ndarray) -> float:
+def accumulate(tif: Path, centre, radius_km, acc: np.ndarray, grid: int) -> float:
     """
     Scatter one tile's population into the output grid.
 
@@ -251,26 +260,26 @@ def accumulate(tif: Path, centre, radius_km, acc: np.ndarray) -> float:
     north = dist * np.cos(theta)
 
     half = radius_km
-    cell = (2 * half) / GRID
+    cell = (2 * half) / grid
     col = np.floor((east + half) / cell).astype(np.int64)
     row = np.floor((half - north) / cell).astype(np.int64)
 
     inside = (
         (dist <= radius_km)
         & (col >= 0)
-        & (col < GRID)
+        & (col < grid)
         & (row >= 0)
-        & (row < GRID)
+        & (row < grid)
         & (data > 0)
     )
     if not inside.any():
         return 0.0
 
-    flat = (row[inside] * GRID + col[inside]).astype(np.int64)
+    flat = (row[inside] * grid + col[inside]).astype(np.int64)
     weights = data[inside]
     # bincount over float64 — deterministic for a fixed input order, which is what
     # the byte-identical invariant rests on.
-    acc += np.bincount(flat, weights=weights, minlength=GRID * GRID).reshape(GRID, GRID)
+    acc += np.bincount(flat, weights=weights, minlength=grid * grid).reshape(grid, grid)
     return float(weights.sum())
 
 
@@ -375,6 +384,12 @@ def main() -> int:
     )
     parser.add_argument("--radius-km", type=float, default=VALERIEPIERIS_RADIUS_KM)
     parser.add_argument("--min-population", type=int, default=MIN_POPULATION)
+    parser.add_argument("--grid", type=int, default=DEFAULT_GRID)
+    parser.add_argument(
+        "--no-cities",
+        action="store_true",
+        help="Skip the city file. The world field does not need its own copy.",
+    )
     args = parser.parse_args()
 
     scene_path = REPO / args.scene
@@ -408,7 +423,8 @@ def main() -> int:
           f"({from_centre / radius_km * 100:.2f}% of the radius)")
     print(f"Tiles       {len(wanted)} candidates")
 
-    acc = np.zeros((GRID, GRID), dtype=np.float64)
+    grid = int(args.grid)
+    acc = np.zeros((grid, grid), dtype=np.float64)
     used = 0
     total_scattered = 0.0
     for tile in wanted:
@@ -416,7 +432,7 @@ def main() -> int:
         if tif is None:
             continue
         used += 1
-        total_scattered += accumulate(tif, centre, radius_km, acc)
+        total_scattered += accumulate(tif, centre, radius_km, acc, grid)
         print(f"  + {tile:<10} running total {acc.sum():>16,.0f}")
 
     inside_total = float(acc.sum())
@@ -435,7 +451,7 @@ def main() -> int:
     value = np.rint(norm * 65535.0).astype(np.uint32)
     value[acc <= 0] = 0
 
-    rgb = np.zeros((GRID, GRID, 3), dtype=np.uint8)
+    rgb = np.zeros((grid, grid, 3), dtype=np.uint8)
     rgb[:, :, 0] = (value >> 8).astype(np.uint8)
     rgb[:, :, 1] = (value & 0xFF).astype(np.uint8)
     # Blue is reserved for a land mask, so one can be added later without changing
@@ -443,7 +459,7 @@ def main() -> int:
 
     stem = (
         f"aeqd_{centre[0]:.3f}_{centre[1]:.3f}"
-        f"_r{int(round(radius_km))}_n{GRID}"
+        f"_r{int(round(radius_km))}_n{grid}"
     )
     png_path = OUT_DIR / f"{stem}.png"
     meta_path = OUT_DIR / f"{stem}.json"
@@ -454,30 +470,31 @@ def main() -> int:
 
     # Cities are a property of the CIRCLE, not of the grid, so they are named
     # without the cell count — changing GRID must not orphan them.
-    cities = build_cities(centre, radius_km, args.min_population)
+    cities = [] if args.no_cities else build_cities(centre, radius_km, args.min_population)
     city_stem = f"aeqd_{centre[0]:.3f}_{centre[1]:.3f}_r{int(round(radius_km))}"
     city_path = OUT_DIR / f"{city_stem}.cities.json"
     city_lines = ",\n".join(
         "    " + json.dumps(c, ensure_ascii=False, sort_keys=True) for c in cities
     )
-    city_path.write_text(
-        "{\n"
-        '  "_comment": "Cities inside the circle, for the REGION register\'s labels. '
-        'Positions are km east/north of the circle centre in the same azimuthal '
-        'equidistant frame as the population field. Sorted by population, descending.",\n'
-        f'  "minPopulation": {args.min_population},\n'
-        f'  "count": {len(cities)},\n'
-        '  "source": {\n'
-        '    "dataset": "GeoNames cities15000",\n'
-        f'    "url": "{GEONAMES_URL}",\n'
-        '    "license": "CC BY 4.0",\n'
-        '    "attribution": "GeoNames"\n'
-        '  },\n'
-        '  "cities": [\n' + city_lines + "\n  ]\n}\n",
-        encoding="utf-8",
-    )
+    if not args.no_cities:
+        city_path.write_text(
+            "{\n"
+            '  "_comment": "Cities inside the circle, for the REGION register\'s labels. '
+            'Positions are km east/north of the circle centre in the same azimuthal '
+            'equidistant frame as the population field. Sorted by population, descending.",\n'
+            f'  "minPopulation": {args.min_population},\n'
+            f'  "count": {len(cities)},\n'
+            '  "source": {\n'
+            '    "dataset": "GeoNames cities15000",\n'
+            f'    "url": "{GEONAMES_URL}",\n'
+            '    "license": "CC BY 4.0",\n'
+            '    "attribution": "GeoNames"\n'
+            '  },\n'
+            '  "cities": [\n' + city_lines + "\n  ]\n}\n",
+            encoding="utf-8",
+        )
 
-    cell_km = (2 * radius_km) / GRID
+    cell_km = (2 * radius_km) / grid
     meta = {
         "_comment": (
             "Population height field for the REGION register. NOT terrain — terrain "
@@ -491,7 +508,7 @@ def main() -> int:
             "earthRadiusKm": EARTH_RADIUS_KM,
         },
         "grid": {
-            "size": GRID,
+            "size": grid,
             "cellKm": round(cell_km, 6),
             "bboxKm": [-radius_km, -radius_km, radius_km, radius_km],
         },
@@ -503,7 +520,7 @@ def main() -> int:
             "units": "people per cell",
         },
         "stats": {
-            "cells": GRID * GRID,
+            "cells": grid * grid,
             "populated": populated,
             "totalInside": inside_total,
             "tilesUsed": used,
@@ -518,11 +535,12 @@ def main() -> int:
     meta_path.write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n")
 
     print()
-    print(f"Grid        {GRID}x{GRID} at {cell_km:.2f} km per cell")
-    print(f"Populated   {populated:,} cells of {GRID * GRID:,}")
+    print(f"Grid        {grid}x{grid} at {cell_km:.2f} km per cell")
+    print(f"Populated   {populated:,} cells of {grid * grid:,}")
     print(f"Inside      {inside_total:,.0f} people")
     print(f"Peak cell   {pmax:,.0f} people")
-    print(f"Cities      {len(cities):,} over {args.min_population:,} inside the circle")
+    if not args.no_cities:
+        print(f"Cities      {len(cities):,} over {args.min_population:,} inside the circle")
     if cities:
         biggest = cities[0]
         rim = min(cities, key=lambda c: abs(math.hypot(*c["km"]) - radius_km))
@@ -532,8 +550,9 @@ def main() -> int:
     print(f"Wrote       {png_path.relative_to(REPO)} "
           f"({png_path.stat().st_size / 1024:.0f} KB)")
     print(f"            {meta_path.relative_to(REPO)}")
-    print(f"            {city_path.relative_to(REPO)} "
-          f"({city_path.stat().st_size / 1024:.0f} KB)")
+    if not args.no_cities:
+        print(f"            {city_path.relative_to(REPO)} "
+              f"({city_path.stat().st_size / 1024:.0f} KB)")
     if previous is not None:
         print("            " + ("(byte-identical to the previous run)" if identical
                                 else "!! BYTES CHANGED since the previous run"))

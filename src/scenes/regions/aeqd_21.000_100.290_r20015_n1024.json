@@ -1,0 +1,41 @@
+{
+  "_comment": "Population height field for the REGION register. NOT terrain \u2014 terrain stays null in the scene document, permanently. This is people per cell in an azimuthal equidistant frame. See docs/architecture.md.",
+  "encoding": {
+    "blue": "reserved for a land mask",
+    "channels": "r*256+g",
+    "gamma": 3.0,
+    "max": 24500370.65136498,
+    "units": "people per cell"
+  },
+  "grid": {
+    "bboxKm": [
+      -20015.1,
+      -20015.1,
+      20015.1,
+      20015.1
+    ],
+    "cellKm": 39.091992,
+    "size": 1024
+  },
+  "projection": {
+    "centre": [
+      21.0,
+      100.29
+    ],
+    "earthRadiusKm": 6371.0088,
+    "kind": "aeqd",
+    "radiusKm": 20015.1
+  },
+  "source": {
+    "attribution": "European Commission JRC, Global Human Settlement Layer",
+    "dataset": "GHS-POP R2023A, epoch 2025, 30 arcsec, EPSG:4326",
+    "license": "CC BY 4.0",
+    "url": "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E2025_GLOBE_R2023A_4326_30ss/V1-0/tiles"
+  },
+  "stats": {
+    "cells": 1048576,
+    "populated": 163814,
+    "tilesUsed": 346,
+    "totalInside": 8191966468.346906
+  }
+}
