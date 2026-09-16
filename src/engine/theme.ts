@@ -169,6 +169,44 @@ export function roadTone(kind: string): Hex {
 }
 
 /**
+ * Population density, as a sequential ramp.
+ *
+ * Sequential and light-to-dark, not a spectral or heat ramp: the quantity has a
+ * natural direction and a rainbow would invent boundaries in it that the data does
+ * not have. It starts at the district's own ground tone, so the two registers read
+ * as one piece rather than as a map and a diorama that happen to share a screen —
+ * the emptiest cell in Asia is exactly the colour of the ground in Wat Ket.
+ *
+ * The printed A0 in the same room uses a dark heat ramp. That is a different
+ * artefact with a different background and the numbers are what have to agree
+ * between them, not the colours.
+ */
+export const POPULATION_RAMP = [
+  GROUND.ground,
+  shiftLightness(PALETTE['progress.blue'], +0.22, -0.1),
+  PALETTE['progress.blue'],
+  shiftLightness(PALETTE['progress.ink'], -0.1),
+  shiftLightness(PALETTE['progress.rose'], -0.22),
+] as const satisfies readonly Hex[];
+
+/** Linear interpolation along a ramp. `t` outside [0,1] clamps to an end stop. */
+export function sampleRamp(stops: readonly string[], t: number): [number, number, number] {
+  if (stops.length === 0) return [0, 0, 0];
+  if (stops.length === 1) return toRgb(stops[0]);
+  const u = t < 0 ? 0 : t > 1 ? 1 : t;
+  const scaled = u * (stops.length - 1);
+  const lo = Math.min(Math.floor(scaled), stops.length - 2);
+  const f = scaled - lo;
+  const a = toRgb(stops[lo]);
+  const b = toRgb(stops[lo + 1]);
+  return [
+    a[0] + (b[0] - a[0]) * f,
+    a[1] + (b[1] - a[1]) * f,
+    a[2] + (b[2] - a[2]) * f,
+  ];
+}
+
+/**
  * UI tokens are DERIVED DARKER from the palette, never taken from it. The raw values
  * fail contrast badly as text — the rose reaches 2.6:1 and the yellow 1.1:1 — and the
  * audience reads this standing in a bright mall on their own phone. A test enforces it.

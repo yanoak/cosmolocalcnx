@@ -14387,5 +14387,11 @@
     { "id": "commons-2045", "label": { "en": "Riverside Commons", "th": "ริมน้ำร่วม" }, "edits": [], "hotspots": [] }
   ],
   "hotspots": [],
-  "terrain": null
+  "terrain": null,
+  "region": {
+    "projection": { "kind": "aeqd", "centre": [21, 100.29], "radiusKm": 3437 },
+    "field": "regions/aeqd_21.000_100.290_r3437_n512.png",
+    "meta": "regions/aeqd_21.000_100.290_r3437_n512.json",
+    "label": { "en": "Half of everyone", "th": "ครึ่งหนึ่งของมนุษยชาติ" }
+  }
 }

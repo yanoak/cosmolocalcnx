@@ -6,6 +6,7 @@
  * See docs/architecture.md.
  */
 
+import { greatCircle } from './aeqd';
 import type { LocaleMap } from './locale';
 import type { Point2 } from './extrude';
 import { projectToLocalMetres } from './project';
@@ -98,6 +99,43 @@ export interface SceneDocument {
   hotspots: Hotspot[];
   /** Reserved. Never implement. See "Skip elevation entirely". */
   terrain: null;
+  /**
+   * The REGION register — the scale at which the scene is a dot.
+   *
+   * OPTIONAL, and a scene without one is not broken: it simply has two registers
+   * instead of three, the zoom ladder loses its outer anchor, and the visitor can
+   * never reach a register with nothing in it. That is what a second neighbourhood
+   * gets before anyone runs `npm run build:region`, and it has to keep working.
+   */
+  region?: RegionRef | null;
+}
+
+/**
+ * A pointer to a committed population field, plus the projection that places it.
+ *
+ * The raster lives BESIDE the document rather than in it: it is not authored
+ * content, it would base64-bloat a 452 KB document, and it would poison every diff.
+ * The projection parameters do live in the document, because they are what the
+ * renderer needs in order to put the scene's own origin in the right place, and
+ * what a human would argue about.
+ *
+ * Note the deliberate contrast with `*.elevation.json`, which sits entirely outside
+ * the schema precisely so that nothing can start rendering it. The region is the
+ * opposite — it exists to be rendered — so it gets a schema entry. Two similar
+ * looking derived rasters with opposite intent is how terrain would creep back in.
+ */
+export interface RegionRef {
+  projection: {
+    kind: 'aeqd';
+    /** Circle centre, lat/lon. Defaults to the scene origin; overridden when the circle is a claim. */
+    centre: [number, number];
+    radiusKm: number;
+  };
+  /** Two-channel population PNG, relative to `src/scenes/`. */
+  field: string;
+  /** Sidecar JSON: grid, encoding, stats, source. */
+  meta: string;
+  label?: LocaleMap;
 }
 
 /**
@@ -154,6 +192,33 @@ export function validateScene(doc: SceneDocument): string[] {
 
   for (const hotspot of doc.hotspots ?? []) {
     checkHotspot(hotspot, 'scene', errors);
+  }
+
+  if (doc.region) {
+    const { kind, centre, radiusKm } = doc.region.projection ?? {};
+
+    if (kind !== 'aeqd') {
+      errors.push(
+        `region: projection must be "aeqd" — the circle has to be a true circle, ` +
+          `and "${kind}" would make it an ellipse`,
+      );
+    }
+
+    if (!(typeof radiusKm === 'number' && radiusKm > 0 && radiusKm < 10_000)) {
+      // Past ~10,000 km an azimuthal equidistant plane folds through the antipode
+      // and the projection stops being a map of anywhere.
+      errors.push(`region: radiusKm must be between 0 and 10,000 — got ${radiusKm}`);
+    } else if (Array.isArray(centre) && Array.isArray(doc.origin)) {
+      // The one that matters, and the one that is silent otherwise: a district
+      // outside its own circle has nowhere for the handover to land.
+      const { distanceKm } = greatCircle(centre, doc.origin as [number, number]);
+      if (distanceKm > radiusKm) {
+        errors.push(
+          `region: the scene origin is ${Math.round(distanceKm).toLocaleString()} km ` +
+            `from the circle centre, outside its own ${Math.round(radiusKm).toLocaleString()} km circle`,
+        );
+      }
+    }
   }
 
   return errors;
