@@ -152,9 +152,11 @@ Solo development with LLMs, over three months. The failure mode is architectural
   people's names would defeat the purpose. Without it the hook still catches private links but
   warns that it cannot catch names; ask Yan for a copy. `--no-verify` bypasses it, which should be
   rare enough to feel wrong.
-- **Six licences, not one** — code MIT, OSM-derived `baseline` data ODbL, authored 2045 content
+- **Eight licensed things, not one** — code MIT, OSM-derived `baseline` data ODbL,
+  satellite-derived footprints ODbL via Overture (crediting Google and Microsoft), observed
+  building heights CC BY 4.0 (Google Open Buildings 2.5D Temporal), authored 2045 content
   CC BY-SA 4.0, the HDX tambon boundary CC BY-IGO, the GHS-POP population field CC BY 4.0, and
-  GeoNames city names CC BY 4.0. **Four of the six require visible credit** and all four live in
+  GeoNames city names CC BY 4.0. **Six of them require visible credit** and all six live in
   the viewer's footer. See the table in the README. The root `LICENSE` file stays pure MIT so GitHub
   detects it; the split is stated in the README. Never commit an asset that cannot be
   redistributed — fetch it with a script instead.
@@ -175,11 +177,17 @@ Solo development with LLMs, over three months. The failure mode is architectural
   message; check the link patterns separately first. **Do not write the offending name into any
   committed file**, including this one, or every future commit that touches it is blocked too.
 
-- **Regenerating data is `npm run fetch:osm`, `npm run fetch:elevation` and
-  `npm run build:region`.** None is needed to run the app. A re-run against the same cached
-  source must produce a **byte-identical** output — if it does not, the height synthesis or the
-  population scatter has stopped being deterministic, and every downstream placement judgement is
-  unstable.
+- **Regenerating data is `npm run fetch:buildings`, `npm run fetch:osm`,
+  `npm run fetch:elevation` and `npm run build:region`.** None is needed to run the app. A re-run
+  against the same cached source must produce a **byte-identical** output — if it does not, the
+  height synthesis, the raster sampling or the population scatter has stopped being
+  deterministic, and every downstream placement judgement is unstable.
+- **Buildings come from Overture plus OSM, heights from a satellite raster.** Decided 19 Sep 2026:
+  OSM held one Wat Ket building in seven. `scripts/fetch-buildings.py` pulls Overture's conflated
+  footprints (OSM + Google + Microsoft) and samples the Google Open Buildings 2.5D Temporal
+  height raster; `src/engine/satellite.ts` merges them. OSM buildings keep `osm/way/…` ids, the
+  rest are `overture/<id>`. Height chain: tag → observed → synthesis. See
+  `plans/2026-09-19_satellite-footprints.plan.md`.
 - Update this file when a decision is made, so the next session inherits it. The diary is the trail;
   this file and `docs/` are the source of truth.
 

@@ -307,7 +307,17 @@ export default function Page() {
       <p className="attribution">
         Building footprints and street data ©{' '}
         <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, ODbL.
-        District boundary from{' '}
+        Further footprints from <a href="https://overturemaps.org/">Overture Maps</a>, ODbL,
+        incorporating{' '}
+        <a href="https://sites.research.google/open-buildings/">Google Open Buildings</a> and{' '}
+        <a href="https://github.com/microsoft/GlobalMLBuildingFootprints">
+          Microsoft Building Footprints
+        </a>
+        . Building heights from{' '}
+        <a href="https://sites.research.google/gr/open-buildings/temporal/">
+          Google Open Buildings 2.5D Temporal
+        </a>
+        , CC BY 4.0. District boundary from{' '}
         <a href="https://data.humdata.org/dataset/cod-ab-tha">
           OCHA Thailand administrative boundaries
         </a>

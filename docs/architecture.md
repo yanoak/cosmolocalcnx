@@ -138,14 +138,41 @@ Simpler than it sounds. A day or two, not a week.
 
 1. **Overpass API** query clipped to the boundary polygon. Pull `building` (ways and relations),
    `highway`, `waterway` / `natural=water`, `landuse`, `leisure=park`.
-2. **Project** lat/lon to local metres against `origin`. A local tangent-plane approximation is
+2. **Satellite-derived buildings** for the same box — see the next section. OSM held one Wat Ket
+   building in seven, so the building layer is Overture's conflation of OSM, Google and Microsoft
+   footprints, and heights are observed from a raster where it has a reading.
+3. **Project** lat/lon to local metres against `origin`. A local tangent-plane approximation is
    correct at neighbourhood scale — do not reach for full UTM.
-3. **Extrude.** three.js `ExtrudeGeometry` takes a `Shape` built straight from the footprint. Height
-   from the `height` tag, else `building:levels × 3.2`, else a per-type default. That is the whole
-   building generator.
+4. **Extrude.** three.js `ExtrudeGeometry` takes a `Shape` built straight from the footprint. Height
+   from the `height` tag, else `building:levels × 3.2`, else the observed raster height, else a
+   per-type synthesis. That is the whole building generator.
 
-Run this as a **script that writes `baseline` into the scene document**, not as a live fetch in the
-viewer. The exhibition must not depend on Overpass being up.
+Run this as **scripts that write `baseline` into the scene document**, not as a live fetch in the
+viewer. The exhibition must not depend on Overpass, S3 or Google Cloud Storage being up.
+
+### Buildings come from Overture and a height raster, not OSM alone
+
+Added 19 Sep 2026. Four satellite-derived sources were pulled for the tambon and matched against
+the Overpass cache; the numbers are in that day's diary and in
+`plans/2026-09-19_satellite-footprints.plan.md`. Two were adopted:
+
+- **Overture Maps `buildings`** for footprints. It already conflates OpenStreetMap, Google Open
+  Buildings and Microsoft's ML footprints and carries the OSM record id, so the join back to the
+  Overpass cache is exact. The release is pinned in `scripts/fetch-buildings.py`. OSM-sourced
+  buildings keep their `osm/way/…` ids and their Overpass geometry and tags; everything else is
+  `overture/<id>` with kind `default`. A non-OSM footprint whose centroid lands inside an OSM
+  building is dropped, because the Overpass cache is newer than Overture's snapshot.
+- **Google Open Buildings 2.5D Temporal** for heights: a yearly raster at 4 m effective
+  resolution with building presence and height bands, read as HTTP-range windows out of its
+  cloud-optimised tiles and sampled at 1 m under every footprint, OSM's included. It knows Rim
+  Ping Condominium is 65 m where synthesis had said 8.
+
+The raw Google and Microsoft sets were tried and are not used directly; Overture contains them.
+
+`npm run fetch:buildings` writes one gitignored cache under `data/buildings-cache/`;
+`npm run fetch:osm` reads it beside the Overpass cache and `src/engine/satellite.ts` does the
+merge, pure and unit-tested. Same invariant as everything else: re-running against the same
+caches is byte-identical.
 
 ### Coordinates and units
 
@@ -176,7 +203,8 @@ resident would call Wat Ket. So `scripts/fetch-osm.ts` intersects it with a rect
 extent, and *that* is what lands in the document's `boundary`. The extent is the editorial lever
 and it is one constant in one file; the tambon polygon beside it stays authoritative and untouched.
 
-Chosen 12 Sep 2026: 1.50 × 2.70 km, 2.98 km², 1,182 buildings.
+Chosen 12 Sep 2026: 1.50 × 2.70 km, 2.98 km², 1,182 OSM buildings. With the satellite-derived
+footprints added on 19 Sep 2026 the same clip holds 4,056.
 
 ### Limits
 
@@ -185,20 +213,32 @@ Chosen 12 Sep 2026: 1.50 × 2.70 km, 2.98 km², 1,182 buildings.
   to write** rather than leaving it to be discovered in the browser.
 - **An extruded footprint is far cheaper than a mesh.** Measured 12 Sep 2026: about **4v − 4
   triangles for v ring vertices**, which is ~17 per real OSM building — not the 50–100 a mesh
-  costs. All 1,182 buildings come to ~22k triangles against a ~100k baseline ceiling. Geometry is
-  therefore *not* the constraint on how big the boundary can be; area and legibility are. Do not
-  shrink the scene to save triangles without measuring first.
-- **Two attributions, both required to be visible**, and both are in the viewer's footer: "©
-  OpenStreetMap contributors" for ODbL, and OCHA for the CC BY-IGO boundary. A few lines of JSX,
-  easy to forget until someone asks.
+  costs. The 1,182 OSM buildings came to ~22k triangles; with the satellite-derived footprints
+  the 4,056 buildings come to ~61k, against a ~100k baseline ceiling. Geometry is still not the
+  constraint on how big the boundary can be; area and legibility are. Do not shrink the scene to
+  save triangles without measuring first.
+- **Six attributions, all required to be visible**, and all in the viewer's footer: "©
+  OpenStreetMap contributors" for ODbL, Overture with Google and Microsoft for the satellite-derived
+  footprints, Google for the observed heights, OCHA for the CC BY-IGO boundary, the JRC for the
+  population field and GeoNames for the city names. One paragraph of JSX, easy to forget until
+  someone asks.
 
-### Height is synthesised, not imported
+### Height is observed where it can be, synthesised where it cannot
 
-96% of Wat Ket's buildings carry no height information at all — one `height` tag and 56
-`building:levels` across the whole scene. So `src/engine/synth.ts` is not a fallback, it is the
-primary source, and it authors almost the entire skyline.
+96% of Wat Ket's buildings carry no height information in OSM — 56 `building:levels` tags across
+the whole scene and no usable `height`. Until 19 Sep 2026 `src/engine/synth.ts` therefore authored
+almost the entire skyline. Now the Open Buildings 2.5D Temporal raster does: it has a reading for
+76% of the 4,056 buildings, and synthesis covers the remaining quarter, mostly small footprints
+the 4 m raster cannot resolve.
 
-Two properties matter, and they are the whole design of that module:
+The chain in `resolveHeight` is tag → observed → synthesis, and each rung has its own ceiling:
+synthesis 30 m, observed 100 m, tags 150 m. An observation is evidence, so it may exceed anything
+synthesis is allowed to invent; but the raster measured Supalai Monte at 75 m against its tagged
+111, so it cannot vouch for a tower and a tag always beats it. An observation is only trusted
+when at least 30% of the footprint's pixels read as building.
+
+Two properties still matter for the synthesised quarter, and they are the whole design of that
+module:
 
 - **Deterministic.** Variation comes from a hash of the OSM id, never from `Math.random()`. A
   re-import in November must not reshuffle the skyline, or every screenshot, every hotspot position

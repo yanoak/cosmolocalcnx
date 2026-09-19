@@ -45,10 +45,18 @@ The scene document is committed, so **none of this is needed to run the app** �
 must not depend on a third-party API being up. Run it only to re-import OpenStreetMap:
 
 ```sh
-npm run fetch:osm                 # rebuilds baseline from the cached Overpass response
+npm run fetch:buildings           # Overture footprints + observed heights → data/buildings-cache/
+npm run fetch:osm                 # rebuilds baseline from the two caches
 npm run fetch:osm -- --refresh    # re-queries Overpass first
+npm run fetch:osm -- --osm-only   # baseline from OpenStreetMap alone
 npm run fetch:elevation           # flood-reference elevation, which the renderer never reads
 ```
+
+OpenStreetMap holds about one Wat Ket building in seven, so the building layer is Overture's
+conflation of OSM, Google Open Buildings and Microsoft's ML footprints, and heights come from
+the Google Open Buildings 2.5D Temporal raster where it has a reading, tags first and synthesis
+last. `fetch:buildings` needs Python with `duckdb rasterio shapely pyproj s2sphere numpy`; see
+the docstring in `scripts/fetch-buildings.py`.
 
 The district boundary is extracted once from the HDX Common Operational Dataset and committed as
 a single polygon; the 377 MB source archive is not. See the docstring in
@@ -56,7 +64,7 @@ a single polygon; the 377 MB source archive is not. See the docstring in
 
 ## Licensing
 
-This repository contains six kinds of thing under six different licences. A single blanket
+This repository contains eight kinds of thing under several licences. A single blanket
 licence would misstate the terms, because OpenStreetMap's is share-alike and cannot be
 relicensed.
 
@@ -64,6 +72,8 @@ relicensed.
 |---|---|
 | **Code** — the engine, the OSM pipeline, the editor, everything in `src/` and `scripts/` | [MIT](./LICENSE) |
 | **OSM-derived data** — building footprints, roads, water and landuse in any scene document's `baseline` | [ODbL](https://opendatacommons.org/licenses/odbl/), © OpenStreetMap contributors |
+| **Satellite-derived footprints** — baseline buildings with `overture/` ids | [ODbL](https://opendatacommons.org/licenses/odbl/), [Overture Maps Foundation](https://overturemaps.org/), incorporating [Google Open Buildings](https://sites.research.google/open-buildings/) (CC BY 4.0 / ODbL) and [Microsoft Building Footprints](https://github.com/microsoft/GlobalMLBuildingFootprints) (ODbL) |
+| **Observed building heights** — `height` on baseline buildings where the raster had a reading | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) / ODbL, [Google Open Buildings 2.5D Temporal](https://sites.research.google/gr/open-buildings/temporal/) |
 | **Authored content** — the 2045 scenarios, hotspot text, images, and the Wat Ket scene's speculative layer | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) |
 | **Administrative boundary** — `src/scenes/wat-ket.boundary.geojson`, the Wat Ket tambon polygon | [CC BY-IGO](https://creativecommons.org/licenses/by/3.0/igo/), OCHA Field Information Services Section |
 | **Population field** — `src/scenes/regions/*.png`, the REGION register's gridded population | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), European Commission JRC, Global Human Settlement Layer |
@@ -72,14 +82,14 @@ relicensed.
 Elevation samples in `src/scenes/*.elevation.json` come from SRTM, which is public domain
 (NASA/USGS) and needs no attribution.
 
-**Four of the six require visible credit**, and all four are in the viewer's footer: OpenStreetMap
-for ODbL, OCHA for the boundary, the JRC for the population field, and GeoNames for the city names.
-Forgetting one is easy and noticing it is somebody else's job, so the footer is the single place
-they live.
+**Six of these require visible credit**, and all six are in the viewer's footer: OpenStreetMap
+for ODbL, Overture with Google and Microsoft for the satellite-derived footprints, Google for the
+observed heights, OCHA for the boundary, the JRC for the population field, and GeoNames for the
+city names. Forgetting one is easy and noticing it is somebody else's job, so the footer is the
+single place they live.
 
 Third-party 3D assets keep their own licences, recorded alongside them in the asset library.
 Anything that cannot be redistributed is not committed — it gets fetched by a script instead.
 
-**Attribution in the viewer:** two of these require visible on-screen credit, and both are in the
-viewer's footer — "© OpenStreetMap contributors" for ODbL, and OCHA for the CC BY-IGO boundary.
-A few lines of JSX, easy to forget until someone asks.
+**Attribution in the viewer** is one paragraph of JSX at the bottom of `src/app/page.tsx`. Add a
+data source, add a clause there — easy to forget until someone asks.
