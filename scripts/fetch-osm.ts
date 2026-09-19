@@ -7,6 +7,7 @@
  *   npm run fetch:osm -- --refresh           # re-queries Overpass
  *   npm run fetch:osm -- --osm-only          # ignore the buildings cache
  *   npm run fetch:osm -- --extent -500,-900,700,750   # try a different clip
+ *   npm run fetch:osm -- --clip tambon       # clip to the Wat Ket ADM3 polygon as well
  *
  * Two caches feed this, both gitignored: the Overpass response, fetched here, and
  * `data/buildings-cache/wat-ket.buildings.json`, written by
@@ -49,23 +50,47 @@ const BUILDINGS_CACHE = join(REPO, 'data/buildings-cache/wat-ket.buildings.json'
 /**
  * The scene's working extent, in local metres around `origin`.
  *
- * **This is an editorial decision, and it is the one to argue with.** The Wat Ket
- * tambon is 6.85 km2 — above the 4 km2 hard limit in docs/architecture.md — and it
- * is an administrative unit rather than a neighbourhood: it runs 3 km south of the
- * origin, well past anything a resident would call Wat Ket. The scene is therefore
- * the tambon INTERSECTED with this rectangle, which holds the riverside quarter
- * either side of Charoen Rat and the temple the district is named for.
+ * **This is an editorial decision, and it is the one to argue with.**
  *
- * Chosen 12 Sep 2026 at 1.50 x 2.70 km: the widest clip that still satisfies the
- * 4 km2 rule, keeping Wat Ket temple, the Charoenrat and Kaewnawarat frontages,
- * Nawarat Bridge and the heritage strip south to Ping Nakara in one scene. It is
- * generous because it can be — the triangle estimate came in at ~17 per building
- * against the plan's assumed 50–100, so geometry was never the binding constraint.
+ * Chosen 12 Sep 2026 at 1.50 x 2.70 km (-500,-1600 → 1000,1100), intersected with
+ * the Wat Ket tambon: the widest clip that satisfied the 4 km2 phone budget, keeping
+ * Wat Ket temple, the Charoenrat and Kaewnawarat frontages, Nawarat Bridge and the
+ * heritage strip south to Ping Nakara in one scene.
  *
- * Widen or move it and re-run; the script reports the area and the triangle count
- * and refuses anything over budget. Nothing downstream hard-codes these numbers.
+ * Tripled 19 Sep 2026 to 4.50 x 8.10 km — that rectangle grown by its own size in
+ * every direction — and no longer cut to the tambon, so the scene crosses the Ping
+ * onto the old-city bank. Measured before deciding: ~54,000 buildings and ~780k
+ * triangles, eight times the phone ceiling. Yan chose it with those numbers in
+ * hand, so BUDGET below is `installation` and the phone surface is knowingly out of
+ * budget until level-of-detail work lands. See
+ * plans/2026-09-19_extended-extent.plan.md.
+ *
+ * Pushed west the same day to -3300 so the whole moated old city is in: the west
+ * moat runs at about x = -2,880 m and a scene that cut it in half read as neither
+ * Wat Ket nor Chiang Mai. 5.80 x 8.10 km.
+ *
+ * Widen or move it and re-run; the script reports the area and the triangle count.
+ * Nothing downstream hard-codes these numbers.
  */
-const DEFAULT_EXTENT = { west: -500, south: -1600, east: 1000, north: 1100 };
+const DEFAULT_EXTENT = { west: -3300, south: -4300, east: 2500, north: 3800 };
+
+/**
+ * What bounds the scene: the extent rectangle alone, or the rectangle intersected
+ * with the Wat Ket ADM3 polygon. `tambon` was the rule until 19 Sep 2026 and is one
+ * flag away; the polygon itself stays committed as the boundary credit.
+ */
+type Clip = 'rect' | 'tambon';
+const DEFAULT_CLIP: Clip = 'rect';
+
+/**
+ * Whether the limits in src/engine/osm.ts REJECT the scene (`phone`: a visitor's own
+ * device over the QR code) or only warn (`installation`: the laptop and projector,
+ * which have a GPU and a local static export). The limits themselves never move —
+ * renaming the budget to fit the scene is how a constraint stops being one — so
+ * every run still prints how far over the phone budget this scene is.
+ */
+type Budget = 'phone' | 'installation';
+const BUDGET: Budget = 'installation';
 
 /** Overpass is queried on a bbox slightly larger than the clip, so edge roads join up. */
 const QUERY_MARGIN_M = 150;
@@ -89,6 +114,11 @@ function arg(name: string): string | undefined {
 
 const refresh = process.argv.includes('--refresh');
 const osmOnly = process.argv.includes('--osm-only');
+const clipMode: Clip = (() => {
+  const value = arg('clip') ?? DEFAULT_CLIP;
+  if (value !== 'rect' && value !== 'tambon') throw new Error(`--clip wants rect or tambon`);
+  return value;
+})();
 const extentArg = arg('extent');
 const extent = extentArg
   ? (() => {
@@ -229,24 +259,28 @@ async function main(): Promise<number> {
     ([lon, lat]) => projectToLocalMetres([lat, lon], origin),
   );
 
-  // …cut down to the working extent. This is the scene's actual boundary.
+  // The working extent, either as is or cut to the tambon. This is the scene's
+  // actual boundary.
   const rect = rectRing(extent.west, extent.south, extent.east, extent.north);
-  const sceneRing = clipRingToConvex(tambon, rect);
-  if (sceneRing.length < 3) {
+  const inTambon = clipRingToConvex(tambon, rect);
+  if (inTambon.length < 3) {
     console.error('error: the extent does not overlap the tambon at all');
     return 1;
   }
+  const sceneRing = clipMode === 'tambon' ? inTambon : rect;
 
   const clip: Poly[] = [[sceneRing]];
   const areaKm2 = clipAreaKm2(clip);
+  const tambonShareKm2 = clipAreaKm2([[inTambon]]);
   console.log(
     `  extent   ${extent.west},${extent.south} → ${extent.east},${extent.north} m ` +
       `(${((extent.east - extent.west) / 1000).toFixed(2)} × ` +
-      `${((extent.north - extent.south) / 1000).toFixed(2)} km)`,
+      `${((extent.north - extent.south) / 1000).toFixed(2)} km), clip ${clipMode}`,
   );
   console.log(
-    `  scene    ${areaKm2.toFixed(3)} km2 — ` +
-      `${((areaKm2 / polygonArea([tambon])) * 1e6 * 100).toFixed(0)}% of the tambon`,
+    `  scene    ${areaKm2.toFixed(3)} km2 — holds ` +
+      `${((tambonShareKm2 / polygonArea([tambon])) * 1e6 * 100).toFixed(0)}% of the tambon` +
+      (clipMode === 'rect' ? `, ${((tambonShareKm2 / areaKm2) * 100).toFixed(0)}% of the scene is Wat Ket` : ''),
   );
 
   // ------------------------------------------------------------- fetch
@@ -377,10 +411,19 @@ async function main(): Promise<number> {
   console.log(`\n  triangles ~${triangles.toLocaleString('en')} (baseline buildings only)`);
   const { errors, warnings } = checkBudget({ areaKm2, triangles });
   for (const warning of warnings) console.log(`  warning: ${warning}`);
-  for (const error of errors) console.error(`  REJECTED: ${error}`);
-  if (errors.length) {
-    console.error('\nNothing written. Adjust --extent and try again.');
-    return 1;
+  if (BUDGET === 'installation') {
+    for (const error of errors) console.log(`  OVER PHONE BUDGET: ${error}`);
+    if (errors.length) {
+      console.log(
+        `  budget    installation — written anyway; the phone surface needs level-of-detail work`,
+      );
+    }
+  } else {
+    for (const error of errors) console.error(`  REJECTED: ${error}`);
+    if (errors.length) {
+      console.error('\nNothing written. Adjust --extent and try again.');
+      return 1;
+    }
   }
 
   // ------------------------------------------------------------- write

@@ -19,7 +19,7 @@
  * Microsoft, ~62k triangles. See plans/2026-09-19_satellite-footprints.plan.md.
  */
 
-import { centroid, pointInAny, pointInRing } from './clip';
+import { bounds, centroid, pointInAny, pointInRing } from './clip';
 import type { BuildStats, BuildOptions } from './osm';
 import { projectRing } from './osm';
 import type { BaselineBuilding } from './scene';
@@ -68,6 +68,37 @@ function toLatLon(ring: [number, number][]) {
 }
 
 /**
+ * OSM footprints bucketed on a coarse grid, so "is this centroid inside any OSM
+ * building" costs a handful of ring tests rather than all of them. Without this the
+ * check is external × OSM: 42,000 × 16,000 at the tripled extent, which took the
+ * import from seconds to a stall.
+ */
+const CELL_M = 50;
+
+class FootprintIndex {
+  private cells = new Map<string, BaselineBuilding[]>();
+
+  constructor(buildings: readonly BaselineBuilding[]) {
+    for (const b of buildings) {
+      const [w, s, e, n] = bounds(b.footprint);
+      for (let x = Math.floor(w / CELL_M); x <= Math.floor(e / CELL_M); x++) {
+        for (let y = Math.floor(s / CELL_M); y <= Math.floor(n / CELL_M); y++) {
+          const key = `${x},${y}`;
+          const cell = this.cells.get(key);
+          if (cell) cell.push(b);
+          else this.cells.set(key, [b]);
+        }
+      }
+    }
+  }
+
+  contains([x, y]: [number, number]): boolean {
+    const cell = this.cells.get(`${Math.floor(x / CELL_M)},${Math.floor(y / CELL_M)}`);
+    return !!cell && cell.some((b) => pointInRing([x, y], b.footprint));
+  }
+}
+
+/**
  * The non-OSM rows of the cache as baseline buildings, projected and clipped the
  * way `buildingsFromElements` does it, minus any that duplicate an OSM building.
  * Order is the cache's; `buildBaseline` sorts.
@@ -80,6 +111,7 @@ export function externalBuildings(
 ): BaselineBuilding[] {
   const out: BaselineBuilding[] = [];
   const skipped = stats?.skipped.buildings;
+  const index = new FootprintIndex(osmBuildings);
 
   for (const row of cache.buildings) {
     if (row.source === 'osm') continue;
@@ -102,7 +134,7 @@ export function externalBuildings(
       continue;
     }
 
-    if (osmBuildings.some((b) => pointInRing(here, b.footprint))) {
+    if (index.contains(here)) {
       if (stats) stats.duplicates += 1;
       continue;
     }
