@@ -46,6 +46,44 @@ export const MAX_HEIGHT_M = 30;
  */
 export const MAX_TAGGED_HEIGHT_M = 150;
 
+/**
+ * The ceiling on a height OBSERVED from satellite imagery — the Open Buildings 2.5D
+ * Temporal raster that `scripts/fetch-buildings.py` samples. Between the other two
+ * on purpose: an observation is evidence, so it may exceed anything synthesis is
+ * allowed to invent, but a 4 m-resolution model that measured Supalai Monte at 75 m
+ * against its tagged 111 cannot vouch for a tower, so it sits below the tagged
+ * ceiling and a tag always wins.
+ */
+export const MAX_OBSERVED_HEIGHT_M = 100;
+
+/**
+ * An observation is only trusted when enough of the footprint actually reads as
+ * building. Below this, the polygon is a detector blob over a tree or a yard and
+ * the "height" is the height of whatever pixels happened to clear the threshold.
+ */
+export const OBSERVED_MIN_PRESENCE = 0.3;
+export const OBSERVED_MIN_PIXELS = 4;
+
+/** What the raster said about one footprint. Sampled at 1 m; see fetch-buildings.py. */
+export interface ObservedHeight {
+  /** Mean height, metres, over pixels where building presence exceeded 0.5. */
+  height: number;
+  /** Fraction of the footprint's pixels that did. */
+  presence: number;
+  /** How many that was. */
+  px: number;
+}
+
+export function acceptObservation(observed: ObservedHeight | null | undefined): observed is ObservedHeight {
+  return (
+    !!observed &&
+    Number.isFinite(observed.height) &&
+    observed.height > 0 &&
+    observed.presence >= OBSERVED_MIN_PRESENCE &&
+    observed.px >= OBSERVED_MIN_PIXELS
+  );
+}
+
 interface StoreyProfile {
   /** Storeys for the smallest footprint of this kind. */
   base: number;
@@ -153,17 +191,23 @@ export function synthesiseHeight(id: string, areaM2: number, kind: string): numb
 export interface HeightSource {
   height: number;
   /** Which rung of the chain produced it — reported by the import so the ratio is visible. */
-  from: 'height' | 'levels' | 'synth';
+  from: 'height' | 'levels' | 'observed' | 'synth';
 }
 
 /**
- * The resolution chain: an explicit `height` tag, else `building:levels`, else
- * synthesis. Tagged values are clamped too, but at a far more generous ceiling —
- * see MAX_TAGGED_HEIGHT_M.
+ * The resolution chain: an explicit `height` tag, else `building:levels`, else an
+ * observed height from the satellite raster, else synthesis. Tagged values are
+ * clamped too, but at a far more generous ceiling — see MAX_TAGGED_HEIGHT_M — and
+ * observed ones at a ceiling between the two.
  */
 export function resolveHeight(
   tags: Record<string, string | undefined>,
-  { id, areaM2, kind }: { id: string; areaM2: number; kind: string },
+  {
+    id,
+    areaM2,
+    kind,
+    observed,
+  }: { id: string; areaM2: number; kind: string; observed?: ObservedHeight | null },
 ): HeightSource {
   // parseFloat rather than Number, because OSM heights carry units: "12 m".
   const tagged = Number.parseFloat(tags.height ?? '');
@@ -176,6 +220,13 @@ export function resolveHeight(
     return {
       height: tidy(clamp(levels * LEVEL_HEIGHT_M, MIN_HEIGHT_M, MAX_TAGGED_HEIGHT_M)),
       from: 'levels',
+    };
+  }
+
+  if (acceptObservation(observed)) {
+    return {
+      height: tidy(clamp(observed.height, MIN_HEIGHT_M, MAX_OBSERVED_HEIGHT_M)),
+      from: 'observed',
     };
   }
 

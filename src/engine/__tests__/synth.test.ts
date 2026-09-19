@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   MAX_HEIGHT_M,
+  MAX_OBSERVED_HEIGHT_M,
   MAX_TAGGED_HEIGHT_M,
   MIN_HEIGHT_M,
+  OBSERVED_MIN_PIXELS,
+  OBSERVED_MIN_PRESENCE,
+  acceptObservation,
   footprintArea,
   hash32,
   resolveHeight,
@@ -144,6 +148,37 @@ describe('resolveHeight', () => {
       expect(resolved.from).toBe('synth');
       expect(Number.isFinite(resolved.height)).toBe(true);
     }
+  });
+
+  describe('observed heights', () => {
+    const good = { height: 14.36, presence: 0.8, px: 120 };
+
+    it('sit between tags and synthesis', () => {
+      expect(resolveHeight({}, { ...at, observed: good })).toEqual({ height: 14.36, from: 'observed' });
+      expect(resolveHeight({ 'building:levels': '2' }, { ...at, observed: good }).from).toBe('levels');
+      expect(resolveHeight({ height: '9' }, { ...at, observed: good }).from).toBe('height');
+    });
+
+    it('are clamped to the observed ceiling, which is below the tagged one', () => {
+      expect(MAX_OBSERVED_HEIGHT_M).toBeLessThan(MAX_TAGGED_HEIGHT_M);
+      expect(MAX_OBSERVED_HEIGHT_M).toBeGreaterThan(MAX_HEIGHT_M);
+      const tall = resolveHeight({}, { ...at, observed: { ...good, height: 400 } });
+      expect(tall).toEqual({ height: MAX_OBSERVED_HEIGHT_M, from: 'observed' });
+      const low = resolveHeight({}, { ...at, observed: { ...good, height: 0.4 } });
+      expect(low).toEqual({ height: MIN_HEIGHT_M, from: 'observed' });
+    });
+
+    it('are ignored when too little of the footprint reads as building', () => {
+      expect(acceptObservation({ ...good, presence: OBSERVED_MIN_PRESENCE - 0.01 })).toBe(false);
+      expect(acceptObservation({ ...good, presence: OBSERVED_MIN_PRESENCE })).toBe(true);
+      expect(acceptObservation({ ...good, px: OBSERVED_MIN_PIXELS - 1 })).toBe(false);
+      expect(acceptObservation({ ...good, px: OBSERVED_MIN_PIXELS })).toBe(true);
+      expect(acceptObservation({ ...good, height: Number.NaN })).toBe(false);
+      expect(acceptObservation({ ...good, height: 0 })).toBe(false);
+      expect(acceptObservation(null)).toBe(false);
+      expect(acceptObservation(undefined)).toBe(false);
+      expect(resolveHeight({}, { ...at, observed: { ...good, presence: 0.05 } }).from).toBe('synth');
+    });
   });
 
   it('clamps an absurd tagged height instead of trusting it', () => {

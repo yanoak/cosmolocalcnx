@@ -10,8 +10,10 @@ import { centroid, pointInAny, pointInRing, ringArea } from './clip';
 import type { Poly } from './clip';
 import { projectToLocalMetres } from './project';
 import type { LatLon } from './project';
+import { externalBuildings, observedHeights } from './satellite';
+import type { BuildingsCache } from './satellite';
 import { footprintArea, resolveHeight } from './synth';
-import type { HeightSource } from './synth';
+import type { HeightSource, ObservedHeight } from './synth';
 import type { Point2 } from './extrude';
 import type { Baseline, BaselineArea, BaselineBuilding, BaselineRoad, OsmId } from './scene';
 
@@ -331,6 +333,15 @@ export interface BuildOptions {
   origin: LatLon;
   /** Local-metre polygons. A feature is kept when its centroid falls inside one. */
   clip: Poly[];
+  /**
+   * The satellite-derived cache from `scripts/fetch-buildings.py`: footprints OSM
+   * lacks, and observed heights for every building including OSM's. Optional, and
+   * without it the baseline is OSM alone — which is what a fresh scene gets before
+   * anyone runs `npm run fetch:buildings`.
+   */
+  buildings?: BuildingsCache | null;
+  /** Derived from `buildings` by buildBaseline; callers of the lower-level functions may pass their own. */
+  observed?: ReadonlyMap<string, ObservedHeight>;
 }
 
 export interface Skipped {
@@ -341,6 +352,10 @@ export interface Skipped {
 
 export interface BuildStats {
   heightSources: Record<HeightSource['from'], number>;
+  /** Where each building's footprint came from: osm, google, microsoft. */
+  sources: Record<string, number>;
+  /** External footprints dropped because an OSM building already stood there. */
+  duplicates: number;
   /** Building kinds only. Water and green are counted separately — conflating them
    *  makes the building total in the report disagree with the building count. */
   kinds: Record<string, number>;
@@ -356,7 +371,9 @@ function noneSkipped(): Skipped {
 
 export function emptyStats(): BuildStats {
   return {
-    heightSources: { height: 0, levels: 0, synth: 0 },
+    heightSources: { height: 0, levels: 0, observed: 0, synth: 0 },
+    sources: {},
+    duplicates: 0,
     kinds: {},
     areaKinds: {},
     skipped: { buildings: noneSkipped(), roads: noneSkipped(), areas: noneSkipped() },
@@ -379,7 +396,7 @@ function ringId(base: OsmId, index: number, total: number): OsmId {
 
 export function buildingsFromElements(
   elements: OverpassElement[],
-  { origin, clip }: BuildOptions,
+  { origin, clip, observed }: BuildOptions,
   stats: BuildStats = emptyStats(),
 ): BaselineBuilding[] {
   const buildings: BaselineBuilding[] = [];
@@ -424,9 +441,15 @@ export function buildingsFromElements(
       const holes = projectedInner.filter((hole) => pointInRing(centroid(hole), footprint));
 
       const id = ringId(base, index, outer.length);
-      const { height, from } = resolveHeight(el.tags!, { id, areaM2: area, kind });
+      const { height, from } = resolveHeight(el.tags!, {
+        id,
+        areaM2: area,
+        kind,
+        observed: observed?.get(id),
+      });
 
       stats.heightSources[from] += 1;
+      stats.sources.osm = (stats.sources.osm ?? 0) + 1;
       stats.kinds[kind] = (stats.kinds[kind] ?? 0) + 1;
       stats.holes += holes.length;
 
@@ -533,7 +556,15 @@ export function buildBaseline(
 ): BuildResult {
   const stats = emptyStats();
 
-  const buildings = buildingsFromElements(elements, options, stats);
+  // Observed heights apply to OSM buildings too — that is most of what the cache
+  // is for, since the raster knows Rim Ping Condominium is 65 m and OSM does not.
+  const observed = options.buildings ? observedHeights(options.buildings) : undefined;
+  const withObserved = { ...options, observed };
+
+  const buildings = buildingsFromElements(elements, withObserved, stats);
+  if (options.buildings) {
+    buildings.push(...externalBuildings(options.buildings, withObserved, buildings, stats));
+  }
   const roads = roadsFromElements(elements, options, stats);
   const water = areasFromElements(elements, 'water', options, stats);
   const green = areasFromElements(elements, 'green', options, stats);
