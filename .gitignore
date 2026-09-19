@@ -77,6 +77,12 @@ __pycache__/
 # build or run time.
 /data/geonames/
 
+# Satellite-derived building caches — the Overture parquet, the 2.5D height raster
+# window and the merged buildings JSON that scripts/fetch-buildings.py writes.
+# Regenerable, ~100 MB, and read only by scripts/fetch-osm.ts, which folds them
+# into the committed scene document. Same rule as the Overpass cache below.
+/data/buildings-cache/
+
 # Raw Overpass / OSM responses — regenerable and large.
 # The GENERATED scene document is committed: the exhibition must not depend on Overpass
 # being up (docs/architecture.md), and the editor's output is committed too (roadmap item 4).
