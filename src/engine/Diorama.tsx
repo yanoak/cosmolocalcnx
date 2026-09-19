@@ -10,6 +10,7 @@ import { isometricFit, type Bounds } from './camera';
 import { DebugOverlay } from './DebugOverlay';
 import { Ground, GroundAreas } from './Ground';
 import { ReliefBackdrop, type ReliefSource } from './ReliefBackdrop';
+import { BridgeMesh } from './BridgeMesh';
 import { RELIEF_HOLD_OUT } from './relief';
 import { RegionPlane } from './RegionPlane';
 import { easeInOutCubic, tweenZoom } from './tween';
@@ -532,6 +533,7 @@ export function Diorama({
               {relief && <ReliefBackdrop source={relief} scene={bounds} />}
               <Ground bounds={bounds} roads={roads} />
               <GroundAreas water={water} green={green} />
+              <BridgeMesh roads={roads} water={water} />
               <Buildings
                 buildings={buildings}
                 selectedId={selectedId}

@@ -390,7 +390,8 @@ async function main(): Promise<number> {
   );
   console.log(
     `  roads     ${baseline.roads.length.toLocaleString('en')} ` +
-      `(${stats.skipped.roads.outsideClip} outside clip)`,
+      `(${stats.skipped.roads.outsideClip} outside clip), ` +
+      `${baseline.roads.filter((r) => r.bridge).length} bridges`,
   );
   console.log(`  water     ${baseline.water.length}`);
   console.log(`  green     ${baseline.green.length}`);

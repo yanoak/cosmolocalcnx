@@ -8,6 +8,7 @@ import {
   checkBudget,
   clipAreaKm2,
   estimateTriangles,
+  isBridge,
   kindForTags,
   osmId,
   projectRing,
@@ -391,6 +392,30 @@ describe('clipAreaKm2', () => {
   it('subtracts holes and is winding-independent', () => {
     const reversed: Poly[] = [[[...CLIP[0][0]].reverse()]];
     expect(clipAreaKm2(reversed)).toBeCloseTo(1);
+  });
+});
+
+describe('isBridge', () => {
+  it('is true for any bridge value except an explicit no', () => {
+    expect(isBridge({ bridge: 'yes' })).toBe(true);
+    expect(isBridge({ bridge: 'trestle' })).toBe(true);
+    expect(isBridge({ bridge: 'no' })).toBe(false);
+    expect(isBridge({})).toBe(false);
+  });
+
+  it('is carried onto the road, absent rather than false', () => {
+    const way = (id: number, tags: Record<string, string>): OverpassElement => ({
+      type: 'way',
+      id,
+      tags,
+      geometry: [at(-50, 0), at(50, 0)],
+    });
+    const roads = roadsFromElements(
+      [way(1, { highway: 'secondary', bridge: 'yes' }), way(2, { highway: 'secondary' })],
+      { origin: ORIGIN, clip: CLIP },
+    );
+    expect(roads.find((r) => r.id === 'osm/way/1')?.bridge).toBe(true);
+    expect('bridge' in roads.find((r) => r.id === 'osm/way/2')!).toBe(false);
   });
 });
 

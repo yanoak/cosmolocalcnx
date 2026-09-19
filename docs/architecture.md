@@ -595,6 +595,15 @@ That is where the distinctiveness comes from, it is just code so it iterates at 
 generators *travel to the next neighbourhood* while hand-placed buildings do not. Same logic applies
 to Blender Python scripts for batch normalization and LOD generation.
 
+**The first Tier 2 generator is the bridge** (19 Sep 2026). Roads live in the ground texture and
+water is painted over them, so every Ping crossing vanished at the bank. `src/engine/bridges.ts`
+reads the roads that carry OSM's `bridge` flag, keeps those that a 5 m sample finds over water,
+and builds a deck at road width raised by class (7.5 m for a major road, 4.5 m for a footbridge),
+a ramp to ground beyond each abutment, low parapets, and piers at a class spacing wherever the
+span is over water. 48 bridges, ~3,600 triangles, one unlit mesh, nothing placed by hand — and
+the same code builds the next city's bridges. Flyovers over roads are deliberately not built:
+a viaduct with nothing under it is a different generator. See `plans/2026-09-19_bridges.plan.md`.
+
 ### Tier 3 is free real estate
 
 Image generation is far more mature than 3D generation, and **because the camera is fixed

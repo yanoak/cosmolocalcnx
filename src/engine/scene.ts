@@ -37,6 +37,12 @@ export interface BaselineRoad {
   kind: string;
   /** Carriageway width in metres, for the stroke. */
   width: number;
+  /**
+   * OSM `bridge=*`, anything but `no`. The road still draws on the ground; the
+   * bridge generator (bridges.ts) reads this and builds a deck where it crosses
+   * water. Absent rather than false, to keep the document small.
+   */
+  bridge?: true;
 }
 
 /** Water and green: flat polygons on the ground plane. */

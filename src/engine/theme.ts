@@ -249,6 +249,17 @@ export const POPULATION_RAMP_OUTSIDE = POPULATION_RAMP.map((stop) =>
 ) as readonly Hex[];
 
 /**
+ * Bridge parts. The deck is the major-road tone pulled darker so it reads as a
+ * structure rather than more tarmac; parapets are the light neutral; piers the
+ * cool grey of concrete in the brand's neutral range. See bridges.ts.
+ */
+export const BRIDGE_TONES = {
+  deck: ramp(shiftLightness(PALETTE_EXTENDED['cosmo.slate'], +0.22, -0.05)),
+  parapet: ramp(PALETTE_EXTENDED['cosmo.softGray']),
+  pier: ramp(PALETTE_EXTENDED['cosmo.coolGray']),
+} as const satisfies Record<string, Ramp>;
+
+/**
  * The relief backdrop's hypsometric ramp: plain → foothills → summits.
  *
  * The plain is barely off the ground token so the diorama's own ground still reads

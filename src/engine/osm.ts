@@ -228,6 +228,12 @@ const ROAD_CLASSES: Record<string, { kind: string; width: number }> = {
   cycleway: { kind: 'path', width: 2 },
 };
 
+/** `bridge=yes|viaduct|trestle|covered|…` — anything OSM uses except an explicit no. */
+export function isBridge(tags: Record<string, string> = {}): boolean {
+  const bridge = tags.bridge ?? '';
+  return bridge !== '' && bridge !== 'no';
+}
+
 export function roadClass(tags: Record<string, string> = {}): { kind: string; width: number } | null {
   const highway = tags.highway ?? '';
   // Links inherit their parent class at a narrower width.
@@ -486,7 +492,9 @@ export function roadsFromElements(
       continue;
     }
 
-    roads.push({ id: osmId(el), path, kind: cls.kind, width: cls.width });
+    const road: BaselineRoad = { id: osmId(el), path, kind: cls.kind, width: cls.width };
+    if (isBridge(el.tags)) road.bridge = true;
+    roads.push(road);
   }
 
   return roads;
