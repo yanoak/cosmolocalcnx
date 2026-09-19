@@ -9,6 +9,8 @@ import { Buildings } from './Buildings';
 import { isometricFit, type Bounds } from './camera';
 import { DebugOverlay } from './DebugOverlay';
 import { Ground, GroundAreas } from './Ground';
+import { ReliefBackdrop, type ReliefSource } from './ReliefBackdrop';
+import { RELIEF_HOLD_OUT } from './relief';
 import { RegionPlane } from './RegionPlane';
 import { easeInOutCubic, tweenZoom } from './tween';
 import {
@@ -339,6 +341,7 @@ export function Diorama({
   debug,
   wireframe,
   region,
+  relief = null,
   heroIds,
   openAt = 'district',
   goTo = null,
@@ -357,6 +360,8 @@ export function Diorama({
   debug: boolean;
   wireframe: boolean;
   region?: RegionSource | null;
+  /** The land around the district, flattened under it. Never under the buildings. */
+  relief?: ReliefSource | null;
   heroIds?: ReadonlySet<string>;
   /** Where the rail starts on mount. The on-ramp opens at the circle. */
   openAt?: RegisterId;
@@ -411,8 +416,8 @@ export function Diorama({
   );
 
   const ladder = useMemo(
-    () => zoomLadder(fit.zoom, { hasRegion: !!region }),
-    [fit.zoom, region],
+    () => zoomLadder(fit.zoom, { hasRegion: !!region, backdropOut: relief ? RELIEF_HOLD_OUT : undefined }),
+    [fit.zoom, region, relief],
   );
 
   /** The scene origin's place on the circle, in stage units. North flips to -Z. */
@@ -439,7 +444,10 @@ export function Diorama({
 
   const camera = useMemo(() => {
     const staged = stageFit(bounds, outerRadiusKm * k, fit);
-    const ladderForOpen = zoomLadder(fit.zoom, { hasRegion: !!region });
+    const ladderForOpen = zoomLadder(fit.zoom, {
+      hasRegion: !!region,
+      backdropOut: relief ? RELIEF_HOLD_OUT : undefined,
+    });
     return {
       position: staged.position,
       zoom:
@@ -447,7 +455,7 @@ export function Diorama({
       near: staged.near,
       far: staged.far,
     };
-  }, [bounds, outerRadiusKm, k, fit, region]);
+  }, [bounds, outerRadiusKm, k, fit, region, relief]);
 
   const heroes = heroIds ?? EMPTY_HEROES;
 
@@ -521,6 +529,7 @@ export function Diorama({
               two cancel exactly, which is why today's framing is untouched. */}
           <group ref={districtGroup}>
             <group position={[-districtCentre[0], 0, -districtCentre[1]]}>
+              {relief && <ReliefBackdrop source={relief} scene={bounds} />}
               <Ground bounds={bounds} roads={roads} />
               <GroundAreas water={water} green={green} />
               <Buildings

@@ -197,25 +197,37 @@ OSM has no Wat Ket polygon — no admin relation, no place polygon, nothing. The
 out once by `scripts/extract-boundary.py` and committed as a single 174-point polygon. The 377 MB
 source archive is not committed; nothing at build or run time reads it.
 
-**The tambon is not the scene.** It is 6.85 km² — above the hard limit below — and it is an
-administrative unit rather than a neighbourhood, running 3 km south of the origin past anything a
-resident would call Wat Ket. So `scripts/fetch-osm.ts` intersects it with a rectangular working
-extent, and *that* is what lands in the document's `boundary`. The extent is the editorial lever
-and it is one constant in one file; the tambon polygon beside it stays authoritative and untouched.
+**The tambon is not the scene.** It is 6.85 km² and an administrative unit rather than a
+neighbourhood, running 3 km south of the origin past anything a resident would call Wat Ket. The
+scene is a rectangular working extent in `scripts/fetch-osm.ts`, and *that* is what lands in the
+document's `boundary`. The extent is the editorial lever and it is one constant in one file; the
+tambon polygon beside it stays committed and untouched as the boundary credit.
 
-Chosen 12 Sep 2026: 1.50 × 2.70 km, 2.98 km², 1,182 OSM buildings. With the satellite-derived
-footprints added on 19 Sep 2026 the same clip holds 4,056.
+Chosen 12 Sep 2026: 1.50 × 2.70 km intersected with the tambon, 2.98 km², 1,182 OSM buildings;
+4,056 once the satellite-derived footprints landed on 19 Sep 2026.
+
+**Extended 19 Sep 2026: 5.80 × 8.10 km, 47 km², the rectangle alone.** The original rectangle
+grown by its own size in every direction and then pushed west to take in the whole moated old
+city, crossing the Ping. `--clip tambon` restores the intersection. The cost was measured before
+deciding and is in `plans/2026-09-19_extended-extent.plan.md`: 68,704 buildings and ~1M
+triangles, ten times the phone budget below, an 18.8 MB document. It was chosen with those numbers
+in hand, for the installation surfaces; see "Limits" for what that means.
 
 ### Limits
 
-- Warn above ~1 km², hard-reject above ~4 km², and cap building count. Overpass will time out or
-  return something unrenderable long before any real limit. **The import enforces both and refuses
-  to write** rather than leaving it to be discovered in the browser.
+- Warn above ~1 km², hard-reject above ~4 km², and cap building count. These are the **phone
+  budget**: what a visitor's own device over the QR code will load. The import computes them on
+  every run. In `phone` mode it refuses to write; since 19 Sep 2026 Wat Ket is in `installation`
+  mode, where the same limits print as "OVER PHONE BUDGET" and the document is written anyway.
+  The numbers never move — renaming the budget to fit the scene is how a constraint stops being
+  one — so every run says how far over the phone budget the scene is. Getting the phone surface
+  back means level-of-detail work, not a bigger number.
 - **An extruded footprint is far cheaper than a mesh.** Measured 12 Sep 2026: about **4v − 4
   triangles for v ring vertices**, which is ~17 per real OSM building — not the 50–100 a mesh
   costs. The 1,182 OSM buildings came to ~22k triangles; with the satellite-derived footprints
-  the 4,056 buildings come to ~61k, against a ~100k baseline ceiling. Geometry is still not the
-  constraint on how big the boundary can be; area and legibility are. Do not shrink the scene to
+  the 4,056 in the same clip came to ~61k, against the ~100k phone ceiling. The tripled extent is
+  a different regime — see the plan for its count — and it is everything merged into two draw
+  calls that makes it renderable at all on the installation machine. Do not shrink the scene to
   save triangles without measuring first.
 - **Six attributions, all required to be visible**, and all in the viewer's footer: "©
   OpenStreetMap contributors" for ODbL, Overture with Google and Microsoft for the satellite-derived
@@ -277,14 +289,29 @@ cheap Android, because the realistic failure on a low-end phone is load time and
 throttling rather than WebGL support — and that distinction decides whether a second renderer is
 ever worth building. See *Device reach* in `docs/roadmap.md`.
 
-### Skip elevation entirely
+### Relief is a backdrop, terrain stays null
 
-Wat Ket is flat river plain and SRTM is 30 m resolution. Implementing terrain would cost two days on
-tile fetching, heightmap sampling and draping buildings onto a surface, and produce something
-visually indistinguishable from a flat plane with stair-stepping artefacts.
+**Nothing in the baseline ever sits on a sampled surface.** `terrain` is `null` in the scene
+document, `validateScene` asserts it, and that is permanent: Wat Ket is river plain flat to
+±10 m, the DEMs are 30 m, and draping buildings onto a sampled surface costs days and produces
+stair-steps indistinguishable from flat. `src/scenes/*.elevation.json` is flood-reference data
+the renderer never reads.
 
-`terrain` stays in the schema. Never build it. If ground relief is wanted visually, fake it with a
-subtle noise displacement on the ground plane.
+**Since 19 Sep 2026 the land *around* the scene is drawn.** Chiang Mai is a valley city — Doi
+Suthep and Doi Pui rise 1,370 m within 10 km of the old city — and a scene of it with nothing
+around it is a scene of somewhere else. `scripts/fetch-relief.py` distils the Copernicus 30 m DEM
+under a 48 × 48 km box about the origin into a committed 256-cell field (`*.relief.png` plus a
+sidecar, both byte-identical on re-run), and `src/engine/ReliefBackdrop.tsx` draws it as one unlit,
+vertex-coloured mesh in the district's own frame. `reliefHeights` in `relief.ts` flattens it
+under the scene rectangle at draw time, a hair below the ground plane, with a 600 m feather
+beyond the edge; so the diorama sits on its plain and the mountains rise beyond it, and the
+rectangle can move without refetching the DEM. It lives in the district group and collapses with
+the district in the handover, so it needs no register of its own.
+
+The document names it as `relief`, a sibling of `region`, **not** as `terrain`. Two names for two
+things: one is the ground the city stands on (never sampled), the other is the country the city
+stands in (sampled, coarse, decorative). Keeping them apart is what keeps "buildings are never
+draped" a checkable invariant rather than a memory.
 
 ## Responsive across three surfaces
 

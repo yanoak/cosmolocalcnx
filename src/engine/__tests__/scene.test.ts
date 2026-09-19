@@ -80,6 +80,27 @@ describe('validateScene', () => {
   });
 });
 
+describe('the relief backdrop', () => {
+  it('is optional, and null is fine', () => {
+    expect(validateScene(minimal())).toEqual([]);
+    expect(validateScene({ ...minimal(), relief: null })).toEqual([]);
+  });
+
+  it('needs both paths when present', () => {
+    expect(
+      validateScene({ ...minimal(), relief: { field: 'wat-ket.relief.png', meta: 'wat-ket.relief.json' } }),
+    ).toEqual([]);
+    expect(validateScene({ ...minimal(), relief: { field: '', meta: 'x' } })).toHaveLength(1);
+    expect(validateScene({ ...minimal(), relief: { field: 'x' } as never })).toHaveLength(1);
+  });
+
+  it('does not loosen the terrain rule', () => {
+    expect(validateScene({ ...minimal(), terrain: {} as never })).toContainEqual(
+      expect.stringContaining('terrain must be null'),
+    );
+  });
+});
+
 describe('the region register', () => {
   const VALERIEPIERIS = {
     projection: { kind: 'aeqd' as const, centre: [21.0, 100.29] as [number, number], radiusKm: 3437 },

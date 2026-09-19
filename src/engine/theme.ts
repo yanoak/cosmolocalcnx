@@ -248,6 +248,21 @@ export const POPULATION_RAMP_OUTSIDE = POPULATION_RAMP.map((stop) =>
   mix(stop, GROUND.ground, 0.55),
 ) as readonly Hex[];
 
+/**
+ * The relief backdrop's hypsometric ramp: plain → foothills → summits.
+ *
+ * The plain is barely off the ground token so the diorama's own ground still reads
+ * as the surface it sits on. The climb goes through the park green into the civic
+ * teal and out at the deep violet, which keeps the mountains in the brand rather
+ * than reaching for a satellite-image brown. See relief.ts.
+ */
+export const RELIEF_RAMP = [
+  shiftLightness(PALETTE['cosmo.white'], -0.04, +0.02),
+  GROUND.green,
+  PALETTE_EXTENDED['cosmo.teal'],
+  PALETTE_EXTENDED['cosmo.deepViolet'],
+] as const satisfies readonly Hex[];
+
 /** Linear interpolation along a ramp. `t` outside [0,1] clamps to an end stop. */
 export function sampleRamp(stops: readonly string[], t: number): [number, number, number] {
   if (stops.length === 0) return [0, 0, 0];

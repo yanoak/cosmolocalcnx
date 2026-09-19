@@ -9,6 +9,7 @@ import {
   smoothstep,
   stageFit,
   stockTint,
+  REGISTER_BANDS,
   tToZoom,
   worldMinZoom,
   zoomLadder,
@@ -201,6 +202,48 @@ describe('registerState', () => {
       const districtFit = isometricFit(WAT_KET, LAPTOP).zoom;
       expect(plain.region).toBeCloseTo(districtFit * 0.5, 12);
     });
+  });
+});
+
+describe('a scene with a relief backdrop', () => {
+  const districtFit = isometricFit(WAT_KET, LAPTOP).zoom;
+  const plain = zoomLadder(districtFit, { hasRegion: true });
+  const held = zoomLadder(districtFit, { hasRegion: true, backdropOut: 3 });
+
+  it('holds the district at full size until the camera is backdropOut times further out', () => {
+    const z = districtFit / 2.5;
+    expect(registerState(z, held).collapse).toBe(0);
+    expect(registerState(z, plain).collapse).toBeGreaterThan(0);
+    expect(registerState(z, held).active).toBe('district');
+    expect(registerState(z, held).railed).toBe(false);
+  });
+
+  it('still collapses fully by the region anchor, monotonically', () => {
+    expect(registerState(held.region, held).collapse).toBe(1);
+    let last = -1;
+    for (let i = 0; i <= 200; i++) {
+      const z = tToZoom(i / 200, held);
+      const c = registerState(z, held).collapse;
+      if (i > 0) expect(c).toBeLessThanOrEqual(last + 1e-9);
+      last = c;
+    }
+  });
+
+  it('leaves the anchors and the block half untouched', () => {
+    expect(held.region).toBe(plain.region);
+    expect(held.district).toBe(plain.district);
+    expect(held.block).toBe(plain.block);
+    expect(zoomToT(districtFit, held)).toBe(0.5);
+  });
+
+  it('never holds past the region hold band, whatever backdropOut is', () => {
+    const extreme = zoomLadder(districtFit, { hasRegion: true, backdropOut: 1000 });
+    expect(extreme.holdFrom).toBeGreaterThan(0.04);
+    expect(extreme.hold! - extreme.holdFrom!).toBeCloseTo(
+      REGISTER_BANDS.districtHold - REGISTER_BANDS.regionHold,
+    );
+    expect(zoomLadder(districtFit, { hasRegion: false, backdropOut: 3 }).hold).toBeUndefined();
+    expect(zoomLadder(districtFit, { hasRegion: true, backdropOut: 1 }).hold).toBeUndefined();
   });
 });
 

@@ -83,6 +83,10 @@ __pycache__/
 # into the committed scene document. Same rule as the Overpass cache below.
 /data/buildings-cache/
 
+# Copernicus DEM window — the source for the relief backdrop. scripts/fetch-relief.py
+# distils it to one committed PNG plus a sidecar; nothing reads the window itself.
+/data/relief-cache/
+
 # Raw Overpass / OSM responses — regenerable and large.
 # The GENERATED scene document is committed: the exhibition must not depend on Overpass
 # being up (docs/architecture.md), and the editor's output is committed too (roadmap item 4).

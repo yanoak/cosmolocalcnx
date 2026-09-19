@@ -108,6 +108,24 @@ export interface SceneDocument {
    * gets before anyone runs `npm run build:region`, and it has to keep working.
    */
   region?: RegionRef | null;
+  /**
+   * The relief backdrop — the land AROUND the district, flattened under it.
+   *
+   * OPTIONAL, and deliberately NOT `terrain`. `terrain` is reserved for the thing
+   * this is not: a surface the baseline sits on. Relief is a sibling of `region`,
+   * a committed field beside the document that the renderer draws around the
+   * scene rectangle and never under it. Keeping the two names apart is what keeps
+   * "buildings are never draped" a checkable invariant. See relief.ts.
+   */
+  relief?: ReliefRef | null;
+}
+
+/** A pointer to a committed relief field, relative to `src/scenes/`. */
+export interface ReliefRef {
+  /** Two-channel PNG of metres above the geoid. */
+  field: string;
+  /** Sidecar JSON: grid, encoding, base level, source. */
+  meta: string;
 }
 
 /**
@@ -226,6 +244,13 @@ export function validateScene(doc: SceneDocument): string[] {
             `from the circle centre, outside its own ${Math.round(radiusKm).toLocaleString()} km circle`,
         );
       }
+    }
+  }
+
+  if (doc.relief) {
+    const { field, meta } = doc.relief;
+    if (typeof field !== 'string' || field === '' || typeof meta !== 'string' || meta === '') {
+      errors.push('relief: needs both a field and a meta path, or null');
     }
   }
 

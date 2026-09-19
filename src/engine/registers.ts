@@ -107,6 +107,16 @@ export interface ZoomLadder {
   district: number;
   block: number;
   hasRegion: boolean;
+  /**
+   * The rail position at which the handover begins, replacing BANDS.districtHold.
+   * Set when the scene has a relief backdrop: the district is held at full size
+   * for the first few doublings out so the mountains around it get a stretch of
+   * zoom where they sit large in frame, rather than the district shrinking onto
+   * the circle the moment the visitor pulls back.
+   */
+  hold?: number;
+  /** Where that handover ends, replacing BANDS.regionHold. Same width as the default band. */
+  holdFrom?: number;
 }
 
 export interface RegisterState {
@@ -151,20 +161,34 @@ export function smoothstep(edge0: number, edge1: number, v: number): number {
  */
 export function zoomLadder(
   districtFit: number,
-  opts: { regionOut?: number; blockIn?: number; hasRegion?: boolean } = {},
+  opts: { regionOut?: number; blockIn?: number; hasRegion?: boolean; backdropOut?: number } = {},
 ): ZoomLadder {
   const {
     regionOut = DEFAULT_REGION_OUT,
     blockIn = DEFAULT_BLOCK_IN,
     hasRegion = true,
+    backdropOut,
   } = opts;
 
-  return {
+  const ladder: ZoomLadder = {
     region: districtFit / (hasRegion ? regionOut : 2),
     district: districtFit,
     block: districtFit * blockIn,
     hasRegion,
   };
+
+  // Hold the district until the camera is `backdropOut` times further out than
+  // the district fit. Expressed on the rail so registerState stays one number in.
+  if (hasRegion && backdropOut && backdropOut > 1) {
+    const width = BANDS.districtHold - BANDS.regionHold;
+    const t = 0.5 * (1 - Math.log(Math.min(backdropOut, regionOut)) / Math.log(regionOut));
+    // The band keeps its width and slides down the rail, never below a floor that
+    // leaves the region a stretch of its own before the anchor.
+    ladder.hold = Math.max(width + 0.05, Math.min(BANDS.districtHold, t));
+    ladder.holdFrom = ladder.hold - width;
+  }
+
+  return ladder;
 }
 
 /**
@@ -205,7 +229,7 @@ export function registerState(zoom: number, ladder: ZoomLadder): RegisterState {
   const t = zoomToT(zoom, ladder);
 
   const collapse = ladder.hasRegion
-    ? 1 - smoothstep(BANDS.regionHold, BANDS.districtHold, t)
+    ? 1 - smoothstep(ladder.holdFrom ?? BANDS.regionHold, ladder.hold ?? BANDS.districtHold, t)
     : 0;
 
   const regionOpacity = ladder.hasRegion

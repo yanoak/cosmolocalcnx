@@ -67,6 +67,14 @@ Consequences: touch is the primary input and hover is decoration; the perf budge
 `docs/architecture.md` is a requirement, not an optimisation; the laptop/projection machine runs
 a local static export so a venue wifi failure cannot take the installation down.
 
+**The phone surface is knowingly over budget since 19 Sep 2026.** The scene was extended to
+5.8 × 8.1 km across the river, taking in the whole old city: 68,704 buildings and ~1M triangles,
+ten times the phone ceiling, by decision with the numbers in hand. About 7 s to first frame on
+the laptop from the static export. `scripts/fetch-osm.ts` runs in `installation` budget mode and prints
+how far over it is on every run. Getting phones back is level-of-detail work (cull, simplify or
+chunk the far buildings), not a bigger budget number. See
+`plans/2026-09-19_extended-extent.plan.md`.
+
 ## Stack (decided — do not relitigate)
 
 - **Next.js App Router + TypeScript**, deployed on **Vercel**. Public URL matters because of the QR.
@@ -89,8 +97,12 @@ If you ever find yourself building a second renderer for the editor, stop — th
 
 Do not build these before 24 Sep, however reasonable they sound in isolation:
 
-- **No elevation / terrain.** Wat Ket is flat river plain and SRTM is 30 m resolution. Leave
-  `terrain` in the schema; never implement it.
+- **No elevation under the city.** Wat Ket is flat river plain and the DEMs are 30 m. Leave
+  `terrain` in the schema; never implement it. **The land *around* the scene is a different
+  thing and is drawn since 19 Sep 2026** — `relief`, a coarse Copernicus DEM backdrop that
+  `ReliefBackdrop.tsx` flattens under the scene rectangle, so the mountains rise around the flat city
+  when you zoom out. See "Relief is a backdrop, terrain stays null" in `docs/architecture.md`
+  and `plans/2026-09-19_relief-backdrop.plan.md`.
 - **No free-roam avatar.** Walk-around characters fail at public exhibitions — people get lost, the
   camera clips into geometry, and WASD is meaningless on a phone. This is a fixed isometric diorama
   you inspect, not a world you traverse. If a character is wanted later: click-to-move, fixed camera.
@@ -152,12 +164,12 @@ Solo development with LLMs, over three months. The failure mode is architectural
   people's names would defeat the purpose. Without it the hook still catches private links but
   warns that it cannot catch names; ask Yan for a copy. `--no-verify` bypasses it, which should be
   rare enough to feel wrong.
-- **Eight licensed things, not one** — code MIT, OSM-derived `baseline` data ODbL,
+- **Nine licensed things, not one** — code MIT, OSM-derived `baseline` data ODbL,
   satellite-derived footprints ODbL via Overture (crediting Google and Microsoft), observed
-  building heights CC BY 4.0 (Google Open Buildings 2.5D Temporal), authored 2045 content
-  CC BY-SA 4.0, the HDX tambon boundary CC BY-IGO, the GHS-POP population field CC BY 4.0, and
-  GeoNames city names CC BY 4.0. **Six of them require visible credit** and all six live in
-  the viewer's footer. See the table in the README. The root `LICENSE` file stays pure MIT so GitHub
+  building heights CC BY 4.0 (Google Open Buildings 2.5D Temporal), the Copernicus DEM relief
+  (free with its fixed notice), authored 2045 content CC BY-SA 4.0, the HDX tambon boundary
+  CC BY-IGO, the GHS-POP population field CC BY 4.0, and GeoNames city names CC BY 4.0.
+  **Seven of them require visible credit** and all seven live in the viewer's footer. See the table in the README. The root `LICENSE` file stays pure MIT so GitHub
   detects it; the split is stated in the README. Never commit an asset that cannot be
   redistributed — fetch it with a script instead.
 - **Assets live in the repo, not Git LFS.** The optimised `.glb`/`.gltf` and their textures are
@@ -177,7 +189,7 @@ Solo development with LLMs, over three months. The failure mode is architectural
   message; check the link patterns separately first. **Do not write the offending name into any
   committed file**, including this one, or every future commit that touches it is blocked too.
 
-- **Regenerating data is `npm run fetch:buildings`, `npm run fetch:osm`,
+- **Regenerating data is `npm run fetch:buildings`, `npm run fetch:osm`, `npm run fetch:relief`,
   `npm run fetch:elevation` and `npm run build:region`.** None is needed to run the app. A re-run
   against the same cached source must produce a **byte-identical** output — if it does not, the
   height synthesis, the raster sampling or the population scatter has stopped being
@@ -188,6 +200,10 @@ Solo development with LLMs, over three months. The failure mode is architectural
   height raster; `src/engine/satellite.ts` merges them. OSM buildings keep `osm/way/…` ids, the
   rest are `overture/<id>`. Height chain: tag → observed → synthesis. See
   `plans/2026-09-19_satellite-footprints.plan.md`.
+- **The scene is the rectangle, not the tambon, since 19 Sep 2026.** `--clip tambon` restores the
+  intersection; the tambon polygon stays committed as the boundary credit. Changing the extent is
+  three commands: `fetch:osm --refresh --osm-only --extent …`, `fetch:buildings --refresh`,
+  `fetch:osm`.
 - Update this file when a decision is made, so the next session inherits it. The diary is the trail;
   this file and `docs/` are the source of truth.
 

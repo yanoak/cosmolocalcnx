@@ -10,6 +10,7 @@ import { SelectPanel, type Selection } from '@/engine/SelectPanel';
 import { step } from '@/engine/ordering';
 import { sceneBoundsMetres, validateScene, type SceneDocument } from '@/engine/scene';
 import { REGION_ASSETS } from '@/scenes/regions';
+import { RELIEF_ASSETS } from '@/scenes/relief';
 import scene from '@/scenes/wat-ket.json';
 
 const DOC = scene as unknown as SceneDocument;
@@ -34,6 +35,17 @@ const REGION = (() => {
     labels: pickLabels(asset.cities.cities, asset.meta.projection.radiusKm),
     world: asset.world,
   };
+})();
+
+/**
+ * The relief backdrop, resolved the same way. Absent is a valid state: a scene with
+ * no relief field is a diorama on a bare page, which is what every scene was until
+ * 19 Sep 2026. See ReliefRef in scene.ts.
+ */
+const RELIEF = (() => {
+  const ref = DOC.relief;
+  const asset = ref ? RELIEF_ASSETS[ref.field] : undefined;
+  return asset ? { url: asset.url, meta: asset.meta } : null;
 })();
 
 /**
@@ -257,6 +269,7 @@ export default function Page() {
               debug={debug}
               wireframe={wireframe}
               region={REGION}
+              relief={RELIEF}
               heroIds={HERO_IDS}
               openAt={hasRegion ? 'region' : 'district'}
               goTo={goTo}
@@ -317,7 +330,10 @@ export default function Page() {
         <a href="https://sites.research.google/gr/open-buildings/temporal/">
           Google Open Buildings 2.5D Temporal
         </a>
-        , CC BY 4.0. District boundary from{' '}
+        , CC BY 4.0. Relief from the{' '}
+        <a href="https://registry.opendata.aws/copernicus-dem/">Copernicus DEM</a>: © DLR e.V.
+        2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the
+        European Union and ESA; all rights reserved. District boundary from{' '}
         <a href="https://data.humdata.org/dataset/cod-ab-tha">
           OCHA Thailand administrative boundaries
         </a>
