@@ -1,18 +1,29 @@
 #!/usr/bin/env -S npx tsx
 /**
- * Generate `baseline` in src/scenes/wat-ket.json from OpenStreetMap.
+ * Generate `baseline` in src/scenes/wat-ket.json from OpenStreetMap plus the
+ * satellite-derived buildings cache.
  *
  *   npm run fetch:osm                        # uses the cached Overpass response
  *   npm run fetch:osm -- --refresh           # re-queries Overpass
+ *   npm run fetch:osm -- --osm-only          # ignore the buildings cache
  *   npm run fetch:osm -- --extent -500,-900,700,750   # try a different clip
  *
- * The scene document is committed and the Overpass cache is not: the exhibition
- * must not depend on a third-party API being up. Re-running this with the same
- * cache must produce a BYTE-IDENTICAL document — that is the property the whole
- * pipeline rests on, and it is what the plan's verification checks.
+ * Two caches feed this, both gitignored: the Overpass response, fetched here, and
+ * `data/buildings-cache/wat-ket.buildings.json`, written by
+ * `npm run fetch:buildings` (Overture footprints and observed heights — see
+ * scripts/fetch-buildings.py). The scene document is committed and the caches are
+ * not: the exhibition must not depend on a third-party API being up. Re-running
+ * this with the same caches must produce a BYTE-IDENTICAL document — that is the
+ * property the whole pipeline rests on, and it is what the plan's verification
+ * checks.
  *
- * Everything numeric lives in src/engine/{clip,osm,synth}.ts and is unit-tested.
- * This file is the part that cannot be: argument parsing, the network, and I/O.
+ * Changing the extent is a three-step dance, because the buildings cache is cut
+ * from the committed boundary: `--osm-only --extent …` writes the new boundary,
+ * then `fetch:buildings`, then a plain `fetch:osm`.
+ *
+ * Everything numeric lives in src/engine/{clip,osm,satellite,synth}.ts and is
+ * unit-tested. This file is the part that cannot be: argument parsing, the
+ * network, and I/O.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -25,6 +36,7 @@ import { buildBaseline, checkBudget, clipAreaKm2 } from '../src/engine/osm';
 import type { OverpassResponse } from '../src/engine/osm';
 import { localMetresToLatLon, projectToLocalMetres } from '../src/engine/project';
 import type { LatLon } from '../src/engine/project';
+import type { BuildingsCache } from '../src/engine/satellite';
 import { validateScene } from '../src/engine/scene';
 import type { SceneDocument } from '../src/engine/scene';
 
@@ -32,6 +44,7 @@ const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SCENE = join(REPO, 'src/scenes/wat-ket.json');
 const BOUNDARY = join(REPO, 'src/scenes/wat-ket.boundary.geojson');
 const CACHE = join(REPO, 'data/osm-cache/wat-ket.overpass.json');
+const BUILDINGS_CACHE = join(REPO, 'data/buildings-cache/wat-ket.buildings.json');
 
 /**
  * The scene's working extent, in local metres around `origin`.
@@ -75,6 +88,7 @@ function arg(name: string): string | undefined {
 }
 
 const refresh = process.argv.includes('--refresh');
+const osmOnly = process.argv.includes('--osm-only');
 const extentArg = arg('extent');
 const extent = extentArg
   ? (() => {
@@ -274,22 +288,68 @@ async function main(): Promise<number> {
     writeFileSync(CACHE, JSON.stringify({ _bbox: bbox, elements: response.elements }));
   }
 
+  // ------------------------------------------------------- buildings cache
+
+  let buildings: BuildingsCache | null = null;
+  if (osmOnly) {
+    console.log(`  satellite --osm-only: baseline buildings come from OSM alone`);
+  } else {
+    if (!existsSync(BUILDINGS_CACHE)) {
+      console.error(
+        `\nerror: ${relative(REPO, BUILDINGS_CACHE)} is missing.\n` +
+          `  Run \`npm run fetch:buildings\` first, or pass --osm-only for an OSM-only baseline.`,
+      );
+      return 1;
+    }
+    buildings = JSON.parse(readFileSync(BUILDINGS_CACHE, 'utf8')) as BuildingsCache;
+    // A micro-degree of slack (~0.1 m): the cache stores its bbox to seven decimals
+    // and an exact comparison rejects a cache that was cut from this very boundary.
+    const EPS = 1e-6;
+    const had = buildings._bbox ?? [];
+    const coversLonLat =
+      had.length === 4 &&
+      had[0] <= wLon + EPS &&
+      had[1] <= sLat + EPS &&
+      had[2] >= eLon - EPS &&
+      had[3] >= nLat - EPS;
+    if (!coversLonLat) {
+      console.error(
+        `\nerror: the buildings cache does not cover this extent.\n` +
+          `  Write the new boundary with --osm-only first, then \`npm run fetch:buildings\`, ` +
+          `then re-run.`,
+      );
+      return 1;
+    }
+    console.log(
+      `  satellite ${relative(REPO, BUILDINGS_CACHE)} — ` +
+        `${buildings.buildings.length.toLocaleString('en')} footprints, ` +
+        `Overture ${buildings.overture_release}, heights ${buildings.height_year}`,
+    );
+  }
+
   // ------------------------------------------------------------- transform
 
-  const { baseline, stats, triangles } = buildBaseline(response.elements, { origin, clip });
+  const { baseline, stats, triangles } = buildBaseline(response.elements, {
+    origin,
+    clip,
+    buildings,
+  });
 
+  const n = Math.max(1, baseline.buildings.length);
+  const pct = (count: number) => `${((count / n) * 100).toFixed(0)}%`;
   console.log(`\n  buildings ${baseline.buildings.length.toLocaleString('en')}`);
+  console.log(`    sources   ${table(stats.sources)}, ${stats.duplicates} duplicates dropped`);
   console.log(`    kinds     ${table(stats.kinds)}`);
   console.log(
     `    height    tagged ${stats.heightSources.height}, ` +
       `levels ${stats.heightSources.levels}, ` +
-      `synthesised ${stats.heightSources.synth} ` +
-      `(${((stats.heightSources.synth / Math.max(1, baseline.buildings.length)) * 100).toFixed(0)}%)`,
+      `observed ${stats.heightSources.observed} (${pct(stats.heightSources.observed)}), ` +
+      `synthesised ${stats.heightSources.synth} (${pct(stats.heightSources.synth)})`,
   );
   console.log(
     `    skipped   ${stats.skipped.buildings.outsideClip} outside clip, ` +
       `${stats.skipped.buildings.noGeometry} without geometry, ` +
-      `${stats.skipped.buildings.degenerate} degenerate`,
+      `${stats.skipped.buildings.degenerate} degenerate or too small`,
   );
   console.log(
     `    detail    ${stats.multipolygons} multipolygon relations, ${stats.holes} courtyards`,
