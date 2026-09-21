@@ -61,35 +61,64 @@ function useReliefField(url: string, meta: ReliefMeta) {
   return field;
 }
 
+/**
+ * How many of the field's cells to skip when building the mesh.
+ *
+ * The committed field is 256 x 256, which is 130,050 triangles — and once the far city
+ * became a raster on 21 Sep 2026 that made the RELIEF the largest single object in the
+ * scene, bigger than every building in Wat Ket put together. Measured on the static
+ * export: 255,330 triangles total, against a budget of 100-150k.
+ *
+ * At 2 this is 32,258 triangles, a 98k saving for cells of 375 m instead of 187.5 m
+ * across a backdrop that spans 48 km and is only ever seen from district-fit outwards.
+ * The field itself is untouched — this is a draw-time decision, like the flattening
+ * under the scene rectangle, so raising it needs no refetch of the DEM.
+ */
+const RELIEF_STRIDE = 2;
+
 /** Build the mesh: positions from the grid, heights from the field, colours from both. */
-export function reliefGeometry(field: Float32Array, meta: ReliefMeta, scene: Bounds): THREE.BufferGeometry {
+export function reliefGeometry(
+  field: Float32Array,
+  meta: ReliefMeta,
+  scene: Bounds,
+  stride: number = RELIEF_STRIDE,
+): THREE.BufferGeometry {
   const { size } = meta.grid;
   const heights = reliefHeights(field, meta, scene);
 
-  const positions = new Float32Array(size * size * 3);
-  for (let i = 0; i < size; i++) {
-    for (let j = 0; j < size; j++) {
-      const k = i * size + j;
+  // Vertices per side after decimating. The last one snaps to the field's edge so the
+  // backdrop keeps its full extent rather than losing a cell off the north and east.
+  const side = Math.floor((size - 1) / stride) + 1;
+  const rowOf = (a: number) => (a === side - 1 ? size - 1 : a * stride);
+
+  const positions = new Float32Array(side * side * 3);
+  const sampled = new Float32Array(side * side);
+  for (let a = 0; a < side; a++) {
+    for (let b = 0; b < side; b++) {
+      const i = rowOf(a);
+      const j = rowOf(b);
+      const k = a * side + b;
       const [x, north] = reliefVertexAt(meta, i, j);
       // Scene x/y are east/north; three.js has north as -Z and height as +Y.
       positions[k * 3] = x;
-      positions[k * 3 + 1] = heights[k];
+      positions[k * 3 + 1] = heights[i * size + j];
       positions[k * 3 + 2] = -north;
+      sampled[k] = heights[i * size + j];
     }
   }
 
-  const quads = (size - 1) * (size - 1);
+  const quads = (side - 1) * (side - 1);
   const index = new Uint32Array(quads * 6);
   let n = 0;
-  for (let i = 0; i < size - 1; i++) {
-    for (let j = 0; j < size - 1; j++) {
-      const a = i * size + j;
-      const b = a + 1;
-      const c = a + size;
-      const d = c + 1;
+  for (let a = 0; a < side - 1; a++) {
+    for (let b = 0; b < side - 1; b++) {
+      const p = a * side + b;
+      const q = p + 1;
+      const r = p + side;
+      const t = r + 1;
       // Counter-clockwise seen from above (+Y), so the top face is the front face.
-      index[n++] = a; index[n++] = c; index[n++] = b;
-      index[n++] = b; index[n++] = c; index[n++] = d;
+      index[n++] = p; index[n++] = r; index[n++] = q;
+      index[n++] = q; index[n++] = r; index[n++] = t;
     }
   }
 
@@ -99,9 +128,9 @@ export function reliefGeometry(field: Float32Array, meta: ReliefMeta, scene: Bou
   geometry.computeVertexNormals();
 
   const normals = geometry.getAttribute('normal') as THREE.BufferAttribute;
-  const colours = new Float32Array(size * size * 3);
-  for (let k = 0; k < size * size; k++) {
-    const [r, g, b] = reliefColour(heights[k]);
+  const colours = new Float32Array(side * side * 3);
+  for (let k = 0; k < side * side; k++) {
+    const [r, g, b] = reliefColour(sampled[k]);
     const shade = reliefShade(normals.getY(k));
     colours[k * 3] = (r / 255) * shade;
     colours[k * 3 + 1] = (g / 255) * shade;
