@@ -58,8 +58,20 @@ const SCENES = join(REPO, 'src', 'scenes');
 
 /** Defaults chosen in the plan: 1,250 m lands the near set at 112k triangles. */
 const DEFAULT_RADIUS_M = 1250;
-/** Crisp at district fit on every one of the three delivery surfaces. */
-const DEFAULT_WIDTH_PX = 4096;
+/**
+ * Chosen by GPU memory, not by disk.
+ *
+ * The committed PNG is tiny either way — 126 KB at this width, 386 KB at 4096 — but the
+ * browser expands an 8-bit greyscale texture to RGBA on upload, so the cost that counts
+ * is 4 bytes per pixel of VRAM: 19 MB for both slices here against 77 MB at 4096. The
+ * phone is the binding surface and 77 MB is not a thing to hand a cheap Android.
+ *
+ * Crispness this buys: the whole extent is 1,076 px wide at district fit on a phone and
+ * 2,650 px on the laptop, so this is comfortable at district fit and softens as the
+ * visitor zooms in — which is what the pan clamp is for. A projector build can raise it
+ * with `--width` whenever the projector is in the room to judge it on.
+ */
+const DEFAULT_WIDTH_PX = 2048;
 
 interface Args {
   scene: string;

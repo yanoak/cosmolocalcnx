@@ -159,8 +159,8 @@ Estimated: ~1.3 MB of near buildings plus trimmed roads, well under 500 KB gzipp
 
 ### Pan clamping, and what the block register is for
 
-At 4,096 px across the extent the backdrop is crisp at district fit on every surface and roughly
-13× under-resolved at block fit. Rather than chase that with resolution, **the pan limit tightens
+At 2,048 px across the extent the backdrop is comfortable at district fit and roughly 25× under-
+resolved at block fit. Rather than chase that with resolution, **the pan limit tightens
 as the camera zooms in**, so block scale is reachable only over the near disc.
 
 This is an honest reading of the register rather than a workaround: the block register is "a
@@ -321,8 +321,12 @@ One behavioural change, and it applies equally to keyboard, wheel and touch:
 - [ ] Should the two scenarios share one backdrop? They almost certainly should — the 2045 edits
       are interventions in Wat Ket, which is the near set — but if any scenario edits something
       beyond 1,250 m, that scenario needs its own raster and the generator must take a scenario id.
-- [ ] Is 4,096 px the right backdrop width, or does the projector's district fit want more? The
-      projector is the surface with the most pixels and the least tolerance for softness.
+- [x] **Answered: 2,048 px, and the deciding number is VRAM rather than disk.** The committed PNG
+      is small either way (126 KB against 386 KB), but the browser expands an 8-bit greyscale
+      texture to RGBA on upload, so both slices cost 19 MB of VRAM at 2,048 and 77 MB at 4,096.
+      The phone is the binding surface. Looked at the 2,048 render through the real palette first:
+      individual buildings, roof and wall tones and the disc edge all still read. The projector can
+      have its own build via `--width` when there is a projector in the room to judge it on.
 
 ## Outcome
 

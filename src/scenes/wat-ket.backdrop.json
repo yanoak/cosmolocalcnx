@@ -19,10 +19,10 @@
     "building.civic:side",
     "building.civic:shade"
   ],
-  "scalePx": 0.41632003998029277,
+  "scalePx": 0.20816001999014638,
   "size": {
-    "width": 4096,
-    "height": 2360
+    "width": 2048,
+    "height": 1180
   },
   "near": {
     "centreM": [
