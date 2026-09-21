@@ -169,8 +169,8 @@ describe('viewDepth', () => {
     expect(viewDepth([500, 500])).toBeCloseTo(0, 9);
   });
 
-  it('is metres — a point 100 m south-east of another is 100 m nearer', () => {
-    // Moving by (+d, -d) is moving straight at the camera in the ground plane.
+  it("is metres along the camera's ground track", () => {
+    // Moving by (+d, -d) is moving straight at the camera's ground track.
     const d = 100 * Math.SQRT1_2;
     expect(viewDepth([d, -d]) - viewDepth([0, 0])).toBeCloseTo(100, 9);
   });

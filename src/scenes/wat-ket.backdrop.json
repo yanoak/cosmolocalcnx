@@ -1,0 +1,61 @@
+{
+  "palette": [
+    "empty",
+    "ground.base",
+    "ground.green",
+    "water",
+    "road.major",
+    "road.secondary",
+    "road.street",
+    "road.service",
+    "road.path",
+    "building.stock:top",
+    "building.stock:side",
+    "building.stock:shade",
+    "building.intervention:top",
+    "building.intervention:side",
+    "building.intervention:shade",
+    "building.civic:top",
+    "building.civic:side",
+    "building.civic:shade"
+  ],
+  "scalePx": 0.41632003998029277,
+  "size": {
+    "width": 4096,
+    "height": 2360
+  },
+  "near": {
+    "centreM": [
+      0,
+      0
+    ],
+    "radiusM": 1250,
+    "buildings": 7588
+  },
+  "slices": [
+    {
+      "slice": "behind",
+      "field": "wat-ket.backdrop.behind.png",
+      "rectM": [
+        -5380.792691049341,
+        -2771.8099330702075,
+        4457.792067430916,
+        2895.909248405412
+      ],
+      "depthM": -1266.4029402723863,
+      "buildings": 43556
+    },
+    {
+      "slice": "front",
+      "field": "wat-ket.backdrop.front.png",
+      "rectM": [
+        -5380.792691049341,
+        -2771.8099330702075,
+        4457.792067430916,
+        2895.909248405412
+      ],
+      "depthM": 1259.635928376431,
+      "buildings": 17560
+    }
+  ]
+}

@@ -13,7 +13,8 @@
     "fetch:buildings": "python3 scripts/fetch-buildings.py",
     "fetch:elevation": "tsx scripts/fetch-elevation.ts",
     "fetch:relief": "python3 scripts/fetch-relief.py",
-    "build:region": "python3 scripts/build-region.py"
+    "build:region": "python3 scripts/build-region.py",
+    "render:backdrop": "tsx scripts/render-backdrop.ts"
   },
   "devDependencies": {
     "@types/node": "22.20.2",
