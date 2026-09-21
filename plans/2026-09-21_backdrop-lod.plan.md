@@ -112,19 +112,30 @@ that pipeline and takes the level-of-detail win as its first customer.**
 
 ### The generator
 
-`scripts/render-backdrop.py` — Python, matching the existing raster generators (`build-region.py`,
-`fetch-relief.py`, `fetch-buildings.py`) and using Pillow's deterministic non-antialiased polygon
-fill. Painter's algorithm over the far set: sort by view depth, project each footprint through the
-fixed isometric transform, fill the roof and the two visible wall tones.
+`scripts/render-backdrop.ts`. Painter's algorithm over the far set: sort by view depth, project
+each footprint through the fixed isometric transform, fill the two camera-facing wall tones and
+the roof.
 
-**It writes tone indices, not colours.** One byte per pixel — the kind and the face tone — exactly
-as `wat-ket.relief.png` stores metres and lets `theme.ts` own the hypsometric ramp. The palette
-stays in `theme.ts`, so a brand change re-tints the backdrop without regenerating it. The 16 Sep
-palette swap is the precedent: a baked RGB backdrop would have silently kept the 1967 PROGRESS
-colours. It also compresses far better — an indexed PNG of ~15 distinct values against a
-full-colour render.
+**Planned as Python, written in TypeScript.** Python was the obvious choice — `build-region.py`,
+`fetch-relief.py` and `fetch-buildings.py` are all Python, and they write committed rasters. But
+those read GeoTIFFs and want numpy, whereas this one needs the partition in `lod.ts`, the tone rule
+in `shading.ts` and the palette in `theme.ts`. Mirroring three engine modules in another language
+is exactly the drift this plan spends its Context section arguing against, so the language followed
+the dependencies rather than the file it sits next to.
 
-Far roads, water and green go into the same raster, so those drop out of the viewer payload too.
+The PNG is still written by hand, for the reason the top of `build-region.py` gives: an image
+library's output varies by version, which would quietly destroy byte-identity.
+
+**It writes tone indices, not colours.** Greyscale 8-bit, so the byte `getImageData` hands back IS
+the index — exactly as `wat-ket.relief.png` stores metres and lets `theme.ts` own the hypsometric
+ramp. The palette stays in `theme.ts`, so a brand change re-tints the backdrop without regenerating
+it. The 16 Sep palette swap is the precedent: a baked RGB backdrop would have silently kept the
+1967 PROGRESS colours while every other surface moved.
+
+**Only buildings go in.** Roads are already a canvas texture and cost no triangles; water and green
+are a few hundred flat polygons. Every one of the 997k triangles is a building, so buildings are
+all the backdrop needs to take — and the ground plane keeps drawing the far roads underneath,
+showing through wherever the raster is index 0.
 
 ### Depth slices, so the near disc is not wrongly in front
 
