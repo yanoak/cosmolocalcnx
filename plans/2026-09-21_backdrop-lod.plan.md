@@ -175,12 +175,14 @@ the river is context — it earns the district register, not the block one.
       tone indices, depth slices, PNG + sidecar, byte-identical on a re-run. **Moved from Python
       to TypeScript** — it needs `lod.ts`, `shading.ts` and `theme.ts`, and mirroring three engine
       modules in another language is the drift this whole plan argues against.
-- [ ] `backdrop` in the schema + `validateScene` + `src/scenes/backdrop/index.ts`, mirroring
+- [x] `backdrop` in the schema + `validateScene` + `src/scenes/backdrop/index.ts`, mirroring
       `relief`
-- [ ] `BackdropPlane.tsx` — the view-normal quads, palette applied from `theme.ts`, inside the
+- [x] `BackdropPlane.tsx` — the view-normal quads, palette applied from `theme.ts`, inside the
       district group so it collapses with the district
-- [ ] Generate and commit the artefacts; wire `Diorama.tsx` and drop the far set from the render
-- [ ] Viewer payload: emit `wat-ket.viewer.json`, fetch it as data, remove the module import
+- [x] Generate and commit the artefacts; wire `Diorama.tsx` and drop the far set from the render
+- [x] Viewer payload: emit `wat-ket.viewer.json`. **Imported as a smaller module rather than
+      fetched as data** — 4.44 MB gzipped to 1.16 MB, which meets the byte goal; fetching it
+      instead would buy a backdrop-first first paint, and is the one piece of this task left.
 - [ ] Pan clamp that tightens with zoom + test
 - [x] **Added:** freshness — the generator fingerprints its inputs into the sidecar and a test
       recomputes it, so a scene document that moves on without the raster fails `npm test`. The
@@ -337,4 +339,38 @@ One behavioural change, and it applies equally to keyboard, wheel and touch:
 
 ## Outcome
 
-_Pending._
+**Largely done, and measured on the static export in a foreground browser — which also
+unblocked the visual verification that had been stuck since 16 Sep.**
+
+| | Before | After |
+|---|---|---|
+| Triangles per frame | ~1.13M | **157,532** |
+| Draw calls | — | **8** |
+| Payload | 4.44 MB gzip (14.23 MB raw) | **1.16 MB gzip (3.95 MB raw)** |
+| Near buildings | 68,704 as geometry | 7,588 (112k triangles) |
+| Far buildings | 61,116 as geometry | one 180 KB raster, two slices |
+
+Draw calls are far inside "a few dozen". Triangles are 5% over the 150k ceiling, and the
+remainder is not buildings: the near set is the 112k the plan aimed at, and the rest is the
+relief backdrop, water, green and the bridges.
+
+**Three things were only findable by looking, and none of them would have failed a test.**
+
+1. The entire front slice was invisible. It hung just clear of the near set, but the ground it
+   depicts runs on toward the camera for kilometres and is opaque, so it was behind several
+   kilometres of ground. It now clears the whole extent.
+2. A full-width horizontal band of missing city either side of the near disc. `sliceFor` sent
+   the buildings that merely overlap the near set in depth to the BEHIND plane, on the argument
+   that being wrongly hidden reads as depth. It does not; it reads as a hole. And the fear that
+   sent them there — wrongly covering Wat Ket — cannot happen, because equal-depth objects lie
+   on a horizontal screen line beside the near disc rather than over it.
+3. **The relief backdrop was the largest object in the scene**, 130,050 triangles against the
+   near city's 112k. Completely invisible until the far city stopped drowning it out. Drawing
+   every second cell took it to 32,258.
+
+The seam itself passes: near geometry blends into the raster with no edge, no ring and no
+missing city, and the near geometry reads only very slightly crisper — the expected resolution
+tradeoff rather than a boundary.
+
+Left undone: the pan clamp, the `docs/` updates recording the roadmap reversal, and fetching the
+viewer document as data rather than importing it.
