@@ -114,11 +114,11 @@ state per view, and a switch.
 ## Tasks
 
 - [x] `fetch-relief.py --field` so two relief fields can coexist
-- [ ] Fetch and commit the 120 km valley field
-- [ ] `views.ts` + test — the view enum, per-view camera state, and the switch. Replaces the rail
+- [x] Fetch and commit the 120 km valley field — 512 grid, 234 m cells, 226–2,565 m, byte-identical on a re-run. **Needed `--refresh`**: the first run silently reused the city backdrop's narrower cached DEM and topped out at Doi Suthep's 1,676 m. A test now asserts the peak is above 2,000 m.
+- [x] `views.ts` + test — the view enum, per-view camera state, and the switch. Replaces the rail
       half of `registers.ts`
-- [ ] `ValleyView.tsx` — the topographic mesh, its own camera fit, Wat Ket marked
-- [ ] Rewire `Diorama.tsx` and `page.tsx` to the three-view model; delete the crossfade machinery
+- [x] `ValleyView.tsx` — the topographic mesh, its own camera fit, Wat Ket marked
+- [x] Rewire `Diorama.tsx` and `page.tsx` to the three-view model; delete the crossfade machinery
 - [ ] The Ping across the valley — `fetch:valley-water`, committed
 - [ ] Neighbouring town labels from GeoNames
 - [ ] Docs: the reversal in `docs/architecture.md` ("Registers"), `docs/roadmap.md` item 8, and the
@@ -254,4 +254,28 @@ CITY — today's diorama, unchanged:
 
 ## Outcome
 
-_Pending._
+**The three views are live and each is its own world.** Measured per view in a foreground browser:
+
+| View | Triangles | Draw calls |
+|---|---|---|
+| The circle | 68 | 3 |
+| The valley | 130,052 | 2 |
+| Wat Ket | 157,532 | 8 |
+
+The circle used to carry the whole district with it through the handover, so the worst case is
+now one view rather than two plus a backdrop. The valley reads unmistakably as the Chiang Mai
+basin — a flat corridor running north to south between two ranges, the western massif in the
+ramp's top colours, the city outlined as a patch about 5% of the frame.
+
+Most of the change was deletion, as predicted: `RegisterDriver`, `ZoomTween`, the crossfade, the
+district's collapse onto the circle and `worldMinZoom` all left the render path, and nothing
+replaced them except a view gate and a camera cut.
+
+**Two things broke, both from removing the driver, and both were found by looking rather than by
+a test.** `RegionPlane`'s materials start at `opacity={0}` because the crossfade used to fade them
+in — with the driver gone the circle rendered as a blank canvas. And `ViewCut` moved the camera
+to a fixed reach, past near and far planes that had been sized for its original position; the fix
+is to move the controls target and let `MapControls` carry the camera, which preserves them.
+
+Still open, in the order they matter: the Ping across the valley, the neighbouring town labels,
+and the `docs/` updates recording the reversal.
