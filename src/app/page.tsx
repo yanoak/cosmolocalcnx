@@ -143,17 +143,33 @@ export default function Page() {
    * How the valley's topography is drawn. Pinned by `?relief=` so the exhibition
    * machine can be set once and so the three can be compared side by side.
    */
-  const [relief, setRelief] = useState<ValleyStyle>('terraced');
+  const [relief, setRelief] = useState<ValleyStyle>('hillshade');
   const stage = useRef<HTMLDivElement>(null);
 
   const hasRegion = REGION !== null;
   const [view, setView] = useState<ViewId>(resolveView(hasRegion ? 'circle' : 'city', HAS_VIEWS));
   const [era, setEra] = useState<Era>(hasRegion ? 'now' : 'futures');
 
+  /**
+   * `?view=` and `?relief=` — deep links into a view and a topography style.
+   *
+   * Not a debug hatch: the exhibition machine opens on a fixed view, and a QR code that
+   * lands somebody on the valley rather than on the circle is a real thing to want. It
+   * also means a view can be looked at without clicking, which is what made it possible
+   * to compare the relief styles at all.
+   */
+  const [deepLinked, setDeepLinked] = useState(false);
   useEffect(() => {
-    const wanted = new URLSearchParams(window.location.search).get('relief');
-    if (wanted && (VALLEY_STYLES as readonly string[]).includes(wanted)) {
-      setRelief(wanted as ValleyStyle);
+    const params = new URLSearchParams(window.location.search);
+    const style = params.get('relief');
+    if (style && (VALLEY_STYLES as readonly string[]).includes(style)) {
+      setRelief(style as ValleyStyle);
+    }
+    const wanted = params.get('view');
+    if (wanted && (VIEW_ORDER as readonly string[]).includes(wanted)) {
+      setView(resolveView(wanted as ViewId, HAS_VIEWS));
+      setEra('futures');
+      setDeepLinked(true);
     }
   }, []);
 
@@ -168,10 +184,10 @@ export default function Page() {
    * back to 2026 happens only on an idle reset, never by switching view.
    */
   useEffect(() => {
-    if (!hasRegion) return;
+    if (!hasRegion || deepLinked) return;
     const handover = window.setTimeout(() => setView('city'), 2600);
     return () => window.clearTimeout(handover);
-  }, [hasRegion]);
+  }, [hasRegion, deepLinked]);
 
   const onArrive = useCallback(() => {
     // A beat in 2026 before the futures take over, so the present registers as a

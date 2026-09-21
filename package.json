@@ -15,7 +15,8 @@
     "fetch:relief": "python3 scripts/fetch-relief.py",
     "build:region": "python3 scripts/build-region.py",
     "render:backdrop": "tsx scripts/render-backdrop.ts",
-    "fetch:valley": "tsx scripts/fetch-valley.ts"
+    "fetch:valley": "tsx scripts/fetch-valley.ts",
+    "preview:relief": "tsx scripts/preview-relief.ts"
   },
   "devDependencies": {
     "@types/node": "22.20.2",

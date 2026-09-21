@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { decodeRelief, reliefColour, reliefShade, type ReliefMeta } from './relief';
 import { toneForNormal } from './shading';
-import { PALETTE_EXTENDED, ramp, UI_TOKENS } from './theme';
+import { GROUND, PALETTE_EXTENDED, ramp, UI_TOKENS } from './theme';
 import {
   cityPatchExtent,
   hillshade,
@@ -113,7 +113,7 @@ export function surfaceHeights(
 export function valleyGeometry(
   field: Float32Array,
   meta: ReliefMeta,
-  style: ValleyStyle = 'terraced',
+  style: ValleyStyle = 'hillshade',
   stride: number = VALLEY_STRIDE,
 ): THREE.BufferGeometry {
   const { size } = meta.grid;
@@ -216,9 +216,14 @@ export function valleyGeometry(
   geometry.computeVertexNormals();
   const normals = geometry.getAttribute('normal') as THREE.BufferAttribute;
   const colours = new Float32Array(side * side * 3);
-  // One colour for the whole surface: the hillshade style carries form with light, so
-  // any hue that is not the water's or the city's will do. Slate is the brand's neutral.
-  const base = new THREE.Color(PALETTE_EXTENDED['cosmo.slate']);
+  /**
+   * A warm near-white, so the hillshade reads as a plaster relief model.
+   *
+   * This is the same Warm White the city's ground plane uses, which is the point: the
+   * valley and the diorama are then made of the same material at different scales. A
+   * mid-tone base multiplied by a shade only ever goes muddy.
+   */
+  const base = new THREE.Color(GROUND.ground);
 
   for (let k = 0; k < side * side; k++) {
     if (style === 'hillshade') {
@@ -370,7 +375,7 @@ function Towns({
 export function ValleyView({
   source,
   sceneBounds,
-  style = 'terraced',
+  style = 'hillshade',
 }: {
   source: ValleySource;
   sceneBounds: [number, number, number, number];

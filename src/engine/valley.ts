@@ -140,6 +140,21 @@ export type ValleyStyle = 'gradient' | 'terraced' | 'hillshade';
 export const VALLEY_STYLES: readonly ValleyStyle[] = ['gradient', 'terraced', 'hillshade'];
 
 /**
+ * `hillshade`, chosen 21 Sep 2026 by rendering all three and looking at them.
+ *
+ * It reads as a plaster relief model: the basin is obviously a flat floor between two
+ * ranges, and the ridges and side valleys have form without any colour doing the work.
+ *
+ * `gradient` was the original and reads as a stain rather than as ground. `terraced` was
+ * the one the project's own rules argued for — quantised bands, flat faces, three tones
+ * by normal, exactly what the buildings do — and it lost anyway: at 469 m between
+ * vertices a terrace is often one cell wide, so treads and risers alternate per cell and
+ * the mountains come out as confetti. Both are kept, switchable with `?relief=`, because
+ * the argument for terracing is still right and only the resolution is wrong.
+ */
+export const DEFAULT_VALLEY_STYLE: ValleyStyle = 'hillshade';
+
+/**
  * Contour interval for the terraced style, in TRUE metres above the plain.
  *
  * Set by what the mesh can actually draw, not by cartographic convention. At 469 m
@@ -246,8 +261,9 @@ export function hillshade(nx: number, ny: number, nz: number): number {
   const ly = 0.7071;
   const lz = -0.5;
   const dot = (nx / length) * lx + (ny / length) * ly + (nz / length) * lz;
-  // Lifted off the floor so a slope facing away is still readable rather than black.
-  return 0.45 + 0.55 * Math.max(0, dot);
+  // Lifted off the floor so a slope facing away is still readable rather than black,
+  // but with enough range that a ridge reads at a glance.
+  return 0.32 + 0.68 * Math.max(0, dot);
 }
 
 /**

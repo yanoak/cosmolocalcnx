@@ -393,7 +393,7 @@ export function Diorama({
   relief = null,
   backdrop = null,
   valley = null,
-  reliefStyle = 'terraced',
+  reliefStyle = 'hillshade',
   view = 'city',
   heroIds,
   openAt = 'district',
@@ -565,7 +565,10 @@ export function Diorama({
   const [visited, setVisited] = useState<Record<ViewId, boolean>>({
     circle: view === 'circle',
     valley: view === 'valley',
-    city: true,
+    // Not unconditionally true: opening straight onto the valley with `?view=` should
+    // not pay for 7,588 extruded buildings and two backdrop rasters nobody is looking
+    // at. The on-ramp sets this a beat later in the ordinary case.
+    city: view === 'city',
   });
   useEffect(() => {
     setVisited((seen) => (seen[view] ? seen : { ...seen, [view]: true }));
@@ -643,7 +646,7 @@ export function Diorama({
               did at collapse 0 anyway — so today's framing is untouched. */}
           <group
             ref={districtGroup}
-            visible={view === 'city'}
+            visible={view === 'city' && visited.city}
             position={[districtCentre[0], 0, districtCentre[1]]}
           >
             <group position={[-districtCentre[0], 0, -districtCentre[1]]}>
