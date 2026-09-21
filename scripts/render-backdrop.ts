@@ -52,6 +52,7 @@ import {
 } from '../src/engine/lod';
 import { centroid } from '../src/engine/ordering';
 import { toneForNormal } from '../src/engine/shading';
+import { sceneBoundsMetres } from '../src/engine/scene';
 import type { BaselineBuilding, SceneDocument } from '../src/engine/scene';
 import type { Point2 } from '../src/engine/extrude';
 
@@ -346,6 +347,29 @@ function main(): number {
   const scalePx = args.widthPx / (maxX - minX);
   const heightPx = Math.ceil((maxY - minY) * scalePx);
 
+  // How far toward the camera the scene's own ground reaches. The FRONT plane has to
+  // clear this, not merely clear the near set: the ground is opaque and spans the whole
+  // extent, so a plane hung just in front of Wat Ket is still behind several kilometres
+  // of ground nearer the camera, and that ground paints over every building on it.
+  // Found by looking at it — the entire front slice was invisible.
+  const bounds = sceneBoundsMetres(doc);
+  let sceneMaxDepth = -Infinity;
+  for (const b of doc.baseline.buildings) {
+    for (const p of b.footprint) {
+      const d = viewDepth(p);
+      if (d > sceneMaxDepth) sceneMaxDepth = d;
+    }
+  }
+  for (const [x, y] of [
+    [bounds[0], bounds[1]],
+    [bounds[2], bounds[1]],
+    [bounds[0], bounds[3]],
+    [bounds[2], bounds[3]],
+  ]) {
+    const d = viewDepth([x, y]);
+    if (d > sceneMaxDepth) sceneMaxDepth = d;
+  }
+
   const groups: Record<BackdropSlice, BaselineBuilding[]> = { behind: [], front: [] };
   for (const b of far) groups[sliceFor(viewDepth(centroid(b.footprint)), range)].push(b);
 
@@ -379,9 +403,16 @@ function main(): number {
       slice,
       field,
       rectM: [minX, minY, maxX, maxY],
-      // Hang each plane just clear of the near set, so neither ever intersects the
-      // geometry it is standing in for.
-      depthM: slice === 'behind' ? range.min - 1 : range.max + 1,
+      /**
+       * BEHIND hangs just behind the near set: everything it draws is further away, and
+       * the only ground nearer than it that it also covers is a one-metre strip.
+       *
+       * FRONT has to clear the whole scene, not just the near set. It draws buildings
+       * standing on ground that runs on toward the camera for kilometres, and that
+       * ground is opaque — hung at `range.max + 1` the plane is behind all of it and
+       * the slice disappears completely, which is exactly what it did.
+       */
+      depthM: slice === 'behind' ? range.min - 1 : sceneMaxDepth + 10,
       buildings: members.length,
     });
 

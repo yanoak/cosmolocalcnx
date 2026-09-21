@@ -164,13 +164,23 @@ export function nearDepthRange(near: readonly BaselineBuilding[]): DepthRange {
  * everything beyond it, but would also hide the far buildings that sit BETWEEN the
  * camera and Wat Ket, which in a true render would overlap it. Hence two slices.
  *
- * An object that merely overlaps the near set in depth sits laterally beside it and
- * barely overlaps on screen. It goes behind: being wrongly hidden reads as depth, while
- * wrongly covering near geometry reads as a bug.
+ * ONLY what is strictly behind the whole near set goes behind. Everything else goes in
+ * front, including the buildings that merely overlap the near set in depth and sit
+ * laterally beside it.
+ *
+ * That last part was the other way round until it was seen on screen on 21 Sep 2026.
+ * The reasoning for sending them behind was that being wrongly hidden reads as depth
+ * while wrongly covering near geometry reads as a bug. Both halves turned out to be
+ * wrong. They are not hidden subtly: the behind plane hangs behind the near set, the
+ * opaque ground in that depth band is nearer than it, and the result is a clean
+ * horizontal band of missing city running the full width of the stage. And they cannot
+ * wrongly cover Wat Ket, because objects at the same depth lie on a line perpendicular
+ * to the view axis — which is a horizontal line on screen, to the left and right of the
+ * near disc rather than over it.
  */
 export type BackdropSlice = 'behind' | 'front';
 
 export function sliceFor(depth: number, range: DepthRange): BackdropSlice {
   if (range.min > range.max) return 'behind';
-  return depth > range.max ? 'front' : 'behind';
+  return depth >= range.min ? 'front' : 'behind';
 }

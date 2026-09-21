@@ -205,13 +205,22 @@ describe('nearDepthRange and sliceFor', () => {
   });
 
   /**
-   * Laterally beside the disc, overlapping it in depth. Either slice is defensible;
-   * `behind` is chosen because being wrongly hidden reads as depth, while wrongly
-   * covering near geometry reads as a bug.
+   * Laterally beside the disc, overlapping it in depth.
+   *
+   * Goes in FRONT. Sending it behind leaves a horizontal band of missing city — the
+   * behind plane hangs behind the near set and the opaque ground in that depth band is
+   * nearer than it. Seen on screen 21 Sep 2026; see sliceFor.
    */
-  it('puts one that merely overlaps the near set in depth behind it', () => {
+  it('puts one that merely overlaps the near set in depth in front of it', () => {
     const range = nearDepthRange(near);
-    expect(sliceFor(viewDepth([4000, 4000]), range)).toBe('behind');
+    expect(sliceFor(viewDepth([4000, 4000]), range)).toBe('front');
+  });
+
+  it('only sends something strictly behind the whole near set behind it', () => {
+    const range = nearDepthRange(near);
+    // Just inside the near set's own depth span.
+    expect(sliceFor(range.min + 1, range)).toBe('front');
+    expect(sliceFor(range.min - 1, range)).toBe('behind');
   });
 
   it('an empty near set gives a degenerate range, and everything falls behind', () => {
