@@ -1,8 +1,8 @@
 ---
 slug: 2026-09-21_three-views
-status: in-progress
+status: done
 started: 2026-09-21
-finished:
+finished: 2026-09-21
 issue:
 ---
 
@@ -137,8 +137,9 @@ state per view, and a switch.
       `scripts/preview-relief.ts`, an offline rasteriser, because the browser route failed twice
       over: the DevTools debugger makes a 130k-triangle rebuild take tens of seconds, and macOS
       screen capture needs a permission this environment does not have.
-- [ ] Docs: the reversal in `docs/architecture.md` ("Registers"), `docs/roadmap.md` item 8, and the
-      semantic-zoom section of CLAUDE.md
+- [x] Docs: `docs/architecture.md` ("Registers" → "Three views", plus a measured budget and a
+      level-of-detail section), `docs/roadmap.md` items 8 and 9 and the reversed *Device reach*
+      objection, and CLAUDE.md's spine and budget sections
 
 ## UI mockups (ASCII)
 
@@ -270,6 +271,9 @@ CITY — today's diorama, unchanged:
 
 ## Outcome
 
+**Done.** Three discrete views, a populated valley drawn as a hillshade, and the docs brought in
+line so the next session inherits the model the code actually has.
+
 **The three views are live and each is its own world.** Measured per view in a foreground browser:
 
 | View | Triangles | Draw calls |
@@ -293,5 +297,17 @@ in — with the driver gone the circle rendered as a blank canvas. And `ViewCut`
 to a fixed reach, past near and far planes that had been sized for its original position; the fix
 is to move the controls target and let `MapControls` carry the camera, which preserves them.
 
-Still open, in the order they matter: the Ping across the valley, the neighbouring town labels,
-and the `docs/` updates recording the reversal.
+The valley is populated: 387 named waterways from Overpass and seven towns from the GeoNames dump
+`build-region.py` already downloads, so no new data dependency.
+
+**The topography style was chosen by looking, and needed a new tool to look with.**
+`scripts/preview-relief.ts` renders the styles to PNGs offline, running the same pure functions the
+viewer runs. It exists because the browser route failed twice over — the DevTools debugger makes a
+130k-triangle rebuild take tens of seconds, and macOS screen capture needs a permission this
+environment does not have. Three styles rendered in seconds and the choice took one look.
+`hillshade` won: a plaster relief model in the city's own Warm White. `terraced` — the one the
+project's own rules argued for, being exactly what the buildings do — lost on resolution, and both
+stay behind `?relief=`.
+
+Left for later: a fly-down transition between views (deliberately out of scope for the 24th), and
+whether the city should be a patch or a point on the valley.
