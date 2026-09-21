@@ -159,3 +159,18 @@ button[aria-pressed='true'] { background: color-mix(in srgb, var(--ui-focus) 18%
 @media (max-width: 767px) {
   .stage { flex-direction: column; }
 }
+
+/* Town names on the valley view. DOM over the canvas, like every other piece of copy
+   in this project — selectable, scalable, and readable by a screen reader. */
+.valley-town {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ui-text);
+  white-space: nowrap;
+  /* A halo rather than a box, so a label never hides the ridge it sits on. */
+  text-shadow:
+    0 0 3px var(--ui-surface),
+    0 0 6px var(--ui-surface),
+    0 0 9px var(--ui-surface);
+}

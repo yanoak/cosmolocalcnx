@@ -11,6 +11,7 @@ import { DebugOverlay } from './DebugOverlay';
 import { Ground, GroundAreas } from './Ground';
 import { BackdropPlane, type BackdropSource } from './BackdropPlane';
 import { ValleyView, type ValleySource } from './ValleyView';
+import type { ValleyStyle } from './valley';
 import { clampZoom, viewSpec, type ViewId } from './views';
 import { ReliefBackdrop, type ReliefSource } from './ReliefBackdrop';
 import { BridgeMesh } from './BridgeMesh';
@@ -392,6 +393,7 @@ export function Diorama({
   relief = null,
   backdrop = null,
   valley = null,
+  reliefStyle = 'terraced',
   view = 'city',
   heroIds,
   openAt = 'district',
@@ -421,6 +423,8 @@ export function Diorama({
   backdrop?: BackdropSource | null;
   /** The committed 120 km topographic field, or null for a scene without one. */
   valley?: ValleySource | null;
+  /** How the valley draws its topography. See ValleyStyle. */
+  reliefStyle?: ValleyStyle;
   /**
    * Which of the three worlds is on screen.
    *
@@ -551,6 +555,22 @@ export function Diorama({
     [view, fit.target],
   );
 
+  /**
+   * Which views have ever been opened.
+   *
+   * A view builds its geometry the first time it is asked for and keeps it after. The
+   * city is here from the start because it is what the piece is about and what the
+   * on-ramp lands on.
+   */
+  const [visited, setVisited] = useState<Record<ViewId, boolean>>({
+    circle: view === 'circle',
+    valley: view === 'valley',
+    city: true,
+  });
+  useEffect(() => {
+    setVisited((seen) => (seen[view] ? seen : { ...seen, [view]: true }));
+  }, [view]);
+
   const heroes = heroIds ?? EMPTY_HEROES;
 
   return (
@@ -607,9 +627,14 @@ export function Diorama({
             </>
           )}
 
-          {valley && (
+          {/* Built on first visit, then kept. Discrete views mean never paying for a
+              world nobody is looking at — and the valley's mesh is 130k triangles and a
+              quarter-million-cell blur, which on load stalled the page even while the
+              city was the thing on screen. Kept mounted afterwards so going back is
+              instant. */}
+          {valley && visited.valley && (
             <group visible={view === 'valley'}>
-              <ValleyView source={valley} sceneBounds={bounds} />
+              <ValleyView source={valley} sceneBounds={bounds} style={reliefStyle} />
             </group>
           )}
 

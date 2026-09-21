@@ -9,6 +9,7 @@ import { SelectPanel, type Selection } from '@/engine/SelectPanel';
 import { step } from '@/engine/ordering';
 import { sceneBoundsMetres, validateScene, type SceneDocument } from '@/engine/scene';
 import { availableViews, resolveView, VIEW_ORDER, type ViewId } from '@/engine/views';
+import { VALLEY_STYLES, type ValleyStyle } from '@/engine/valley';
 import { BACKDROP_ASSETS } from '@/scenes/backdrop';
 import { VALLEY_ASSETS } from '@/scenes/valley';
 import { REGION_ASSETS } from '@/scenes/regions';
@@ -77,7 +78,7 @@ const BACKDROP = (() => {
 const VALLEY = (() => {
   const ref = DOC.valley;
   const asset = ref ? VALLEY_ASSETS[ref.field] : undefined;
-  return asset ? { url: asset.url, meta: asset.meta } : null;
+  return asset ? { url: asset.url, meta: asset.meta, features: asset.features } : null;
 })();
 
 /**
@@ -138,11 +139,23 @@ export default function Page() {
   const [locale, setLocale] = useState('en');
   const [debug, setDebug] = useState(false);
   const [wireframe, setWireframe] = useState(false);
+  /**
+   * How the valley's topography is drawn. Pinned by `?relief=` so the exhibition
+   * machine can be set once and so the three can be compared side by side.
+   */
+  const [relief, setRelief] = useState<ValleyStyle>('terraced');
   const stage = useRef<HTMLDivElement>(null);
 
   const hasRegion = REGION !== null;
   const [view, setView] = useState<ViewId>(resolveView(hasRegion ? 'circle' : 'city', HAS_VIEWS));
   const [era, setEra] = useState<Era>(hasRegion ? 'now' : 'futures');
+
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('relief');
+    if (wanted && (VALLEY_STYLES as readonly string[]).includes(wanted)) {
+      setRelief(wanted as ValleyStyle);
+    }
+  }, []);
 
   /**
    * The on-ramp, rebuilt for discrete views.
@@ -322,6 +335,7 @@ export default function Page() {
               heroIds={HERO_IDS}
               view={view}
               valley={VALLEY}
+              reliefStyle={relief}
               onArrive={onArrive}
               onPickCell={onPickCell}
               highlight={pickedCell}

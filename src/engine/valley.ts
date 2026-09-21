@@ -59,10 +59,12 @@ export function valleyHeights(
   field: Float32Array,
   meta: ReliefMeta,
   exaggeration: number = VALLEY_EXAGGERATION,
+  smooth = 0,
 ): Float32Array {
-  const out = new Float32Array(field.length);
-  for (let i = 0; i < field.length; i++) {
-    out[i] = (field[i] - meta.base) * exaggeration;
+  const source = smoothField(field, meta.grid.size, smooth);
+  const out = new Float32Array(source.length);
+  for (let i = 0; i < source.length; i++) {
+    out[i] = (source[i] - meta.base) * exaggeration;
   }
   return out;
 }
@@ -123,4 +125,147 @@ export function cityPatchExtent(bounds: [number, number, number, number]): {
     width: Math.abs(east - west),
     depth: Math.abs(north - south),
   };
+}
+
+
+// ---------------------------------------------------------------------------
+// Rendering styles.
+//
+// Added 21 Sep 2026: a hypsometric gradient alone was not enough to read as
+// mountains. Three ways of drawing the same field, chosen by the scene rather than
+// hard-coded, so the choice can be made by looking at all three.
+
+export type ValleyStyle = 'gradient' | 'terraced' | 'hillshade';
+
+export const VALLEY_STYLES: readonly ValleyStyle[] = ['gradient', 'terraced', 'hillshade'];
+
+/**
+ * Contour interval for the terraced style, in TRUE metres above the plain.
+ *
+ * Set by what the mesh can actually draw, not by cartographic convention. At 469 m
+ * between vertices, a band narrower than this leaves most terraces one cell wide — the
+ * tread and the riser then alternate every cell and the mountains read as static rather
+ * than as contours. That is what 100 m looked like, and it was unusable.
+ *
+ * 500 m gives four or five bands from the plain to Doi Inthanon, which is close to what
+ * a laser-cut site model of this valley would have layers of.
+ */
+export const TERRACE_STEP_M = 500;
+
+/**
+ * Cells of box blur applied before anything else is done with the field.
+ *
+ * The Copernicus DEM is a DSM — a SURFACE model — so it includes buildings and tree
+ * canopy, which puts 10-40 m of jitter on every cell. Untouched, that jitter crosses a
+ * contour band at random and terracing turns it into speckle rather than terraces; the
+ * first attempt at the stepped style looked like static and was unusable.
+ *
+ * Five cells is about 1.2 km of smoothing, which is below the width of every ridge in
+ * this basin and far above the canopy that was making the noise. It also widens the
+ * terraces, which is the other half of making them read.
+ */
+export const VALLEY_SMOOTH_CELLS = 5;
+
+/**
+ * Separable box blur, edge-clamped. Cheap, and its only job is to take the canopy off.
+ *
+ * Runs on the FIELD, before heights or bands are derived, so every style sees the same
+ * surface and the gradient style benefits from it too.
+ *
+ * Called ONCE, by `ValleyView`, and memoised there. The height functions below default
+ * to no smoothing on purpose: smoothing inside them meant two full blurs of a quarter
+ * of a million cells per render — enough to wedge the tab — and it quietly coupled pure
+ * arithmetic to `meta.grid.size` matching the field's length, which the unit tests
+ * immediately caught.
+ */
+export function smoothField(
+  field: Float32Array,
+  size: number,
+  radius: number = VALLEY_SMOOTH_CELLS,
+): Float32Array {
+  if (radius < 1 || field.length !== size * size) return field;
+  const clamp = (v: number) => Math.min(size - 1, Math.max(0, v));
+  const pass = (src: Float32Array, horizontal: boolean) => {
+    const out = new Float32Array(src.length);
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        let total = 0;
+        for (let d = -radius; d <= radius; d++) {
+          const a = horizontal ? i : clamp(i + d);
+          const b = horizontal ? clamp(j + d) : j;
+          total += src[a * size + b];
+        }
+        out[i * size + j] = total / (radius * 2 + 1);
+      }
+    }
+    return out;
+  };
+  return pass(pass(field, true), false);
+}
+
+/** Quantise to the contour band below a height. The plain becomes exactly one step. */
+export function terrace(heightAbovePlain: number, step: number = TERRACE_STEP_M): number {
+  return Math.floor(heightAbovePlain / step) * step;
+}
+
+/**
+ * Heights above the plain, stepped into contour bands and then exaggerated.
+ *
+ * Quantising BEFORE exaggerating is what keeps the steps at a real contour interval:
+ * the bands are 100 true metres whatever the exaggeration, so the terraces mean
+ * something a reader could check against a map.
+ */
+export function terracedHeights(
+  field: Float32Array,
+  meta: ReliefMeta,
+  step: number = TERRACE_STEP_M,
+  exaggeration: number = VALLEY_EXAGGERATION,
+  smooth = 0,
+): Float32Array {
+  const source = smoothField(field, meta.grid.size, smooth);
+  const out = new Float32Array(source.length);
+  for (let i = 0; i < source.length; i++) {
+    out[i] = terrace(source[i] - meta.base, step) * exaggeration;
+  }
+  return out;
+}
+
+/**
+ * Directional hillshade, for the style that carries form with light rather than colour.
+ *
+ * North-west at 45 degrees, which is the cartographic convention — and the one people
+ * read as raised rather than sunken. Everything else in this project is unlit and takes
+ * its tone from face orientation; this is the one place a light direction is named, and
+ * it is named because a shaded-relief map is a drawing convention rather than a
+ * simulation.
+ */
+export function hillshade(nx: number, ny: number, nz: number): number {
+  const length = Math.hypot(nx, ny, nz) || 1;
+  // Light from the north-west, well above the horizon. Scene north is -z.
+  const lx = -0.5;
+  const ly = 0.7071;
+  const lz = -0.5;
+  const dot = (nx / length) * lx + (ny / length) * ly + (nz / length) * lz;
+  // Lifted off the floor so a slope facing away is still readable rather than black.
+  return 0.45 + 0.55 * Math.max(0, dot);
+}
+
+/**
+ * Nearest-cell height lookup, for hanging rivers and town markers on the surface.
+ *
+ * Nearest rather than bilinear on purpose: in the terraced style a river interpolated
+ * across a step would float above one terrace and sink into the next, and nearest keeps
+ * it on whichever terrace it is actually crossing.
+ */
+export function sampleHeight(
+  heights: Float32Array,
+  meta: ReliefMeta,
+  [x, y]: Point2,
+): number {
+  const { size, cellM } = meta.grid;
+  const [west, , , north] = meta.grid.bboxM;
+  const j = Math.round((x - west) / cellM - 0.5);
+  const i = Math.round((north - y) / cellM - 0.5);
+  if (i < 0 || j < 0 || i >= size || j >= size) return 0;
+  return heights[i * size + j];
 }
