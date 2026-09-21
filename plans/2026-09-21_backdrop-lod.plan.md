@@ -182,6 +182,11 @@ the river is context — it earns the district register, not the block one.
 - [ ] Generate and commit the artefacts; wire `Diorama.tsx` and drop the far set from the render
 - [ ] Viewer payload: emit `wat-ket.viewer.json`, fetch it as data, remove the module import
 - [ ] Pan clamp that tightens with zoom + test
+- [x] **Added:** freshness — the generator fingerprints its inputs into the sidecar and a test
+      recomputes it, so a scene document that moves on without the raster fails `npm test`. The
+      alternative considered was rendering during `next build`; committing the artefact keeps the
+      exhibition off the critical path of a build step, for the same reason the generated scene
+      document is committed and the Overpass cache is not.
 - [ ] Docs: the budget table in `docs/architecture.md`, the reversal note in `docs/roadmap.md`
       under *Device reach*, and CLAUDE.md's "knowingly over budget" paragraph
 
@@ -294,6 +299,8 @@ One behavioural change, and it applies equally to keyboard, wheel and touch:
    zoom in — it recentres rather than magnifying the raster.
 8. **`prefers-reduced-motion: reduce`** — unchanged, every tween still a jump cut.
 9. `npm test && npm run typecheck`, and `npm run render:backdrop` twice → **byte-identical output**.
+   The freshness test in `backdrop-freshness.test.ts` covers the other direction: a scene document
+   that changed without a re-render fails the suite.
 10. **On a real phone over the QR URL** — the device test roadmap item 1 has been waiting for. Load
     time on mobile data, frame rate at each register, and whether it throttles. This is the number
     that has been speculation since 12 Sep.
