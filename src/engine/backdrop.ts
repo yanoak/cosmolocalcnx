@@ -15,6 +15,7 @@
  */
 
 import type { Point2 } from './extrude';
+import type { BaselineBuilding } from './scene';
 import type { Tone } from './shading';
 import { GROUND, ROAD_TONES, SURFACE_ROLES, roleForKind } from './theme';
 
@@ -163,6 +164,22 @@ export interface BackdropSliceMeta {
 export interface BackdropMeta {
   /** Index to token. Written out so a reader needs no build of this module. */
   palette: readonly string[];
+  /**
+   * What this raster was rendered FROM.
+   *
+   * The whole argument for a pre-rendered backdrop is that it is derived rather than
+   * authored, and `docs/roadmap.md` rejected pre-rendered raster precisely because a
+   * hand-maintained image drifts from the document. Derived only stays true if
+   * something re-derives it — and a committed artefact can go stale the moment
+   * `npm run fetch:osm` rewrites the scene document.
+   *
+   * So the generator records a fingerprint of its inputs and `backdrop.test.ts`
+   * recomputes it from the committed document. A stale backdrop fails `npm test`,
+   * which is the same guarantee rendering at build time would give, at the cost of a
+   * few milliseconds instead of six seconds on the deploy path — and it fails where
+   * someone can fix it rather than in front of a deploy.
+   */
+  source: { fingerprint: string; buildings: number };
   /** Pixels per screen metre. The same for every slice. */
   scalePx: number;
   size: { width: number; height: number };
@@ -189,4 +206,81 @@ export function planeRect(slice: BackdropSliceMeta): {
     width: maxX - minX,
     height: maxY - minY,
   };
+}
+
+
+// ---------------------------------------------------------------------------
+// Freshness.
+
+/**
+ * Everything that changes what the generator draws.
+ *
+ * Not the generator's own logic, which no hash of its inputs can cover — this catches
+ * a scene document that moved on without the raster, which is the failure that
+ * actually happens. Re-running the generator is the fix, and it says so in the
+ * assertion message.
+ */
+export interface FingerprintInput {
+  buildings: readonly BaselineBuilding[];
+  heroIds: ReadonlySet<string>;
+  centre: Point2;
+  radiusM: number;
+  widthPx: number;
+}
+
+/**
+ * FNV-1a, two lanes, over a canonical stream of the inputs.
+ *
+ * A checksum, not a cryptographic hash: it exists to notice that 68,704 buildings
+ * changed, not to resist anyone. Two 32-bit lanes rather than one because a single
+ * lane over twelve megabytes is a coin-flip more collision-prone than is comfortable
+ * for something that gates a release.
+ *
+ * Numbers are hashed by their IEEE bytes rather than their decimal text — exact, and
+ * it keeps 400,000 `toString` calls out of the test suite.
+ */
+export function backdropFingerprint(input: FingerprintInput): string {
+  let a = 0x811c9dc5;
+  let b = 0x01000193;
+  const scratch = new DataView(new ArrayBuffer(8));
+
+  const byte = (v: number) => {
+    a = Math.imul(a ^ v, 0x01000193);
+    b = Math.imul(b ^ v, 0x01000105);
+  };
+  const num = (v: number) => {
+    scratch.setFloat64(0, v);
+    for (let i = 0; i < 8; i++) byte(scratch.getUint8(i));
+  };
+  const str = (v: string) => {
+    for (let i = 0; i < v.length; i++) {
+      byte(v.charCodeAt(i) & 0xff);
+      byte(v.charCodeAt(i) >>> 8);
+    }
+    byte(0);
+  };
+
+  // The tone table is part of the format: reordering it repaints every raster.
+  for (const token of BACKDROP_TOKENS) str(token);
+  num(input.centre[0]);
+  num(input.centre[1]);
+  num(input.radiusM);
+  num(input.widthPx);
+
+  // Sorted, because a Set's iteration order is insertion order and the hero set is
+  // built by flattening scenarios — reordering a scenario must not look like a change.
+  for (const id of [...input.heroIds].sort()) str(id);
+
+  for (const building of input.buildings) {
+    str(building.id);
+    str(building.kind);
+    num(building.height);
+    for (const [x, y] of building.footprint) {
+      num(x);
+      num(y);
+    }
+  }
+
+  const hex = (v: number) => (v >>> 0).toString(16).padStart(8, '0');
+  return hex(a) + hex(b);
 }

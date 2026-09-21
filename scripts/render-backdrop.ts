@@ -36,6 +36,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   BACKDROP_TOKENS,
+  backdropFingerprint,
   buildingToneIndex,
   projectIso,
   type BackdropMeta,
@@ -392,6 +393,16 @@ function main(): number {
 
   const meta: BackdropMeta = {
     palette: [...BACKDROP_TOKENS],
+    source: {
+      fingerprint: backdropFingerprint({
+        buildings: doc.baseline.buildings,
+        heroIds,
+        centre: args.centre,
+        radiusM: args.radiusM,
+        widthPx: args.widthPx,
+      }),
+      buildings: doc.baseline.buildings.length,
+    },
     scalePx,
     size: { width: args.widthPx, height: heightPx },
     near: { centreM: args.centre, radiusM: args.radiusM, buildings: near.length },

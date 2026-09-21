@@ -19,6 +19,10 @@
     "building.civic:side",
     "building.civic:shade"
   ],
+  "source": {
+    "fingerprint": "fb07ce66e6da2c7e",
+    "buildings": 68704
+  },
   "scalePx": 0.20816001999014638,
   "size": {
     "width": 2048,
