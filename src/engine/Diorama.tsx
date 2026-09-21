@@ -9,6 +9,7 @@ import { Buildings } from './Buildings';
 import { isometricFit, type Bounds } from './camera';
 import { DebugOverlay } from './DebugOverlay';
 import { Ground, GroundAreas } from './Ground';
+import { BackdropPlane, type BackdropSource } from './BackdropPlane';
 import { ReliefBackdrop, type ReliefSource } from './ReliefBackdrop';
 import { BridgeMesh } from './BridgeMesh';
 import { RELIEF_HOLD_OUT } from './relief';
@@ -343,6 +344,7 @@ export function Diorama({
   wireframe,
   region,
   relief = null,
+  backdrop = null,
   heroIds,
   openAt = 'district',
   goTo = null,
@@ -363,6 +365,12 @@ export function Diorama({
   region?: RegionSource | null;
   /** The land around the district, flattened under it. Never under the buildings. */
   relief?: ReliefSource | null;
+  /**
+   * The far city, pre-rendered. Null renders every baseline building as geometry,
+   * which is what this did until 21 Sep 2026 and what a scene inside the triangle
+   * budget still does. See BackdropPlane.tsx.
+   */
+  backdrop?: BackdropSource | null;
   heroIds?: ReadonlySet<string>;
   /** Where the rail starts on mount. The on-ramp opens at the circle. */
   openAt?: RegisterId;
@@ -532,6 +540,10 @@ export function Diorama({
             <group position={[-districtCentre[0], 0, -districtCentre[1]]}>
               {relief && <ReliefBackdrop source={relief} scene={bounds} />}
               <Ground bounds={bounds} roads={roads} />
+              {/* After the ground, so the far city stands on it, and before the near
+                  buildings, so three.js sorts the two transparent planes against
+                  geometry that has already written depth. */}
+              {backdrop && <BackdropPlane source={backdrop} />}
               <GroundAreas water={water} green={green} />
               <BridgeMesh roads={roads} water={water} />
               <Buildings

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { backdropFingerprint, type BackdropMeta, type FingerprintInput } from '../backdrop';
+import { partitionBuildings } from '../lod';
 import type { SceneDocument } from '../scene';
 
 /**
@@ -56,6 +57,38 @@ describe('the committed backdrop is not stale', () => {
   it('accounts for every building — near plus both slices is the whole scene', () => {
     const inSlices = meta.slices.reduce((n, s) => n + s.buildings, 0);
     expect(meta.near.buildings + inSlices).toBe(doc.baseline.buildings.length);
+  });
+
+  /**
+   * The viewer document is what `page.tsx` actually imports, and it is derived: the
+   * full scene with the backdrop's buildings removed. If it drifts, the viewer either
+   * draws buildings the raster has already drawn, or leaves a ring of missing city
+   * around the near set — and neither shows up anywhere else in the suite.
+   */
+  it('the viewer document holds exactly the near set', () => {
+    const viewer = read<SceneDocument>('wat-ket.viewer.json');
+    const { near } = partitionBuildings(doc.baseline.buildings, {
+      centre: meta.near.centreM,
+      radiusM: meta.near.radiusM,
+      heroIds,
+    });
+
+    expect(
+      viewer.baseline.buildings.map((b) => b.id),
+      'The viewer document is stale. Run `npm run render:backdrop`.',
+    ).toEqual(near.map((b) => b.id));
+  });
+
+  it('the viewer document keeps the roads whole, because they cost no triangles', () => {
+    const viewer = read<SceneDocument>('wat-ket.viewer.json');
+    expect(viewer.baseline.roads.length).toBe(doc.baseline.roads.length);
+    expect(viewer.baseline.water.length).toBe(doc.baseline.water.length);
+    expect(viewer.baseline.green.length).toBe(doc.baseline.green.length);
+  });
+
+  it('the viewer document still points at the backdrop it was split for', () => {
+    const viewer = read<SceneDocument>('wat-ket.viewer.json');
+    expect(viewer.backdrop?.meta).toBe(doc.backdrop?.meta);
   });
 
   it('keeps the near set inside the triangle budget', () => {

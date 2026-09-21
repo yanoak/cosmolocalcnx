@@ -124,6 +124,33 @@ export interface SceneDocument {
    * "buildings are never draped" a checkable invariant. See relief.ts.
    */
   relief?: ReliefRef | null;
+  /**
+   * The far city, pre-rendered — the level-of-detail split added 21 Sep 2026.
+   *
+   * OPTIONAL, and a scene without one renders every baseline building as geometry,
+   * which is what every scene did until the extent took in the whole old city and
+   * put the phone ten times over budget. Absent is therefore the ORIGINAL
+   * behaviour, not a broken one, and a second neighbourhood small enough to fit the
+   * budget never needs to run the generator.
+   *
+   * Not a third kind of terrain. The raster is a projection of buildings through the
+   * fixed isometric camera, drawn on planes normal to the view direction — nothing
+   * in the baseline sits on it, and `terrain` stays null beside it. See backdrop.ts
+   * and plans/2026-09-21_backdrop-lod.plan.md.
+   */
+  backdrop?: BackdropRef | null;
+}
+
+/**
+ * A pointer to a committed backdrop, relative to `src/scenes/`.
+ *
+ * Only the sidecar, because the sidecar names its own rasters — there are two of
+ * them, one per depth slice, and how many there are is the generator's business
+ * rather than the document's.
+ */
+export interface BackdropRef {
+  /** Sidecar JSON: palette, slices, near split, source fingerprint. */
+  meta: string;
 }
 
 /** A pointer to a committed relief field, relative to `src/scenes/`. */
@@ -257,6 +284,13 @@ export function validateScene(doc: SceneDocument): string[] {
     const { field, meta } = doc.relief;
     if (typeof field !== 'string' || field === '' || typeof meta !== 'string' || meta === '') {
       errors.push('relief: needs both a field and a meta path, or null');
+    }
+  }
+
+  if (doc.backdrop) {
+    const { meta } = doc.backdrop;
+    if (typeof meta !== 'string' || meta === '') {
+      errors.push('backdrop: needs a meta path, or null');
     }
   }
 

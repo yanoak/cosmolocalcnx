@@ -33,7 +33,8 @@
 
 import { deflateSync } from 'node:zlib';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
+import { format } from './scene-format';
 import {
   BACKDROP_TOKENS,
   backdropFingerprint,
@@ -410,6 +411,52 @@ function main(): number {
   };
   const metaPath = join(SCENES, `${args.scene}.backdrop.json`);
   writeFileSync(metaPath, JSON.stringify(meta, null, 2) + '\n');
+
+  // Point the document at what was just written, the way it points at its relief and
+  // its region field. `fetch-osm.ts` spreads the existing document when it rewrites
+  // the baseline, so this survives a re-import — and it is written through the shared
+  // formatter so the 68,704-building file keeps its one-line footprints.
+  const ref = { meta: `${args.scene}.backdrop.json` };
+  const withRef: SceneDocument = { ...doc, backdrop: ref };
+  if (JSON.stringify(doc.backdrop ?? null) !== JSON.stringify(ref)) {
+    writeFileSync(docPath, `${format(withRef)}\n`);
+    console.log(`Wrote  ${relative(REPO, docPath)} — added the backdrop reference`);
+  }
+
+  /**
+   * The VIEWER document: the same scene with the far buildings taken out.
+   *
+   * `page.tsx` imports this rather than the full document, which is the other half of
+   * the budget. Triangles were the rendering cost; these are the bytes — the full
+   * document is 14.2 MB in the JS bundle and 4.4 MB over the wire, against a ceiling
+   * of 10 MB and an ideal of 5.
+   *
+   * Both files stay committed. The full one is the source of truth: the editor reads
+   * it, the generators read it, and a building that is only in the backdrop today has
+   * to still be there when someone writes a hotspot about it tomorrow. The viewer
+   * document is derived, and `backdrop-freshness.test.ts` holds it to that.
+   *
+   * Roads, water and green are kept whole. Roads are a canvas texture and cost no
+   * triangles, and they have to keep drawing under the backdrop — the raster is
+   * transparent between far buildings precisely so the streets show through.
+   */
+  const viewer: SceneDocument = {
+    ...withRef,
+    baseline: { ...withRef.baseline, buildings: near },
+  };
+  const viewerPath = join(SCENES, `${args.scene}.viewer.json`);
+  const viewerText = `${format(viewer)}\n`;
+  const viewerBefore = tryRead(viewerPath);
+  writeFileSync(viewerPath, viewerText);
+
+  console.log(
+    `Wrote  ${relative(REPO, viewerPath)} — ${(viewerText.length / 1024).toFixed(0)} KB` +
+      (viewerBefore === null
+        ? ''
+        : viewerBefore.toString('utf8') === viewerText
+          ? '  (byte-identical)'
+          : '  (CHANGED)'),
+  );
 
   const triangles = (list: BaselineBuilding[]) =>
     list.reduce((n, b) => n + (b.footprint.length - 2) * 2 + b.footprint.length * 2, 0);

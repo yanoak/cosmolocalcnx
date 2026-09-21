@@ -9,10 +9,20 @@ import { TokenSwatches } from '@/engine/DebugOverlay';
 import { SelectPanel, type Selection } from '@/engine/SelectPanel';
 import { step } from '@/engine/ordering';
 import { sceneBoundsMetres, validateScene, type SceneDocument } from '@/engine/scene';
+import { BACKDROP_ASSETS } from '@/scenes/backdrop';
 import { REGION_ASSETS } from '@/scenes/regions';
 import { RELIEF_ASSETS } from '@/scenes/relief';
-import scene from '@/scenes/wat-ket.json';
+import scene from '@/scenes/wat-ket.viewer.json';
 
+/**
+ * The VIEWER document, not the full one.
+ *
+ * `wat-ket.json` holds all 68,704 buildings and is the source of truth — the editor
+ * and the generators read it. This is the same scene with the 61,116 buildings that
+ * the backdrop raster draws taken out: 4.2 MB against 18.9 MB, which is the byte half
+ * of the phone budget. `scripts/render-backdrop.ts` writes it and
+ * `backdrop-freshness.test.ts` fails the suite if it drifts from its source.
+ */
 const DOC = scene as unknown as SceneDocument;
 
 /**
@@ -46,6 +56,17 @@ const RELIEF = (() => {
   const ref = DOC.relief;
   const asset = ref ? RELIEF_ASSETS[ref.field] : undefined;
   return asset ? { url: asset.url, meta: asset.meta } : null;
+})();
+
+/**
+ * The far city, pre-rendered. Absent is a valid state: a scene with no backdrop
+ * renders every baseline building as geometry, which is what this did until
+ * 21 Sep 2026 and what a scene inside the triangle budget still does.
+ */
+const BACKDROP = (() => {
+  const ref = DOC.backdrop;
+  const asset = ref ? BACKDROP_ASSETS[ref.meta] : undefined;
+  return asset ?? null;
 })();
 
 /**
@@ -166,6 +187,12 @@ export default function Page() {
     }
   }, []);
 
+  /**
+   * Already only the near buildings — the split happened in the generator, not here.
+   * 112k triangles against the 997k the full document would extrude, which is what
+   * puts this inside the budget in `docs/architecture.md` for the first time since
+   * the scene took in the old city.
+   */
   const buildings = DOC.baseline.buildings;
   const bounds = useMemo(() => sceneBoundsMetres(DOC), []);
 
@@ -270,6 +297,7 @@ export default function Page() {
               wireframe={wireframe}
               region={REGION}
               relief={RELIEF}
+              backdrop={BACKDROP}
               heroIds={HERO_IDS}
               openAt={hasRegion ? 'region' : 'district'}
               goTo={goTo}
