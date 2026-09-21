@@ -218,6 +218,11 @@ def main() -> int:
     parser.add_argument("--half-km", type=float, default=DEFAULT_HALF_KM)
     parser.add_argument("--grid", type=int, default=DEFAULT_GRID)
     parser.add_argument("--refresh", action="store_true")
+    # The city view keeps its own close relief backdrop while the VALLEY view needs a
+    # far wider, coarser field. Two fields, two names, one generator — added
+    # 21 Sep 2026 with the three-view split. See plans/2026-09-21_three-views.plan.md.
+    parser.add_argument("--field", default="relief",
+                        help="output suffix: writes <scene>.<field>.png/.json")
     args = parser.parse_args()
 
     scene_path = REPO / args.scene
@@ -225,8 +230,8 @@ def main() -> int:
     origin = (float(scene["origin"][0]), float(scene["origin"][1]))
     name = scene_path.stem
     cache = REPO / "data" / "relief-cache" / f"{name}.copernicus-glo30.tif"
-    png_path = scene_path.with_name(f"{name}.relief.png")
-    meta_path = scene_path.with_name(f"{name}.relief.json")
+    png_path = scene_path.with_name(f"{name}.{args.field}.png")
+    meta_path = scene_path.with_name(f"{name}.{args.field}.json")
 
     print(f"{name} relief")
     print(f"  box       ±{args.half_km:g} km about {origin[0]}, {origin[1]}; grid {args.grid} ({2000 * args.half_km / args.grid:.1f} m cells)")

@@ -1,0 +1,147 @@
+/**
+ * Three views, not one rail.
+ *
+ * Replaces the rail half of `registers.ts`, decided 21 Sep 2026. The circle, the valley
+ * and the city are three discrete worlds a visitor moves between deliberately; zoom and
+ * pan operate INSIDE a view and can never leave it.
+ *
+ * What the rail was doing wrong: it put a 3,437 km azimuthal-equidistant population
+ * raster and an 8 km building diorama on one continuous gesture, which says they are
+ * the same kind of thing seen from different distances. They are not — one is a claim
+ * about half of humanity, the other is a model of a place. Every special case in
+ * `registers.ts` was the cost of pretending otherwise: a crossfade band, a frame
+ * transform, a stage scale absorbing 2,500:1, and `RELIEF_HOLD_OUT`, which existed only
+ * because zooming out shrank the district onto the circle before the mountains arrived.
+ *
+ * Most of this change is deletion. Keeping two frames from tearing, guaranteeing no
+ * black frame inside the handover, holding the district while the backdrop catches up —
+ * none of those are solved differently here. They stop being problems.
+ *
+ * What does NOT change: `aeqd.ts` and the anchor it pins. Wat Ket is 279.98 km from the
+ * circle's centre, 8.15% of the radius. Separating the views changes how a visitor
+ * travels between the scales, not what the scales say.
+ *
+ * See `plans/2026-09-21_three-views.plan.md`.
+ */
+
+export type ViewId = 'circle' | 'valley' | 'city';
+
+/** Presentation order, outermost first. Also the chip order and the `1`/`2`/`3` keys. */
+export const VIEW_ORDER: readonly ViewId[] = ['circle', 'valley', 'city'] as const;
+
+/**
+ * Which views a scene actually has.
+ *
+ * The city is always present — it is the scene. The other two depend on committed
+ * fields, and absent is a valid state rather than a broken one: a second neighbourhood
+ * has a city view and nothing else until someone runs the generators. A view with
+ * nothing in it must be unreachable rather than empty.
+ */
+export interface ViewAvailability {
+  circle: boolean;
+  valley: boolean;
+}
+
+export function availableViews({ circle, valley }: ViewAvailability): ViewId[] {
+  return VIEW_ORDER.filter((id) => (id === 'circle' ? circle : id === 'valley' ? valley : true));
+}
+
+export function isAvailable(id: ViewId, has: ViewAvailability): boolean {
+  return availableViews(has).includes(id);
+}
+
+/**
+ * How far a view can be zoomed, as multiples of its own fit.
+ *
+ * Each view fits its subject at 1. The ranges are deliberately generous outward and
+ * tight inward for the two context views, and the reverse for the city — that is the
+ * difference between something you look AT and something you look INTO.
+ *
+ * The city's 40 is `DEFAULT_BLOCK_IN`, carried over unchanged: it is the district-to-
+ * doorstep ratio the piece has been built around since 16 Sep, and `registers.ts` pinned
+ * it with tests.
+ */
+export const VIEW_RANGE: Record<ViewId, { out: number; in: number }> = {
+  // Out to the committed 12,000 km world field, in far enough to read a bright patch.
+  circle: { out: 0.35, in: 4 },
+  // The basin fills the frame; in far enough to pick a town off the flank of a ridge.
+  valley: { out: 0.9, in: 8 },
+  // Out for a little air around the district, in to one doorstep.
+  city: { out: 0.5, in: 40 },
+};
+
+export interface ViewSpec {
+  id: ViewId;
+  /** Orthographic zoom at which this view's subject fits the viewport. */
+  fit: number;
+  minZoom: number;
+  maxZoom: number;
+}
+
+export function viewSpec(id: ViewId, fit: number): ViewSpec {
+  // A zero-sized viewport is a real state during layout, and a fit of 0 would make
+  // every zoom in this view 0 and the camera degenerate.
+  const safeFit = Number.isFinite(fit) && fit > 0 ? fit : 1;
+  const range = VIEW_RANGE[id];
+  return {
+    id,
+    fit: safeFit,
+    minZoom: safeFit * range.out,
+    maxZoom: safeFit * range.in,
+  };
+}
+
+/**
+ * Zoom, held inside the view.
+ *
+ * This is the whole mechanism of "no continuum": there is no zoom in any view that
+ * selects another view. Reaching the end of a view's range stops the camera, and the
+ * only way out is the switcher.
+ */
+export function clampZoom(spec: ViewSpec, zoom: number): number {
+  if (!Number.isFinite(zoom)) return spec.fit;
+  return Math.min(spec.maxZoom, Math.max(spec.minZoom, zoom));
+}
+
+/**
+ * How far into a view the camera is, 0 at the way out and 1 at the way in.
+ *
+ * Logarithmic, because zoom is multiplicative — the same reason `zoomToT` was, and the
+ * reason a linear map would spend almost the whole range in the last doubling.
+ *
+ * In the city view this drives hero emphasis through `stockTint`, which is the one
+ * thing the old `RegisterState.detail` was for.
+ */
+export function detailWithin(spec: ViewSpec, zoom: number): number {
+  const z = clampZoom(spec, zoom);
+  const span = Math.log(spec.maxZoom / spec.minZoom);
+  if (!(span > 0)) return 0;
+  return Math.log(z / spec.minZoom) / span;
+}
+
+/**
+ * The next view in a direction, or null at the ends.
+ *
+ * Returns null rather than wrapping. Wrapping would put the circle one step in from a
+ * doorstep, which is exactly the adjacency this change exists to remove.
+ */
+export function stepView(
+  current: ViewId,
+  direction: 1 | -1,
+  has: ViewAvailability,
+): ViewId | null {
+  const views = availableViews(has);
+  const at = views.indexOf(current);
+  if (at === -1) return views[0] ?? null;
+  return views[at + direction] ?? null;
+}
+
+/**
+ * Where a visitor lands when a view they were in stops existing, or was never there.
+ *
+ * Always the city: it is the only view guaranteed to have something in it, and it is
+ * what the piece is about.
+ */
+export function resolveView(wanted: ViewId | null, has: ViewAvailability): ViewId {
+  return wanted && isAvailable(wanted, has) ? wanted : 'city';
+}
