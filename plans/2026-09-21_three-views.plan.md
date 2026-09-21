@@ -119,8 +119,19 @@ state per view, and a switch.
       half of `registers.ts`
 - [x] `ValleyView.tsx` — the topographic mesh, its own camera fit, Wat Ket marked
 - [x] Rewire `Diorama.tsx` and `page.tsx` to the three-view model; delete the crossfade machinery
-- [ ] The Ping across the valley — `fetch:valley-water`, committed
-- [ ] Neighbouring town labels from GeoNames
+- [x] The Ping across the valley — `npm run fetch:valley`, 387 named waterways, committed
+- [x] Neighbouring town labels from GeoNames — seven, from the dump `build-region.py` already
+      downloads, so no new data dependency
+- [ ] **Make the terraced style good, or drop it.** Implemented and switchable, but not yet
+      right: at 469 m between vertices a terrace is often one cell wide, so treads and risers
+      alternate per cell and read as confetti rather than as contours; and the hypsometric ramp
+      makes harsh jumps across five bands. Tried 100, 250 and 500 m intervals. The honest options
+      are a finer mesh for this view only (stride 1 is 520k triangles, so it would need its own
+      budget argument), a much gentler ramp, or contour LINES on a smooth surface instead of
+      stepped geometry.
+- [ ] **Look at the hillshade style.** Implemented, never seen — the tab wedged under the
+      debugger before it could be captured. It is the one style whose legibility does not depend
+      on terrace width, so it is the most likely answer.
 - [ ] Docs: the reversal in `docs/architecture.md` ("Registers"), `docs/roadmap.md` item 8, and the
       semantic-zoom section of CLAUDE.md
 
