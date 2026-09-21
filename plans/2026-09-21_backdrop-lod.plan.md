@@ -158,10 +158,12 @@ the river is context — it earns the district register, not the block one.
 
 ## Tasks
 
-- [ ] `lod.ts` + test — the pure partition: heroes always near, radius as the September proxy,
+- [x] `lod.ts` + test — the pure partition: heroes always near, radius as the September proxy,
       deterministic order preserved so merge ranges stay in the order `idForFace` expects
-- [ ] `scripts/render-backdrop.py` — the painter's-algorithm rasteriser, tone indices, depth
-      slices, PNG + sidecar, byte-identical on a re-run
+- [x] `scripts/render-backdrop.ts` + `backdrop.ts` + test — the painter's-algorithm rasteriser,
+      tone indices, depth slices, PNG + sidecar, byte-identical on a re-run. **Moved from Python
+      to TypeScript** — it needs `lod.ts`, `shading.ts` and `theme.ts`, and mirroring three engine
+      modules in another language is the drift this whole plan argues against.
 - [ ] `backdrop` in the schema + `validateScene` + `src/scenes/backdrop/index.ts`, mirroring
       `relief`
 - [ ] `BackdropPlane.tsx` — the view-normal quads, palette applied from `theme.ts`, inside the
