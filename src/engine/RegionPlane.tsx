@@ -172,7 +172,7 @@ const WorldPlane = forwardRef<
         toneMapped={false}
         transparent
         depthWrite={false}
-        opacity={0}
+        opacity={1}
       />
     </mesh>
   );
@@ -268,7 +268,7 @@ export const RegionPlane = forwardRef<
         // The handover crossfades this against the district; writing depth while
         // translucent would punch a hole in whatever is behind it.
         depthWrite={false}
-        opacity={0}
+        opacity={1}
       />
     </mesh>
 

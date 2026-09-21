@@ -1,0 +1,32 @@
+{
+  "_comment": "Relief backdrop: the land AROUND the scene, NOT terrain under it. `terrain` stays null in the scene document and nothing in the baseline sits on this surface. The renderer flattens it under the scene rectangle. See docs/architecture.md.",
+  "base": 308.2,
+  "encoding": {
+    "channels": "r*256+g",
+    "max": 2565.0,
+    "min": 226.0,
+    "units": "metres above EGM2008"
+  },
+  "grid": {
+    "bboxM": [
+      -60000.0,
+      -60000.0,
+      60000.0,
+      60000.0
+    ],
+    "cellM": 234.375,
+    "rowZeroIs": "north",
+    "size": 512
+  },
+  "source": {
+    "attribution": "\u00a9 DLR e.V. 2010-2014 and \u00a9 Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved",
+    "dataset": "Copernicus DEM GLO-30 (2021 release), 1 arc-second DSM, EGM2008",
+    "url": "https://copernicus-dem-30m.s3.amazonaws.com"
+  },
+  "stats": {
+    "cellsWithData": 262144,
+    "max": 2565.0,
+    "min": 226.0,
+    "reliefAboveBase": 2256.8
+  }
+}

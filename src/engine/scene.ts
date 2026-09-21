@@ -139,6 +139,21 @@ export interface SceneDocument {
    * and plans/2026-09-21_backdrop-lod.plan.md.
    */
   backdrop?: BackdropRef | null;
+  /**
+   * The VALLEY view — the basin the city grew in, added 21 Sep 2026 with the split
+   * into three discrete views.
+   *
+   * OPTIONAL. Absent means the scene has two views instead of three, exactly as an
+   * absent `region` means two instead of three at the other end. A second
+   * neighbourhood gets a city view and nothing else until the generators run.
+   *
+   * A sibling of `relief`, not a replacement: `relief` is the close land AROUND the
+   * city that the backdrop flattens underneath it, and this is a 120 km field that is
+   * its own view and is never flattened. Same generator, same format, different job —
+   * which is why they are two fields and two names. And `terrain` is still null
+   * beside both of them.
+   */
+  valley?: ReliefRef | null;
 }
 
 /**
@@ -291,6 +306,13 @@ export function validateScene(doc: SceneDocument): string[] {
     const { meta } = doc.backdrop;
     if (typeof meta !== 'string' || meta === '') {
       errors.push('backdrop: needs a meta path, or null');
+    }
+  }
+
+  if (doc.valley) {
+    const { field, meta } = doc.valley;
+    if (typeof field !== 'string' || field === '' || typeof meta !== 'string' || meta === '') {
+      errors.push('valley: needs both a field and a meta path, or null');
     }
   }
 

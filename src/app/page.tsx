@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Diorama } from '@/engine/Diorama';
 import { cellAt, citiesInCell, nearestCity, type City } from '@/engine/cities';
-import type { RegisterId } from '@/engine/registers';
 import { pickLabels } from '@/engine/cities';
 import { TokenSwatches } from '@/engine/DebugOverlay';
 import { SelectPanel, type Selection } from '@/engine/SelectPanel';
 import { step } from '@/engine/ordering';
 import { sceneBoundsMetres, validateScene, type SceneDocument } from '@/engine/scene';
+import { availableViews, resolveView, VIEW_ORDER, type ViewId } from '@/engine/views';
 import { BACKDROP_ASSETS } from '@/scenes/backdrop';
+import { VALLEY_ASSETS } from '@/scenes/valley';
 import { REGION_ASSETS } from '@/scenes/regions';
 import { RELIEF_ASSETS } from '@/scenes/relief';
 import scene from '@/scenes/wat-ket.viewer.json';
@@ -70,6 +71,16 @@ const BACKDROP = (() => {
 })();
 
 /**
+ * The valley field, resolved the same way. Absent is a valid state: the scene then has
+ * two views instead of three.
+ */
+const VALLEY = (() => {
+  const ref = DOC.valley;
+  const asset = ref ? VALLEY_ASSETS[ref.field] : undefined;
+  return asset ? { url: asset.url, meta: asset.meta } : null;
+})();
+
+/**
  * The buildings a hotspot points at, which the district register emphasises.
  *
  * Deliberately derived rather than stored: the set of buildings worth emphasising
@@ -83,8 +94,9 @@ const HERO_IDS: ReadonlySet<string> = new Set(
     .filter((t): t is string => typeof t === 'string' && t !== ''),
 );
 
-/** Where each register chip sits on the rail. registers.ts pins these exactly. */
-const RAIL: Record<RegisterId, number> = { region: 0, district: 0.5, block: 1 };
+/** Which of the three worlds this scene actually has. The city is always one of them. */
+const HAS_VIEWS = { circle: REGION !== null, valley: VALLEY !== null };
+const VIEWS = availableViews(HAS_VIEWS);
 
 /**
  * 2026 is an ON-RAMP, not a state you can select.
@@ -110,10 +122,16 @@ type Era = 'now' | 'futures';
 /** How long the diorama sits in 2026 before the futures take over. */
 const ON_RAMP_HOLD_MS = 1100;
 
-const REGISTER_LABELS: Record<RegisterId, string> = {
-  region: 'Asia',
-  district: 'Wat Ket',
-  block: 'Street',
+/**
+ * Three worlds, named for what they are rather than for a zoom level.
+ *
+ * "Asia" became "The circle" because the view is not a continent — it is a claim with a
+ * boundary, and the caption underneath states the claim.
+ */
+const VIEW_LABELS: Record<ViewId, string> = {
+  circle: 'The circle',
+  valley: 'The valley',
+  city: 'Wat Ket',
 };
 export default function Page() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -123,22 +141,26 @@ export default function Page() {
   const stage = useRef<HTMLDivElement>(null);
 
   const hasRegion = REGION !== null;
-  const [active, setActive] = useState<RegisterId>(hasRegion ? 'region' : 'district');
-  const [goTo, setGoTo] = useState<number | null>(null);
+  const [view, setView] = useState<ViewId>(resolveView(hasRegion ? 'circle' : 'city', HAS_VIEWS));
   const [era, setEra] = useState<Era>(hasRegion ? 'now' : 'futures');
 
   /**
-   * The on-ramp. Also the attract loop's return path (roadmap item 6) — they are
-   * the same journey, which is most of why this was affordable.
+   * The on-ramp, rebuilt for discrete views.
+   *
+   * It opens on the circle and hands over to the city. What it no longer does is
+   * TRAVEL there — with three discrete views the descent was the rail, and the rail is
+   * what went. The visitor is shown the claim, then shown the place.
+   *
+   * Still the attract loop's return path (roadmap item 6), and still one-way: going
+   * back to 2026 happens only on an idle reset, never by switching view.
    */
   useEffect(() => {
     if (!hasRegion) return;
-    const descend = window.setTimeout(() => setGoTo(RAIL.district), 700);
-    return () => window.clearTimeout(descend);
+    const handover = window.setTimeout(() => setView('city'), 2600);
+    return () => window.clearTimeout(handover);
   }, [hasRegion]);
 
   const onArrive = useCallback(() => {
-    setGoTo(null);
     // A beat in 2026 before the futures take over, so the present registers as a
     // place rather than as a loading state.
     window.setTimeout(() => setEra((e) => (e === 'now' ? 'futures' : e)), ON_RAMP_HOLD_MS);
@@ -146,7 +168,6 @@ export default function Page() {
 
   /** Any deliberate input takes control: the visitor is driving, not watching. */
   const takeControl = useCallback(() => {
-    setGoTo(null);
     setEra('futures');
   }, []);
 
@@ -178,10 +199,10 @@ export default function Page() {
     return near ? [near.city] : [];
   }, [pickedCell, pickedKm]);
 
-  const jumpTo = useCallback((register: RegisterId) => {
+  const goToView = useCallback((next: ViewId) => {
     setEra('futures');
-    setGoTo(RAIL[register]);
-    if (register !== 'region') {
+    setView(resolveView(next, HAS_VIEWS));
+    if (next !== 'circle') {
       setPickedCell(null);
       setPickedKm(null);
     }
@@ -226,11 +247,11 @@ export default function Page() {
       if (e.key === 'Escape') close();
       if (e.key.toLowerCase() === 'd') setDebug((v) => !v);
       if (e.key.toLowerCase() === 'w') setWireframe((v) => !v);
-      if (e.key === '1' && hasRegion) jumpTo('region');
-      if (e.key === '2') jumpTo('district');
-      if (e.key === '3') jumpTo('block');
+      if (e.key === '1' && hasRegion) goToView('circle');
+      if (e.key === '2' && VALLEY) goToView('valley');
+      if (e.key === '3') goToView('city');
     },
-    [buildings, close, hasRegion, jumpTo],
+    [buildings, close, hasRegion, goToView],
   );
 
   return (
@@ -238,17 +259,17 @@ export default function Page() {
       <div className="topbar">
         <h1>Wat Ket 2045</h1>
         <div className="controls">
-          {hasRegion && (
-            <div className="registers" role="group" aria-label="Scale">
-              {(['region', 'district', 'block'] as const).map((id, i) => (
+          {VIEWS.length > 1 && (
+            <div className="registers" role="group" aria-label="View">
+              {VIEWS.map((id) => (
                 <button
                   key={id}
                   type="button"
-                  aria-pressed={active === id}
-                  aria-keyshortcuts={String(i + 1)}
-                  onClick={() => jumpTo(id)}
+                  aria-pressed={view === id}
+                  aria-keyshortcuts={String(VIEW_ORDER.indexOf(id) + 1)}
+                  onClick={() => goToView(id)}
                 >
-                  {REGISTER_LABELS[id]}
+                  {VIEW_LABELS[id]}
                 </button>
               ))}
             </div>
@@ -299,17 +320,16 @@ export default function Page() {
               relief={RELIEF}
               backdrop={BACKDROP}
               heroIds={HERO_IDS}
-              openAt={hasRegion ? 'region' : 'district'}
-              goTo={goTo}
+              view={view}
+              valley={VALLEY}
               onArrive={onArrive}
-              onRegisterChange={setActive}
               onPickCell={onPickCell}
               highlight={pickedCell}
             />
           </div>
         </div>
         <div className="register-caption" aria-live="polite">
-          {active === 'region' ? (
+          {view === 'circle' ? (
             pickedCities.length > 0 ? (
               <p className="city-readout">
                 <strong>{pickedCities.map((c) => c.name).join(' · ')}</strong>{' '}
@@ -331,6 +351,14 @@ export default function Page() {
                 </span>
               </p>
             )
+          ) : view === 'valley' ? (
+            <p>
+              <strong>The valley the city grew in.</strong>{' '}
+              <span>
+                120 km across, from Doi Inthanon to the Ping. Heights are exaggerated
+                four times, so the ground reads as ground.
+              </span>
+            </p>
           ) : (
             <p>{era === 'now' ? 'Wat Ket, 2026.' : 'Wat Ket, 2045.'}</p>
           )}

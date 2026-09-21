@@ -126017,5 +126017,6 @@
     "world": { "field": "regions/aeqd_21.000_100.290_r12000_n1024.png", "meta": "regions/aeqd_21.000_100.290_r12000_n1024.json" }
   },
   "relief": { "field": "wat-ket.relief.png", "meta": "wat-ket.relief.json" },
+  "valley": { "field": "wat-ket.valley.png", "meta": "wat-ket.valley.json" },
   "backdrop": { "meta": "wat-ket.backdrop.json" }
 }

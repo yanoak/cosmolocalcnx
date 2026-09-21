@@ -10,6 +10,8 @@ import { isometricFit, type Bounds } from './camera';
 import { DebugOverlay } from './DebugOverlay';
 import { Ground, GroundAreas } from './Ground';
 import { BackdropPlane, type BackdropSource } from './BackdropPlane';
+import { ValleyView, type ValleySource } from './ValleyView';
+import { clampZoom, viewSpec, type ViewId } from './views';
 import { ReliefBackdrop, type ReliefSource } from './ReliefBackdrop';
 import { BridgeMesh } from './BridgeMesh';
 import { RELIEF_HOLD_OUT } from './relief';
@@ -213,6 +215,50 @@ function ZoomTween({
  * every pinch already produces a frame, so the handover costs nothing when nobody
  * is touching the screen.
  */
+/**
+ * Cuts the camera to a view.
+ *
+ * Switching views is a selection, not a journey: a tween here would be the rail coming
+ * back through the door, and the point of three discrete views is that the visitor is
+ * told these are different kinds of thing rather than different distances.
+ *
+ * Runs only when the view actually changes, so it never fights a visitor mid-pinch —
+ * the same discipline the camera memo upstream is written for.
+ */
+function ViewCut({
+  view,
+  spec,
+  target,
+  onArrive,
+}: {
+  view: ViewId;
+  spec: ReturnType<typeof viewSpec>;
+  target: [number, number, number];
+  onArrive?: () => void;
+}) {
+  const camera = useThree((s) => s.camera) as THREE.OrthographicCamera;
+  const controls = useThree((s) => s.controls) as { target: THREE.Vector3; update: () => void } | null;
+  const invalidate = useThree((s) => s.invalidate);
+  const previous = useRef<ViewId | null>(null);
+
+  useEffect(() => {
+    if (previous.current === view) return;
+    const first = previous.current === null;
+    previous.current = view;
+
+    camera.zoom = clampZoom(spec, spec.fit);
+    camera.updateProjectionMatrix();
+    if (controls) {
+      controls.target.set(target[0], target[1], target[2]);
+      controls.update();
+    }
+    invalidate();
+    if (!first) onArrive?.();
+  }, [view, spec, target, camera, controls, invalidate, onArrive]);
+
+  return null;
+}
+
 function RegisterDriver({
   ladder,
   sigma,
@@ -313,7 +359,7 @@ function AnchorMarker({
         toneMapped={false}
         transparent
         depthWrite={false}
-        opacity={0}
+        opacity={1}
       />
     </mesh>
   );
@@ -345,6 +391,8 @@ export function Diorama({
   region,
   relief = null,
   backdrop = null,
+  valley = null,
+  view = 'city',
   heroIds,
   openAt = 'district',
   goTo = null,
@@ -371,6 +419,15 @@ export function Diorama({
    * budget still does. See BackdropPlane.tsx.
    */
   backdrop?: BackdropSource | null;
+  /** The committed 120 km topographic field, or null for a scene without one. */
+  valley?: ValleySource | null;
+  /**
+   * Which of the three worlds is on screen.
+   *
+   * Discrete since 21 Sep 2026. Exactly one renders; zoom and pan stay inside it and
+   * cannot reach another. See views.ts for why the rail went.
+   */
+  view?: ViewId;
   heroIds?: ReadonlySet<string>;
   /** Where the rail starts on mount. The on-ramp opens at the circle. */
   openAt?: RegisterId;
@@ -466,6 +523,34 @@ export function Diorama({
     };
   }, [bounds, outerRadiusKm, k, fit, region, relief]);
 
+  /**
+   * One camera fit per view.
+   *
+   * The circle's fit still comes through the old ladder, because `regionScale` and
+   * `stageFit` are what absorb the 2,500:1 gap between kilometres and district metres
+   * and that arithmetic is unchanged — what went is the idea that a visitor travels
+   * across it by pinching.
+   */
+  const specs = useMemo(() => {
+    const valleyHalfM = valley ? Math.abs(valley.meta.grid.bboxM[2]) : 0;
+    const valleyFit = valley
+      ? isometricFit([-valleyHalfM, -valleyHalfM, valleyHalfM, valleyHalfM], size ?? { width: 0, height: 0 }).zoom
+      : fit.zoom;
+    return {
+      circle: viewSpec('circle', ladder.region),
+      valley: viewSpec('valley', valleyFit),
+      city: viewSpec('city', fit.zoom),
+    };
+  }, [valley, size, fit.zoom, ladder.region]);
+
+  const spec = specs[view];
+
+  /** Where each world is centred, in world units. Both fields sit on the origin. */
+  const viewTarget = useMemo<[number, number, number]>(
+    () => (view === 'city' ? fit.target : [0, 0, 0]),
+    [view, fit.target],
+  );
+
   const heroes = heroIds ?? EMPTY_HEROES;
 
   return (
@@ -489,18 +574,20 @@ export function Diorama({
 
           <RedrawOnVisible />
 
-          <ZoomTween to={goTo} ladder={ladder} onArrive={onArrive} />
+          {/* Cuts the camera to the new view. Switching is a selection, not a
+              journey — a tween here would be the rail coming back through the door. */}
+          <ViewCut view={view} spec={spec} target={viewTarget} onArrive={onArrive} />
 
           {region && (
             <>
-              <group ref={regionGroup} scale={k} visible={false}>
+              <group ref={regionGroup} scale={k} visible={view === 'circle'}>
                 <RegionPlane
                   url={region.url}
                   meta={region.meta}
                   anchor={aeqdForward(region.origin, region.meta.projection.centre)}
                   materialRef={regionMaterial}
-                  labels={registers.active === 'region' ? region.labels : EMPTY_LABELS}
-                  interactive={registers.active === 'region' && !registers.railed}
+                  labels={view === 'circle' ? region.labels : EMPTY_LABELS}
+                  interactive={view === 'circle'}
                   onPickCell={onPickCell}
                   highlight={highlight}
                   world={region.world ?? null}
@@ -513,30 +600,27 @@ export function Diorama({
                 />
               </group>
 
-              <RegisterDriver
-                ladder={ladder}
-                sigma={k / 1000}
-                districtCentre={districtCentre}
-                anchorStage={anchorStage}
-                heroCount={heroes.size}
-                refs={{
-                  region: regionGroup,
-                  district: districtGroup,
-                  regionMaterial,
-                  worldMaterial,
-                  markerMaterial,
-                  stockMaterial,
-                }}
-                onChange={report}
-              />
+              {/* RegisterDriver is gone with the rail. It drove the crossfade, the
+                  district's collapse onto the circle and the stock tint, all per frame;
+                  with discrete views the first two do not exist and the third is a
+                  no-op until hotspots are authored. See views.ts. */}
             </>
           )}
 
-          {/* The district. The outer group is driven by the handover; the inner one
-              pre-centres the geometry so that shrinking happens about the middle
-              rather than dragging the scene off toward the origin. At collapse 0 the
-              two cancel exactly, which is why today's framing is untouched. */}
-          <group ref={districtGroup}>
+          {valley && (
+            <group visible={view === 'valley'}>
+              <ValleyView source={valley} sceneBounds={bounds} />
+            </group>
+          )}
+
+          {/* The city. The outer group used to be driven by the handover; with discrete
+              views it simply cancels the inner pre-centring, which is what the handover
+              did at collapse 0 anyway — so today's framing is untouched. */}
+          <group
+            ref={districtGroup}
+            visible={view === 'city'}
+            position={[districtCentre[0], 0, districtCentre[1]]}
+          >
             <group position={[-districtCentre[0], 0, -districtCentre[1]]}>
               {relief && <ReliefBackdrop source={relief} scene={bounds} />}
               <Ground bounds={bounds} roads={roads} />
@@ -552,7 +636,7 @@ export function Diorama({
                 onSelect={onSelect}
                 wireframe={wireframe}
                 heroIds={heroes}
-                pickable={!registers.railed && registers.active !== 'region'}
+                pickable={view === 'city'}
                 stockMaterialRef={stockMaterial}
               />
               {debug && <DebugOverlay bounds={bounds} wireframe={wireframe} />}
@@ -562,17 +646,17 @@ export function Diorama({
           <MapControls
             makeDefault
             enableRotate={false}
-            target={fit.target}
+            target={viewTarget}
             // Relative to the fitted zoom, so the limits mean the same thing on a
             // phone and a projector. The outer end used to be twice the district;
             // it is now the whole planet where a world field exists, the circle
             // where only that exists, and twice the district for a scene with
             // neither. Pulling back past the region anchor changes no register —
             // `t` is already clamped at 0 — so this is reach, not a new state.
-            minZoom={
-              region ? worldMinZoom(ladder, radiusKm, outerRadiusKm) : ladder.region * 0.95
-            }
-            maxZoom={ladder.block}
+            // Each view holds its own range. There is no zoom in any view that reaches
+            // another one — that is the whole of "discrete", and views.ts owns it.
+            minZoom={spec.minZoom}
+            maxZoom={spec.maxZoom}
           />
         </Canvas>
       )}
