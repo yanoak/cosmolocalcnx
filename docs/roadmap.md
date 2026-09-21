@@ -13,13 +13,19 @@ Sequenced so the schema is right on day one and everything downstream is disposa
 | 5 | **Content.** Hotspots and bilingual copy, kept in data files so the partly-formed 2045 material can land late. Each hotspot carries its own before-and-after — with no "today" view, this copy is the only thing that makes an intervention legible as a change. Includes the Thai typography pass: subsetted webfont, and line-breaking checked on a real phone. |
 | 6 | **Exhibition hardening.** Idle reset + attract loop, fullscreen kiosk mode, static export served locally on the laptop/projection machine, thumb-sized hit targets, QR code and short URL, ambient audio. Plus the still-render pipeline — see *Device reach*. |
 | 7 | **Buffer.** You will need all of it. |
-| 8 | **Semantic zoom** — added 16 Sep 2026, out of item 4's budget. Three registers on one rail, the Valeriepieris circle as the outermost, and the 2026 on-ramp. See "Registers" in `docs/architecture.md`. |
+| 8 | **Three views** — the circle, the valley, the city. Added 16 Sep 2026 as one rail out of item 4's budget; **rewritten 21 Sep as three discrete views** with a new middle one. See "Three views" in `docs/architecture.md`. |
+| 9 | **Level of detail** — added 21 Sep 2026. The far city is a pre-rendered raster, which is what repaid the phone budget. See "Level of detail" in `docs/architecture.md`. |
 
-### Added 16 Sep 2026: semantic zoom, and the cost of it
+### Added 16 Sep 2026: semantic zoom — and split into three views on the 21st
 
-Three registers on one rail — the circle, the district, the block — with the Valeriepieris circle
-as the outermost. It is the piece's cosmolocal argument made geographically: Wat Ket sits 280 km
-from the centre of a circle containing half of humanity.
+Originally three registers on one rail, with the Valeriepieris circle as the outermost. It is the
+piece's cosmolocal argument made geographically: Wat Ket sits 280 km from the centre of a circle
+containing half of humanity.
+
+**The rail was replaced on 21 Sep by three discrete views**, plus a new middle one showing the
+120 km basin the city grew in. A population raster and a building diorama are different kinds of
+rendering rather than different zoom levels, and the rail's accumulating special cases were the
+cost of pretending otherwise. Zoom now stays inside a view. The anchor number is untouched.
 
 **This came out of item 4, the scrappy editor**, which is the only outstanding item whose deadline
 is not the 24th: workshop output lands 26–27 Sep and is merged overnight, so the editor can be
@@ -106,12 +112,28 @@ preview and share card, an instant loading image the 3D swaps in behind, and the
 already described under *Cheap insurance*. It also gives the 26–27 Sep workshops something
 participants can take away. Half a day.
 
-**No second interactive renderer before 24 Sep.** And if one is ever wanted, do not pre-render
-raster — render the *same scene document* to SVG or Canvas 2D with a painter's-algorithm isometric
-projection. Because the scene is a document, hit testing stays exact polygon picking and hotspots
-stay positioned automatically. The pre-rendered image version needs hand-maintained hit regions, an
-image set per scenario and zoom level, and hotspot coordinates kept in sync by hand — three things
-that rot the first time someone moves a building.
+**No second interactive renderer before 24 Sep.** That still holds.
+
+**The objection to pre-rendered raster was reversed on 21 Sep 2026, and the reversal is narrow.**
+It used to read: do not pre-render raster, because it needs hand-maintained hit regions, an image
+set per scenario and zoom level, and hotspot coordinates kept in sync by hand — three things that
+rot the first time someone moves a building.
+
+Every one of those rots only if a **human** draws the picture. Generated from the scene document by
+a script, hit regions and hotspot positions are derived and cannot drift — the same move this
+codebase already makes for heroes and for bridges. And the generator this paragraph recommended as
+the alternative ("render the *same scene document* to SVG or Canvas 2D with a painter's-algorithm
+isometric projection") is, in fact, exactly what got built. It makes a backdrop, not a second
+interactive renderer, so the non-goal above is untouched.
+
+What keeps it honest is `backdrop-freshness.test.ts`: the generator fingerprints its inputs into
+the sidecar and the suite fails if the document moves on without a re-render. That is the same
+guarantee building it on deploy would give, without putting the render on the deploy path.
+
+The still-render pipeline this section asked for exists twice over now — `render-backdrop.ts` for
+the city and `preview-relief.ts` for the valley's topography. The second was written because
+choosing a relief style has to be done by looking, and driving a browser kept failing; rendering
+the same pure functions offline took seconds.
 
 ### The discipline
 

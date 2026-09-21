@@ -30,28 +30,39 @@ The September build is scaffolding. Expect to rewrite the renderer and the edito
 December. What must survive is the scene schema, the asset library, and the authored content —
 see `docs/roadmap.md`.
 
-## Semantic zoom is the spine
+## Three views are the spine
 
-Added 16 Sep 2026. Three **registers** on one rail, moved through with one gesture:
+Rewritten 21 Sep 2026. **Three discrete views**, moved between deliberately. Zoom and pan stay
+inside whichever one is open and can never reach another:
 
 ```
- t=0 ──────────────────────────────────────────────── t=1
- REGION            DISTRICT                    BLOCK
- the circle        Wat Ket                     a shophouse
- 4.10 bn people    2.98 km²                    one doorstep
+ ┌── CIRCLE ────────┐   ┌── VALLEY ────────┐   ┌── CITY ──────────┐
+ │ AEQD, kilometres │ ⇄ │ DEM, 120 km      │ ⇄ │ diorama, 8 km    │
+ │ 3,437 km radius  │   │ 2,565 m relief   │   │ district ⇄ block │
+ │ a claim          │   │ a landscape      │   │ a place          │
+ └──────────────────┘   └──────────────────┘   └──────────────────┘
 ```
 
 The outermost is the **Valeriepieris circle** — 21.00°N 100.29°E, radius 3,437 km, containing half
 of humanity. **Wat Ket sits 279.98 km from its centre, 8.15% of the radius.** That number is the
-piece's argument made geographically, and `src/engine/__tests__/aeqd.test.ts` pins it.
+piece's argument made geographically, `src/engine/__tests__/aeqd.test.ts` pins it, and it is not up
+for renegotiation.
 
-Three registers but only **two coordinate frames** — district and block are the same geometry
-differing in emphasis, so there is one handover, not two. The frames are siblings, never nested,
-and the region is authored in kilometres, which is what keeps the 2,500:1 gap out of the scene
-graph. One orthographic camera serves both.
+**This replaced one rail**, which from 16 to 21 Sep ran the circle, the district and the block
+through a single gesture. It went because a 3,437 km population raster and an 8 km building diorama
+are *different kinds of rendering, not different zoom levels* — and the pretence that they were not
+cost a crossfade band, a frame transform, a stage scale absorbing 2,500:1, and `RELIEF_HOLD_OUT`,
+which existed only because zooming out shrank the district onto the circle before the mountains
+arrived. Splitting them was mostly deletion. `views.ts` enforces it, and **no function there returns
+a view from a zoom** — the only way out of a view is the switcher.
 
-This came out of item 4's budget (the scrappy editor), which is the only week-one item whose
-deadline is not the 24th. Items 3 and 5 were protected.
+The middle view is new: the basin Chiang Mai grew in, drawn as a **hillshade** — a plaster relief
+model in the city's own Warm White, form from a north-west light, heights exaggerated four times
+with the caption saying so. A hypsometric gradient and a terraced contour style are both still
+behind `?relief=`; terracing is what the project's own rules argued for and it lost on resolution.
+See "Three views" in `docs/architecture.md`.
+
+**A view builds on first visit and is kept.** Never pay for a world nobody is looking at.
 
 ## Three delivery surfaces
 
@@ -67,13 +78,16 @@ Consequences: touch is the primary input and hover is decoration; the perf budge
 `docs/architecture.md` is a requirement, not an optimisation; the laptop/projection machine runs
 a local static export so a venue wifi failure cannot take the installation down.
 
-**The phone surface is knowingly over budget since 19 Sep 2026.** The scene was extended to
-5.8 × 8.1 km across the river, taking in the whole old city: 68,704 buildings and ~1M triangles,
-ten times the phone ceiling, by decision with the numbers in hand. About 7 s to first frame on
-the laptop from the static export. `scripts/fetch-osm.ts` runs in `installation` budget mode and prints
-how far over it is on every run. Getting phones back is level-of-detail work (cull, simplify or
-chunk the far buildings), not a bigger budget number. See
-`plans/2026-09-19_extended-extent.plan.md`.
+**The phone budget was repaid on 21 Sep 2026.** The scene still covers 5.8 × 8.1 km and 68,704
+buildings, but the viewer no longer draws them all: everything beyond 1,250 m of the origin is a
+pre-rendered raster hung on two planes, and the relief backdrop is decimated. Measured on the
+static export — **157,532 triangles in 8 draw calls, 1.16 MB gzipped**, against ~1.13M and 4.44 MB
+before. Triangles are ~5% over the 150k ceiling and the remainder is not buildings.
+
+That raster is **exact rather than approximate**, and the reason is load-bearing: the camera is
+orthographic and never rotates, so zoom is a 2D scale and pan a 2D translation. **Enabling orbit
+would silently turn it into a lie.** See "Level of detail" in `docs/architecture.md` and
+`plans/2026-09-21_backdrop-lod.plan.md`. The device test on a cheap Android is still outstanding.
 
 ## Stack (decided — do not relitigate)
 
@@ -103,6 +117,16 @@ Do not build these before 24 Sep, however reasonable they sound in isolation:
   `ReliefBackdrop.tsx` flattens under the scene rectangle, so the mountains rise around the flat city
   when you zoom out. See "Relief is a backdrop, terrain stays null" in `docs/architecture.md`
   and `plans/2026-09-19_relief-backdrop.plan.md`.
+
+  **Since 21 Sep there is also a whole topographic VIEW** — the valley, 120 km of DEM drawn as a
+  hillshade with nothing flattened. **This is now the non-goal most at risk**, because a mountain
+  range one click from the diorama is exactly the pressure that puts the diorama on a surface. It
+  does not. The valley is its own view with its own field, `terrain` is still `null`,
+  `validateScene` still asserts it, and nothing in `valley.ts` takes a baseline object as an
+  argument — that last one is the checkable part. `relief.ts` flattens and `valley.ts` does not,
+  and they are two modules rather than one function with a flag precisely so nobody can call the
+  flattening off by accident.
+
 - **No free-roam avatar.** Walk-around characters fail at public exhibitions — people get lost, the
   camera clips into geometry, and WASD is meaningless on a phone. This is a fixed isometric diorama
   you inspect, not a world you traverse. If a character is wanted later: click-to-move, fixed camera.
