@@ -1,0 +1,118 @@
+/* Styles for the internal print tool only.
+   Co-located rather than added to globals.css on purpose: `src/app/print/` is listed
+   in .vercelignore, so nothing in this directory reaches the deployed export. Putting
+   these rules in the global sheet would ship them anyway — harmless, but it would make
+   the exclusion partial, and a partial exclusion is the kind that gets forgotten.
+   Colour tokens come from theme.ts via layout.tsx. Never a hex value here. */
+
+.print {
+  position: fixed;
+  inset: 0;
+  overflow: auto;              /* html/body are overflow:hidden for the diorama */
+  padding: 0 0 48px;
+  background: var(--cosmo-offWhite);
+}
+
+.print-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--cosmo-offWhite);
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-text) 18%, transparent);
+}
+.print-head h1 { margin: 0; font-size: 1rem; }
+.print-head .note { font-size: 0.75rem; color: var(--ui-text-muted); }
+
+.print-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  padding: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .print-body { grid-template-columns: minmax(0, 1fr); }
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.plan canvas {
+  width: 100%;
+  height: auto;
+  background: var(--ground);
+  border: 1px solid color-mix(in srgb, var(--ui-text) 25%, transparent);
+  border-radius: 4px;
+}
+.plan figcaption { font-size: 0.8125rem; color: var(--ui-text-muted); }
+
+.print-form { display: flex; flex-direction: column; gap: 14px; }
+.print-form fieldset {
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 1px solid color-mix(in srgb, var(--ui-text) 20%, transparent);
+  border-radius: 6px;
+}
+.print-form legend {
+  padding: 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted);
+}
+.field { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 6px; }
+.field label { font-size: 0.8125rem; }
+.field .unit { color: var(--ui-text-muted); font-size: 0.75rem; }
+.field input[type='number'],
+.field select {
+  width: 8.5rem;
+  min-height: 34px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--ui-text);
+  background: var(--cosmo-white);
+  border: 1px solid color-mix(in srgb, var(--ui-text) 30%, transparent);
+  border-radius: 4px;
+}
+.field.check { justify-content: flex-start; }
+.field.check input { width: 20px; height: 20px; }
+
+.derived {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+}
+.derived dt { color: var(--ui-text-muted); }
+.derived dd { margin: 0; }
+
+.warnings { margin: 0; padding: 0 0 0 1.1em; font-size: 0.8125rem; color: var(--ui-accent); }
+
+.build {
+  min-height: 44px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--ui-focus) 16%, transparent);
+}
+
+.built { padding: 0 20px; }
+.built h2 { font-size: 0.9375rem; margin: 0 0 4px; }
+.built h2:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 4px; }
+.built .stats { margin: 0 0 14px; font-size: 0.8125rem; color: var(--ui-text-muted); }
+
+.tiles { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.tiles th { text-align: left; font-weight: 600; color: var(--ui-text-muted); padding: 4px 8px 4px 0; }
+.tiles td { padding: 3px 8px 3px 0; vertical-align: middle; }
+.tiles td.count { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ui-text-muted); }
+.tiles button { min-height: 32px; min-width: 0; padding: 0 8px; font-size: 0.75rem; margin-right: 4px; }
+
+.download-all { margin-top: 16px; }

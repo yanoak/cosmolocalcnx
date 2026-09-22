@@ -96,6 +96,14 @@ would silently turn it into a lie.** See "Level of detail" in `docs/architecture
 - **Not Godot, not Unity.** Considered and rejected: large wasm payloads, flaky iOS Safari, and the
   content is text panels over a 3D scene — which is DOM's job, not a game engine's.
 - Viewer at `/`, editor at `/admin`. Shared renderer components in `src/engine/`.
+- **`/print` is internal and is not on the public URL.** An STL exporter for the exhibition's
+  3D print, added 22 Sep 2026. `src/app/print/` is listed in `.vercelignore`, so the Vercel
+  build never receives the directory and the deployed export has no such page and no chunk —
+  it works under `npm run dev` and in a locally built export, which is the exhibition laptop.
+  **That exclusion is the only gate there is.** `output: 'export'` means no server, so no auth
+  is possible; an `NEXT_PUBLIC_*` flag would ship the page and its 4 MB scene import anyway and
+  is one line from being flipped by anyone reading the bundle. Deleting that line publishes the
+  tool. See `plans/2026-09-22_stl-print-export.plan.md`.
 
 ## The one architectural rule
 
@@ -126,6 +134,20 @@ Do not build these before 24 Sep, however reasonable they sound in isolation:
   argument — that last one is the checkable part. `relief.ts` flattens and `valley.ts` does not,
   and they are two modules rather than one function with a flag precisely so nobody can call the
   flattening off by accident.
+
+- **No terrain under the print either, and no second renderer to make one.** `src/engine/print.ts` reads the same document the GPU does and shares its
+  winding normalisation and its triangulator; the plate is flat because Wat Ket is flat, and
+  nothing in it takes a relief or elevation field. Its own conventions are millimetres and +Z
+  up with **no rotation at all**, against the renderer's −Z-is-north — two conventions, each
+  serving its own consumer, and both written down where they are used.
+
+  Two things it learned that generalise. **Walls raised from a clipped RING are not the walls
+  its triangulation implies**: `clipRingToConvex` joins a shape it cut in two with a zero-width
+  neck, earcut drops the neck, and `ExtrudeGeometry` then leaves open edges — so `solid()`
+  raises walls on the cap's own boundary and the test file checks edge pairing on the shapes
+  that cause it. And **HTML5 `step` validation is `(value - min) % step` in binary floating
+  point**, so a 2 mm plate against `min=0.6 step=0.2` is a silent "step mismatch" that blocks
+  form submission with no error anywhere. Both cost an hour each.
 
 - **No free-roam avatar.** Walk-around characters fail at public exhibitions — people get lost, the
   camera clips into geometry, and WASD is meaningless on a phone. This is a fixed isometric diorama

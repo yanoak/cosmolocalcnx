@@ -18,6 +18,19 @@ node_modules/
 docs/references/
 docs/programme-context.md
 
+# The STL print tool. THIS IS THE GATE, and it is the only one.
+#
+# `output: 'export'` means there is no server and therefore no auth to hide an internal
+# route behind. So the route is not hidden, it is ABSENT: the Vercel build never sees
+# this directory, and the deployed export has no /print page and no chunk to read.
+#
+# It still works under `npm run dev` and in a locally built export — which is the
+# exhibition laptop, the machine that will be driving the printer.
+#
+# Deleting this line publishes the tool. Nothing in the code would stop it, because an
+# env flag that ships the page anyway is not a gate. See src/app/print/page.tsx.
+src/app/print/
+
 # Scratch
 *.log
 __pycache__/

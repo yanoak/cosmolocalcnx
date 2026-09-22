@@ -39,6 +39,18 @@ npm test             # the pure functions — projection, clipping, height synth
 npm run typecheck
 ```
 
+### The print tool
+
+`/print` turns the scene into STLs for the exhibition's 3D print: a base plate with the buildings
+extruded on it, the Ping and the parks raised, and the wider streets as raised ribbons, tiled into
+plates that fit a Bambu A1 mini's 180 mm bed and interlock with tabs. Heights are exaggerated —
+the median Wat Ket building is 5 m, which at any printable scale is thinner than a nozzle — and
+the factor is stated on screen, in each file's header and in the README the download carries.
+
+**It is internal and is not on the deployed site.** `src/app/print/` is in `.vercelignore`, so the
+Vercel build never sees it; it works on a dev server and in a local `npm run build` export. There
+is no server here to put auth on, so absence is the gate.
+
 ### Regenerating the baseline
 
 The scene document is committed, so **none of this is needed to run the app** — the exhibition
@@ -96,3 +108,8 @@ Anything that cannot be redistributed is not committed — it gets fetched by a 
 
 **Attribution in the viewer** is one paragraph of JSX at the bottom of `src/app/page.tsx`. Add a
 data source, add a clause there — easy to forget until someone asks.
+
+**A 3D print is a Produced Work and carries its own credit.** It leaves the repository as an
+object with no footer attached to it, so `printSummary` in `src/engine/print.ts` writes the
+sources into the `README.txt` inside every download, next to the scale and the exaggeration
+factor. Add a data source that reaches the plate, add it there too.
