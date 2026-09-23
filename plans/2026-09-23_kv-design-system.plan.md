@@ -116,7 +116,7 @@ Kept as an open question rather than a silent change.
       A component with no caller is dead code; this is ten lines whenever a use appears
 - [x] `posterise()` in `theme.ts`, tested, and `RELIEF_RAMP_THREAD` as purple tonal bands
 - [x] `?relief=thread` wired through `relief.ts`, with the byte-identical re-run test
-- [ ] Rewrite `docs/design-system.md` around the two registers; note why the panels supersede
+- [x] Rewrite `docs/design-system.md` around the two registers; note why the panels supersede
       the deck
 
 ## UI mockups (ASCII)

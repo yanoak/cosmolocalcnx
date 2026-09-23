@@ -2,9 +2,56 @@
 
 ## Where it comes from
 
-The **Cosmo Local CNX brand system**, designed by Anupong Limsirivong for the programme this
-exhibition is one strand of. The concept deck lives at `docs/references/`, which is gitignored
-because it is somebody else's document; what is committed is the token table below.
+The **Cosmo Local CNX brand system**, designed for the programme this exhibition is one strand of.
+Source material lives at `docs/references/`, which is gitignored because it is somebody else's
+document; what is committed is the token table below.
+
+**The printed exhibition panels supersede the concept deck, decided 23 Sep 2026.** This file was
+written on the 16th from the deck. On the 22nd the actual artwork landed — 56 panels — and the
+panels are what will be on the wall beside the screen, so they are what the screen answers to.
+
+The palette survived that intact. Every value the panels use was already here, verified by
+extracting the PDF's own span colours and fill operators rather than sampling pixels: `#FF8A00`,
+`#2B184C`, `#1F1F1F`, `#FCFAF6`, IBM Plex Sans Thai. The apparent gold rail on p22 samples
+`#FF8900`, which is Cosmo Orange with JPEG rounding — there is no separate gold in the panel
+system. (There is in the *banner* system, along with an `#E7D1B1` cream. Banners are a different
+artefact and get no tokens until something needs them.)
+
+What was wrong was the **register**, which is the next section.
+
+## Two registers
+
+The panels put charcoal ink on a near-white page with an orange kicker above the headline, and
+reserve purple for a single inverted panel — the one invitation, not a general surface. This file
+described one surface and had no kicker at all.
+
+A **register** is a ground and the three text weights that sit on it. Both are composed entirely
+from Layer 1, so this added roles without adding colours.
+
+| Register | Ground | Ink | Kicker | Muted |
+|---|---|---|---|---|
+| `page` | `cosmo.offWhite` | `cosmo.charcoal` | derived orange `#854800` | `cosmo.slate` |
+| `invert` | `cosmo.purple` | `cosmo.offWhite` | `cosmo.orange` | `cosmo.lilac` |
+
+`UI_TOKENS` are the `page` register under their older names, so the viewer's chrome and a text
+panel cannot drift apart. That moved `ui.text` from Cosmo Purple to charcoal.
+
+### The kicker derives on light and does not on purple
+
+This is the one thing in the system that is not obvious, and it was found by measurement after the
+plan had assumed the opposite.
+
+| | On `cosmo.offWhite` | On `cosmo.purple` |
+|---|---|---|
+| raw `cosmo.orange` | **2.27:1** — fails at every size | **6.64:1** — passes outright |
+
+The panels set kickers at 80 pt in raw orange and it works, on paper, under gallery light. It is
+not evidence about a phone in a mall. So `invert` carries the exact colour off the wall and `page`
+derives one at −24%. There is deliberately no `kickerLarge` token: there is no size at which the
+light register can use the raw value, so such a token would exist only to be avoided.
+
+**The generalisable rule: print contrast is not screen contrast, and the panels are not evidence
+about the screen.**
 
 This replaced a palette derived from a 1967 Thai magazine cover on **16 Sep 2026**. The earlier
 palette was a good argument — a 1967 vision of progress for the same country this project imagines
@@ -124,6 +171,17 @@ pixel it produces. It is also cheaper on a phone and it matches the flat ink of 
 
 Revisit only if the flat version reads as cardboard on a real device.
 
+## `/design` renders this system from this system
+
+Every value on `/design` is imported from `theme.ts` rather than written there, which is the only
+property that makes such a page worth having: it cannot drift. If a swatch is wrong, the token is
+wrong.
+
+It is not decoration. It measured the kicker above and disproved the plan that had just been
+written, within an hour of existing. Internal like `/settings` — not linked from the viewer,
+reached by typing the address — and harmless to deploy, because it ships tokens rather than a
+scene.
+
 ## DOM and WebGL read the same tokens
 
 One source of truth, two consumers: CSS custom properties for panels and chrome, `THREE.Color` for
@@ -139,19 +197,12 @@ entirely avoidable. Decide it once, in the same commit that introduces the token
 The diorama may be as vivid as it likes. Text may not — visitors read this standing in a bright
 mall, on their own phones, at arm's length.
 
-Measured against `ground` (`#F7F4EE`):
+Rather than copying a table here that will rot, **read the live one on `/design`**, which measures
+every token against its own register's ground and marks pass or fail. The rule it enforces:
 
-| Token | Hex | Ratio |
-|---|---|---|
-| `ui.text` | `#2B184C` | 14.3:1 |
-| `ui.text.muted` | `#555B66` | 6.2:1 |
-| `ui.accent` | `#854800` | 6.5:1 |
-| `ui.focus` | `#6E4FD3` | 5.1:1 |
-
-Cosmo Purple is already a text-weight colour, so `ui.text` takes it unchanged — this palette needs
-less derivation than the one it replaced. **The accent still has to be derived:** Cosmo Orange is
-2.2:1 on Warm White, which is fine as a surface and illegible as text. Never put body text in
-orange or yellow; in this system they are surface colours.
+Everything that carries text must hit **4.5:1**. Never put body text in raw orange or yellow; in
+this system they are surface colours. The rail's conduit is raw orange and that is fine — it is a
+surface, and the floor that forces the kicker to derive does not apply to it.
 
 Everything that carries text must hit **4.5:1**. This is checked, not eyeballed — the ratio
 function is pure and testable like the ramp, and a test asserts every UI token clears it.
@@ -183,14 +234,26 @@ Named themes are possible from the start — `progress-1967` was the first and `
 current one. A second neighbourhood or a second brand becomes a second theme, not a fork. The 1967
 palette is in git history and re-derivable from this file's structure alone.
 
-## Borrowed from the brand, beyond colour
+## Borrowed from the panels, beyond colour
 
-The brand's mark is an eight-point **starburst**, and the deck uses it as a connector — nodes on
-routed orthogonal lines, linking places to each other. That is a ready-made treatment for hotspots:
-callouts on leader lines with a starburst node, rather than floating pins. Distinctive, cheap,
-straight out of the source, and it needs no illustrator.
+**The rail.** Page 22 runs a conduit with a beaded ring node at each section heading — a chapter
+rail, in print, by the same designer. It is built in `engine/Rail.tsx` against the three views,
+which is a repurposing: the printed rail marks sections *within* one panel. When chapters land a
+visitor will need three view stops and N chapter stops at once, which is a nested rail rather than
+a data change. Selection deliberately does not follow focus, because a view builds on first visit
+and is kept — arrowing across the valley on the way to the city would build a valley nobody asked
+to see.
 
-Worth keeping in reserve rather than building on day one.
+**Thread.** The key visual draws the ranges as embroidery in five flat tones of purple, which is
+`?relief=thread`: `posterise()` quantises the hillshade into bands and `RELIEF_RAMP_THREAD` maps
+them dark to light. This is the terracing argument won on a different field. Terracing lost because
+at 469 m between vertices a contour band is often one cell wide and the mountains came out as
+confetti — a *mesh* resolution problem. Thread quantises the shading and leaves the geometry alone,
+so that failure mode does not apply to it.
+
+**The connector mark.** The brand's eight-point starburst is used in the source as a node on routed
+orthogonal lines. Still a ready-made treatment for hotspots — callouts on leader lines rather than
+floating pins — and still in reserve rather than built.
 
 ## September scope
 
