@@ -9,6 +9,7 @@ import {
   VIEW_ORDER,
   VIEW_PLACE,
   VIEW_RANGE,
+  BLOCK_IN,
   viewSpec,
   type ViewId,
   CHAPTER_ORDER,
@@ -20,7 +21,6 @@ import {
   resolveChapter,
   type ChapterId,
 } from '../views';
-import { DEFAULT_BLOCK_IN } from '../registers';
 
 const ALL = { circle: true, valley: true };
 const CITY_ONLY = { circle: false, valley: false };
@@ -67,7 +67,7 @@ describe('viewSpec', () => {
    * carried over rather than re-chosen, so the city view is exactly today's range.
    */
   it("keeps the city's district-to-block ratio at the ladder's", () => {
-    expect(VIEW_RANGE.city.in).toBe(DEFAULT_BLOCK_IN);
+    expect(VIEW_RANGE.city.in).toBe(BLOCK_IN);
   });
 
   it('never emits a degenerate range from a zero-sized viewport', () => {

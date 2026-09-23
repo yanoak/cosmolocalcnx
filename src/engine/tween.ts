@@ -1,11 +1,7 @@
 /**
- * Easing and interpolation for the register chips and the attract loop.
- *
- * Deliberately small, and separate from `registers.ts`, because the two answer
- * different questions. The crossfade is a pure function of camera zoom and needs no
- * clock at all — every pinch already produces a frame. Only a jump the visitor did
- * not make with their fingers needs to be animated over time: pressing a register
- * chip. (It also served an on-ramp that played the whole rail on load; both went.)
+ * Easing and interpolation for camera moves the visitor did not make with their
+ * fingers: a chapter switch, a beat, the attract loop. `camera.ts` composes these into
+ * a pose; `CameraRig.tsx` plays it over time.
  */
 
 /** Smooth at both ends, linear through the middle. */

@@ -30,7 +30,7 @@ import { POPULATION_RAMP, POPULATION_RAMP_OUTSIDE, UI_TOKENS } from './theme';
  *
  * Authored in KILOMETRES. The parent group carries the scale that reconciles that
  * with the district's metres, which is what keeps the 2,500:1 gap out of the scene
- * graph and float32 comfortable at both ends. See registers.ts.
+ * graph and float32 comfortable at both ends. See `regionScale` in camera.ts.
  */
 
 /** Decode the committed PNG to people per cell, once. */

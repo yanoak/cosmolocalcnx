@@ -124,8 +124,10 @@ lines, and the hard part here is the camera and layer state, which no library kn
 
 ## Tasks
 
-- [ ] `camera.ts` — `goTo({ view, zoom, target }, duration)`; absorb `Diorama`'s rig and what
-      `registers.ts` still does; delete the rest of `registers.ts`
+- [x] `camera.ts` existed already (isometric framing). Extended with `CameraPose`,
+      `poseBetween`, and the circle framing that survived `registers.ts`; `CameraRig.tsx` applies
+      a pose and replaces both `ViewCut` and the rail-era `ZoomTween`. `registers.ts` deleted —
+      the crossfade watcher it fed was defined and never mounted
 - [x] `ChapterId`, `CHAPTER_VIEWS`, tense labels keyed by chapter; `Rail` and the number keys move
       to chapters
 - [x] Extend `Hotspot` with `chapter`, `view`, `icon`; `validateScene` requires `chapter` and a

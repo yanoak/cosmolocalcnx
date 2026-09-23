@@ -137,13 +137,16 @@ export function isAvailable(id: ViewId, has: ViewAvailability): boolean {
  * doorstep ratio the piece has been built around since 16 Sep, and `registers.ts` pinned
  * it with tests.
  */
+/** The district-to-doorstep ratio the piece has been built around since 16 Sep. */
+export const BLOCK_IN = 40;
+
 export const VIEW_RANGE: Record<ViewId, { out: number; in: number }> = {
   // Out to the committed 12,000 km world field, in far enough to read a bright patch.
   circle: { out: 0.35, in: 4 },
   // The basin fills the frame; in far enough to pick a town off the flank of a ridge.
   valley: { out: 0.9, in: 8 },
   // Out for a little air around the district, in to one doorstep.
-  city: { out: 0.5, in: 40 },
+  city: { out: 0.5, in: BLOCK_IN },
 };
 
 export interface ViewSpec {

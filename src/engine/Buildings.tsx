@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { buildingGeometry, idForFace, mergeBuildings } from './merge';
-import { stockTint } from './registers';
+import { stockTint } from './shading';
 import type { BaselineBuilding } from './scene';
 import { UI_TOKENS } from './theme';
 
@@ -47,7 +47,7 @@ export function Buildings({
   onSelect: (id: string) => void;
   wireframe?: boolean;
   heroIds?: ReadonlySet<string>;
-  /** 0 at district-fit, 1 at block-fit. From registers.ts. */
+  /** 0 at district-fit, 1 at block-fit. `detailWithin` in views.ts. */
   detail?: number;
   /** False through the region handover, so a tap near the marker hits nothing. */
   pickable?: boolean;
