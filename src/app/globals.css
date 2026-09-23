@@ -20,6 +20,15 @@ html, body {
 
 .viewer { position: relative; height: 100dvh; display: flex; flex-direction: column; }
 
+/* The stem. The viewer becomes the scroll container; the stage sticks to the top of it
+   and the story's track scrolls over it (see Scrolly.css for the geometry). In explore
+   the viewer is the viewport again and the wheel goes back to zooming. html/body keep
+   overflow hidden either way: nothing outside the viewer ever scrolls. */
+.viewer.is-stem { overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y proximity; }
+.viewer.is-stem .topbar { position: sticky; top: 0; z-index: 3; background: var(--cosmo-offWhite); }
+.viewer.is-stem .stage { position: sticky; top: 0; height: 100dvh; flex: none; z-index: 1; }
+.viewer.is-stem .attribution { position: relative; z-index: 2; background: var(--cosmo-offWhite); }
+
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; padding: 10px 14px;

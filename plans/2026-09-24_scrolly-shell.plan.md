@@ -134,14 +134,18 @@ lines, and the hard part here is the camera and layer state, which no library kn
       view the chapter uses; `validateCopyJoin` checks the id join both ways. **No `date`** — the
       line above a name is a kicker from the copy doc, and a date field is how the time slider
       would creep back
-- [ ] The layout change — scroll track over a fixed canvas; wheel is scroll in the stem, zoom in
-      explore
+- [x] The layout change — the viewer is the scroll container, the stage sticks, the track scrolls
+      over it starting one viewport up so card *i* centres at progress *i/(n−1)*. Wheel scrolls in
+      the stem; `MapControls` zoom/pan are off until the bowl
 - [x] `chapters.ts` — the beat score: view, relative camera pose, layers, hotspots, terminal flag;
       `beatAt` gives beat index plus continuous 0–1 progress; `resolvePose` → `CameraPose`;
       `validateScore`, `releasedAt`, `joinBeatCopy`. Copy is joined by id from the doc, not
       carried on the beat. 21 tests
-- [ ] `Scrolly.tsx` — full-bleed slot, centred cards, `IntersectionObserver` → beat and progress
-- [ ] `Explore.tsx` — the release: layer toggles, pan and zoom unlocked, a "next chapter" control
+- [x] `Scrolly.tsx` — centred cards over the full-bleed scene, copy by beat id. **Deviation:** a
+      scroll listener on the container feeds `beatAt`, not `IntersectionObserver` — it gives the
+      continuous 0–1 for free and is fewer lines
+- [x] `Explore.tsx` — the release: pan and zoom unlocked, "← Story" and "Next →" as controls.
+      Layer toggles arrive with the Past's threads, the first thing that has layers
 - [ ] `Hotspot.tsx` — hover blurb, click modal for short items, click overlay for stories
 - [ ] `Story.tsx` — the full-viewport overlay state with its own scroll container
 - [ ] Line hit-testing with a screen-pixel threshold

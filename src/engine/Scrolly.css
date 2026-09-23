@@ -1,0 +1,46 @@
+/* Colour tokens are injected in layout.tsx from src/engine/theme.ts.
+   Never write a hex value in this file. */
+
+/* The track scrolls OVER the sticky stage. It starts one viewport up so the first card is
+   on screen at scrollTop 0 rather than a screen below it — which is what makes
+   scrollTop / ((n − 1) × viewport) the beat progress, with card i centred at i / (n − 1). */
+.scrolly-track {
+  position: relative;
+  z-index: 2;
+  margin-top: -100dvh;
+  pointer-events: none;            /* the scene underneath stays hoverable between cards */
+}
+
+.scrolly-section {
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: start;
+  padding: 0 16px;
+}
+
+/* The card. The reading register: a quiet surface with charcoal ink and an orange kicker,
+   floating over the scene. Links inside it need pointer events back. */
+.scrolly-card {
+  pointer-events: auto;
+  width: min(34rem, 100%);
+  padding: 20px 22px 22px;
+  border-radius: 8px;
+  background: var(--register-page-ground);
+  color: var(--register-page-ink);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--register-page-ink) 16%, transparent);
+  opacity: 0.55;
+  transition: opacity 240ms ease;
+}
+.scrolly-section.is-current .scrolly-card { opacity: 1; }
+
+.scrolly-card .kicker { margin-bottom: 4px; }
+.scrolly-card .headline { margin-bottom: 10px; }
+.scrolly-card .body { margin: 0 0 10px; }
+.scrolly-card .body:last-child { margin-bottom: 0; }
+.scrolly-card a { color: var(--register-page-kicker); }
+
+@media (prefers-reduced-motion: reduce) {
+  .scrolly-card { transition: none; }
+}

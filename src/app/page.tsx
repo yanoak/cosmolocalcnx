@@ -33,6 +33,11 @@ import {
   type ViewId,
 } from '@/engine/views';
 import { Rail } from '@/engine/Rail';
+import { Scrolly, type BeatCopy } from '@/engine/Scrolly';
+import { Explore } from '@/engine/Explore';
+import { beatAt, releasedAt, type BeatPosition } from '@/engine/chapters';
+import { SCORES } from '@/content/scores';
+import copyDoc from '@/content/copy.json';
 import { ViewHeader } from '@/engine/ViewHeader';
 import type { ValleyStyle } from '@/engine/valley';
 import { BACKDROP_ASSETS } from '@/scenes/backdrop';
@@ -166,6 +171,47 @@ export default function Page() {
   // They are separate state because Futures uses two views, so `view` alone cannot say
   // which chapter is open. Opens on the earliest chapter the scene has.
   const [chapter, setChapter] = useState<ChapterId>(resolveChapter(null, HAS_VIEWS));
+
+  /**
+   * A chapter is a tilted martini glass: an authored stem, then a bowl. `mode` is which
+   * half the visitor is in. The stem's scroll position picks a beat, the beat names the
+   * view and the camera; the terminal beat releases into explore, and from there only a
+   * control moves the visitor on — never a beat.
+   */
+  const [mode, setMode] = useState<'stem' | 'explore'>('stem');
+  const [position, setPosition] = useState<BeatPosition>({ index: 0, t: 0 });
+  const viewer = useRef<HTMLElement>(null);
+  const score = SCORES[chapter];
+  const beat = score.beats[position.index] ?? score.beats[0];
+  const beatCopy = useMemo<BeatCopy[]>(() => {
+    const byLocale = copyDoc as unknown as Record<string, Record<string, { beats?: BeatCopy[] }>>;
+    return (byLocale[locale] ?? byLocale.en)?.[chapter]?.beats ?? [];
+  }, [locale, chapter]);
+
+  // The beat names the view. This is the ONLY place a view is chosen during a stem.
+  useEffect(() => {
+    if (mode === 'stem') setView(resolveView(beat.view, HAS_VIEWS));
+  }, [mode, beat]);
+
+  // The terminal beat, fully played, opens the bowl. Nothing closes it but a control.
+  useEffect(() => {
+    if (mode === 'stem' && releasedAt(score, position)) setMode('explore');
+  }, [mode, score, position]);
+
+  /** Scroll progress over the track → beat and 0–1 within it. See Scrolly.css for the geometry. */
+  const onScroll = useCallback(() => {
+    const el = viewer.current;
+    if (!el || mode !== 'stem') return;
+    const n = score.beats.length;
+    const max = Math.max(1, (n - 1) * el.clientHeight);
+    setPosition(beatAt(el.scrollTop / max, n));
+  }, [mode, score]);
+
+  const scrollToBeat = useCallback((index: number, smooth = true) => {
+    const el = viewer.current;
+    if (!el) return;
+    el.scrollTo({ top: Math.max(0, index) * el.clientHeight, behavior: smooth ? 'smooth' : 'auto' });
+  }, []);
   const [view, setView] = useState<ViewId>(() => resolveView(defaultView(resolveChapter(null, HAS_VIEWS)), HAS_VIEWS));
 
   /**
@@ -257,6 +303,9 @@ export default function Page() {
   const goToChapter = useCallback((next: ChapterId) => {
     const c = resolveChapter(next, HAS_VIEWS);
     setChapter(c);
+    setMode('stem');
+    setPosition({ index: 0, t: 0 });
+    viewer.current?.scrollTo({ top: 0 });
     setView(resolveView(defaultView(c), HAS_VIEWS));
     if (defaultView(c) !== 'circle') {
       setPickedCell(null);
@@ -309,6 +358,24 @@ export default function Page() {
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // In the stem the keys drive the story, not the buildings.
+      if (mode === 'stem') {
+        if (e.key === ' ' || e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          scrollToBeat(position.index + 1);
+          e.preventDefault();
+          return;
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          scrollToBeat(position.index - 1);
+          e.preventDefault();
+          return;
+        }
+        if (e.key === 'Escape') {
+          scrollToBeat(score.beats.length - 1, false);
+          setMode('explore');
+          return;
+        }
+      }
       const arrows: Record<string, [1 | -1, 'horizontal' | 'vertical']> = {
         ArrowRight: [1, 'horizontal'],
         ArrowLeft: [-1, 'horizontal'],
@@ -344,11 +411,15 @@ export default function Page() {
       const n = Number(e.key);
       if (n >= 1 && n <= CHAPTER_ORDER.length) goToChapter(CHAPTER_ORDER[n - 1]);
     },
-    [buildings, close, goToChapter],
+    [buildings, close, goToChapter, mode, position.index, score, scrollToBeat],
   );
 
   return (
-    <main className="viewer">
+    <main
+      ref={viewer}
+      className={mode === 'stem' ? 'viewer is-stem' : 'viewer'}
+      onScroll={onScroll}
+    >
       <div className="topbar">
         <ViewHeader chapter={chapter} view={view} />
         <div className="controls">
@@ -411,9 +482,12 @@ export default function Page() {
               reliefStyle={relief}
               onPickCell={onPickCell}
               highlight={pickedCell}
+              beat={mode === 'stem' ? beat : null}
+              interactive={mode === 'explore'}
             />
           </div>
         </div>
+        {mode === 'explore' && (
         <div className="view-caption" aria-live="polite">
           {view === 'circle' ? (
             pickedCities.length > 0 ? (
@@ -449,9 +523,23 @@ export default function Page() {
             <p>Wat Ket, 2045.</p>
           )}
         </div>
+        )}
+        {mode === 'explore' && (
+          <Explore
+            next={CHAPTERS[CHAPTERS.indexOf(chapter) + 1] ?? null}
+            nextLabel={CHAPTER_TENSE[CHAPTERS[CHAPTERS.indexOf(chapter) + 1] ?? chapter]}
+            onStory={() => {
+              setMode('stem');
+              requestAnimationFrame(() => scrollToBeat(score.beats.length - 1, false));
+            }}
+            onNext={goToChapter}
+          />
+        )}
 
         <SelectPanel selection={selection} locale={locale} onClose={close} />
       </div>
+
+      {mode === 'stem' && <Scrolly beats={score.beats} copy={beatCopy} current={position.index} />}
 
       {debug && <TokenSwatches />}
 

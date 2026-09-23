@@ -8,6 +8,7 @@ import { aeqdForward } from './aeqd';
 import { Buildings } from './Buildings';
 import { circleFitZoom, isometricFit, regionScale, stageFit, type Bounds, type CameraPose } from './camera';
 import { CameraRig } from './CameraRig';
+import { resolvePose, type Beat, type ViewFits } from './chapters';
 import { DebugOverlay } from './DebugOverlay';
 import { Ground, GroundAreas } from './Ground';
 import { BackdropPlane, type BackdropSource } from './BackdropPlane';
@@ -177,6 +178,9 @@ export function Diorama({
   reliefStyle = 'hillshade',
   view = 'city',
   heroIds,
+  beat = null,
+  beatDurationMs = 600,
+  interactive = true,
   onArrive,
   onPickCell,
   highlight = null,
@@ -211,7 +215,17 @@ export function Diorama({
    */
   view?: ViewId;
   heroIds?: ReadonlySet<string>;
-  /** After the camera settles on a new view — not on mount. Chapter beats will want it. */
+  /**
+   * The stem's current beat, or null in explore. A beat names its view and a pose
+   * relative to that view's fit; `view` must agree with `beat.view` — the page sets it
+   * from the beat, which is the only way a view is ever chosen during a stem.
+   */
+  beat?: Beat | null;
+  /** How long a move between beats takes. A view switch with no beat is a cut. */
+  beatDurationMs?: number;
+  /** Pan and zoom by hand. Off during the stem, where the wheel scrolls the story. */
+  interactive?: boolean;
+  /** After the camera settles on a new pose — not on mount. */
   onArrive?: () => void;
   /** A position on the circle, in km, that the visitor pointed at. */
   onPickCell?: (km: [number, number]) => void;
@@ -279,20 +293,24 @@ export function Diorama({
 
   const spec = specs[view];
 
-  /** Where each world is centred, in world units. Both fields sit on the origin. */
-  const viewTarget = useMemo<[number, number, number]>(
-    () => (view === 'city' ? fit.target : [0, 0, 0]),
-    [view, fit.target],
+  /** Every view's fit, as the renderer knows it right now — what a beat's pose is relative to. Both fields sit on the origin. */
+  const fits = useMemo<ViewFits>(
+    () => ({
+      circle: { zoom: clampZoom(specs.circle, specs.circle.fit), target: [0, 0, 0] },
+      valley: { zoom: clampZoom(specs.valley, specs.valley.fit), target: [0, 0, 0] },
+      city: { zoom: clampZoom(specs.city, specs.city.fit), target: fit.target },
+    }),
+    [specs, fit.target],
   );
 
   /**
-   * The pose for the open view: its fit, centred on its world. A view switch is a cut
-   * (duration 0). When chapter beats land they will hand the rig poses of their own,
-   * with durations — this is the only seam they need.
+   * The pose the rig applies. During a stem it is the beat's, resolved against the fits;
+   * otherwise the open view's own fit, centred on its world. A view switch is a cut and a
+   * beat is a move — the duration is the whole difference.
    */
   const pose = useMemo<CameraPose>(
-    () => ({ view, zoom: clampZoom(spec, spec.fit), target: viewTarget }),
-    [view, spec, viewTarget],
+    () => (beat ? resolvePose(beat, fits) : { view, zoom: fits[view].zoom, target: fits[view].target }),
+    [beat, fits, view],
   );
 
   /**
@@ -339,7 +357,7 @@ export function Diorama({
 
           {/* Cuts the camera to the open view. Switching is a selection, not a
               journey — a tween here would be the rail coming back through the door. */}
-          <CameraRig pose={pose} durationMs={0} onArrive={onArrive} />
+          <CameraRig pose={pose} durationMs={beat ? beatDurationMs : 0} onArrive={onArrive} />
 
           {region && (
             <>
@@ -401,7 +419,11 @@ export function Diorama({
           <MapControls
             makeDefault
             enableRotate={false}
-            target={viewTarget}
+            // Off during a stem: the wheel scrolls the story, and a drag would fight
+            // the beat's pose. The bowl turns them back on.
+            enableZoom={interactive}
+            enablePan={interactive}
+            target={pose.target}
             // Relative to the fitted zoom, so the limits mean the same thing on a
             // phone and a projector. The outer end used to be twice the district;
             // it is now the whole planet where a world field exists, the circle
