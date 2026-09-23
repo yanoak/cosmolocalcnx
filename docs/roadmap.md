@@ -198,6 +198,15 @@ Judge every decision between now and December against whether it makes the secon
 This is another argument for procedural generators (tier 2 in `architecture.md`) over hand-modelled
 assets: generators travel, hand-placed buildings do not.
 
+### The newspaper map is an export
+
+Added 24 Sep 2026. The Faiways newspaper prints a valley isometric with a city inset, and that is
+exactly the Futures chapter's two scales with the same thirteen pins. If it is drawn by hand it
+drifts from the screen the day a blurb changes. So it is an **export from the scene document's
+hotspots** — the "2D document renderer driven by the same scene document" this roadmap already
+defers, arriving early because print has a date attached. Static SVG or a rendered frame is enough;
+it does not need to be interactive, only to be the same data.
+
 ### A tiled backdrop pyramid — the one renderer change with numbers behind it
 
 Raised 23 Sep 2026, after the raster was seen going soft on a laptop at two or three times

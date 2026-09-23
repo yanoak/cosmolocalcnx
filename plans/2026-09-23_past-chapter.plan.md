@@ -41,6 +41,12 @@ the same iconography as the 2045 pins, specified 24 Sep 2026. The two chapters t
 valley therefore share a visual language, so a visitor reads the same grammar in both — and the
 icon production run is one set rather than two.
 
+**The point items are document hotspots, not a data file.** The sprite *registry* is the shell's;
+the *data* — the airport, the station, the tunnel, each with a `LocaleMap` blurb and body — is
+`Hotspot` entries in `wat-ket.json` with `chapter: 'past'`. Lines are not hotspots; they are
+`threads.ts` geometry with their own blurb and body, because a line has a certainty and a point
+does not need one.
+
 **Lines are hoverable, not just icons.** A road or a rail alignment answers on hover with a blurb
 and on click with a modal, the same as a point. That is a real constraint on the shell: hit-testing
 has to work on thin geometry with a screen-space tolerance, or a line becomes untappable as soon as
@@ -89,10 +95,11 @@ obliged to repeat its sibling and should not.
       confirmed alignments
 - [ ] Line styles per certainty, from the KV: solid, dashed corridor, node-and-arc
 - [ ] The stem — five beats, one layer arriving per beat, over the hillshade
-- [ ] Point-item icons: airport, railway station, and the rest, from the shared registry
+- [ ] Point items as `Hotspot`s in `wat-ket.json`, `chapter: 'past'`, icons from the shared registry
 - [ ] Blurb and modal copy for every icon and every line
 - [ ] Copy for five layers plus the dated nuggets, EN and TH, **written from the findings file**
-- [ ] The remote-work beat as terminal, handing over to Present
+- [ ] The remote-work beat as terminal — it releases into the timeline; the rail is what carries
+      a visitor on to Present
 
 ## UI mockups (ASCII)
 
@@ -163,7 +170,8 @@ which is the point and the caption says so.
 - `threadsAt(year)` returns only layers that exist by that year — unit
 - …is stable at exact boundary years — unit, the off-by-one that a scrubber finds immediately
 - the air layer yields nodes and zero polylines at every year — unit, pins the "no route" rule
-- the chapter's last beat is terminal and hands to `circle` — unit — `chapters.test.ts`
+- the chapter's last beat is terminal, releases explore, and **does not change view** — unit —
+  `chapters.test.ts`
 
 ## Verification
 
@@ -171,7 +179,8 @@ which is the point and the caption says so.
 2. `Space` five times: Ping solid; caravans as a dashed corridor, visibly *not* a line; Highway 11
    solid and clearly a separate layer from the caravans; rail with station and tunnel; then air as
    nodes and arcs with no route.
-3. The fifth beat hands over to the circle rather than stopping.
+3. The fifth beat releases into the timeline. Nothing switches chapter on its own; the rail's next
+   stop is Present.
 4. `Escape` from any beat reveals the timeline.
 5. In the bowl: toggle each layer off and on; scrub to 1867, 1921, 1934, 2013 and read the nugget.
 6. Chiang Dao appears as an edge arrow with a bearing and a distance, not a line running off frame.

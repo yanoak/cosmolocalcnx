@@ -61,8 +61,20 @@ backdrop. Generated isometric artwork through the Higgsfield API, iterated on a 
 enabled. That is a second, independent reason it stays off, which makes the constraint sturdier
 than when it rested on the raster alone.
 
-**A story page is a state, not a route.** It must not unmount the scene — "a view builds on first
-visit and is kept", and a route that rebuilds pays that cost every time somebody opens a story.
+**A story is the shell's full-viewport overlay state.** Not a modal, not a route — see
+`2026-09-24_scrolly-shell`. The scene stays mounted and dimmed behind an overlay with its own
+scroll container, so opening a story never pays the build cost again.
+
+**Pins are document hotspots.** No `pins.ts`. Each of the thirteen places is a `Hotspot` in
+`wat-ket.json` with `chapter: 'futures'`, a `view`, an `icon`, a `date`, and `LocaleMap` label and
+body. The story a pin belongs to is a field on the hotspot; a story may own several. That is the one
+architectural rule — the scene is a document — applied to the future's furniture, and it is also
+what makes the printed newspaper map an *export* rather than a second drawing.
+
+**No edge arrows at city scale.** Decided 24 Sep 2026 unless objected to: at city zoom nine valley
+pins fall outside the frame, and nine arrows on the edge would be clutter that says nothing. The
+city inset is a zoom of the same pin set; the view switch in explore is the affordance for the rest.
+Edge arrows exist only at valley scale, for the two places outside the 120 km field.
 
 **Precision is not required here, and the reason must be written at the point of choice.** This is
 fiction; approximate placement and soft zones are legitimate *because nothing is claimed as fact*.
@@ -78,14 +90,14 @@ landscape you want to look around, which a repeated marker does not give you.
 
 ## Tasks
 
-- [ ] `pins.ts` — the pin schema: id, place, lat/lon, scale, story, blurb, date, icon
-- [ ] The pin list as committed data, derived from the context file
+- [ ] The thirteen places as `Hotspot`s in `wat-ket.json`, `chapter: 'futures'`, derived from the
+      context file
 - [ ] `/jig` — the icon comparison page, Higgsfield prompts in, candidates out
 - [ ] Twelve isometric icons, generated and committed as optimised assets
 - [ ] Billboarded pin rendering at both scales, with the off-frame edge arrow for Chiang Dao
 - [ ] The stem — one pin revealed per beat, city first, then the shift to valley
 - [ ] Explore: the two views switchable, both carrying the full pin set
-- [ ] The story page, as a state over the mounted scene
+- [ ] Stories wired to the shell's overlay state, one per piece
 - [ ] Stem copy adapted from the editor's note, plus thirteen blurbs, EN and TH
 
 ## UI mockups (ASCII)
@@ -157,8 +169,7 @@ conduit rather than stacking.
 
 ## Test list (TDD)
 
-- every pin resolves to a scale — `valley`, `city` or `both` — unit —
-  `src/engine/__tests__/pins.test.ts`
+- every futures hotspot names a `view` — unit — `src/engine/__tests__/scene.test.ts`
 - a pin outside the 120 km frame yields an edge bearing and distance, not a clipped position —
   unit; Chiang Dao at 64 km and Mae Chaem at 75 km are the cases
 - city-scale pins all fall inside the scene rectangle — unit. Catches a pin authored at a plausible
@@ -187,8 +198,9 @@ conduit rather than stacking.
 
 - **A second scenario.** There is one 2045 and the schema already supports another for free.
 - Extruded buildings of any kind, and therefore `building.intervention`.
-- The printed newspaper map itself — but the pin list and blurbs are the **shared source** it should
-  be made from, so this plan owns that data and the print consumes it.
+- The printed newspaper map itself. It is an **export of the same hotspots** — see the roadmap's
+  "The newspaper map is an export" — so this plan owns the data and the export consumes it, and
+  nothing about the map is drawn twice.
 - Thai translation of the eight full stories. Blurbs are bilingual; the articles can follow.
 
 ## Open questions

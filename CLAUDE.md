@@ -144,6 +144,13 @@ Consequences: touch is the primary input and hover is decoration; the perf budge
 `docs/architecture.md` is a requirement, not an optimisation; the laptop/projection machine runs
 a local static export so a venue wifi failure cannot take the installation down.
 
+**Priority from 24 Sep 2026: the exhibition screen first.** The chapter build — the scrolly shell,
+extruded population columns, the pin landscape — is designed and verified on the laptop and the
+projector. The phone budget stays a requirement for the QR surface but is not the design
+constraint for this phase: where a choice costs the phone, take it and leave the LOD switch for
+later. The population field's block-sum makes 256 and 128 exact, so that switch is a setting, not a
+redesign — the same shape as `?lod=full`.
+
 **The phone budget was repaid on 21 Sep 2026.** The scene still covers 5.8 × 8.1 km and 68,704
 buildings, but the viewer no longer draws them all: everything beyond 1,250 m of the origin is a
 pre-rendered raster hung on two planes, and the relief backdrop is decimated. Measured on the

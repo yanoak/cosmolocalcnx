@@ -49,8 +49,29 @@ so extruding cells gives the mountains look directly, without the tilt the Puddi
 Mapbox camera for. And **population is additive**, so the committed 512-cell field block-sums
 exactly to 256 and 128 — which is the phone's LOD, free and lossless rather than approximated.
 
-One instanced mesh, one column per populated cell. The 3,437 km field has 89,051 populated cells of
-262,144, so the instance count is tractable; the decimated field is what a phone draws.
+One instanced mesh, one column per populated cell. Sized from the committed 3,437 km field, with
+an isometric camera seeing three faces of a box (6 triangles):
+
+| Field | Populated cells | Triangles | vs the 150k phone ceiling |
+|---|---|---|---|
+| 512² | 89,051 | 534k | 3.56× |
+| 256² | 25,954 | 156k | 1.04× |
+| 128² | 7,415 | 44k | 0.30× |
+
+**The exhibition screen draws 512² and this plan is built for that screen.** Decided 24 Sep 2026:
+the laptop and the projector are the priority, and 534k triangles is well inside what that machine
+already handles with `?lod=full` at roughly a million. The phone is not the design constraint for
+this chapter. When it is, the block-sum makes 256 and 128 exact, so the LOD is a switch rather than
+a redesign — the same shape as `?lod=full`.
+
+**The growing radius is a shader uniform.** "Desaturate outside the circle" while the circle grows
+would otherwise mean recolouring tens of thousands of instances per frame. One float uniform,
+compared against instance position in the fragment shader, costs nothing. Materials stay unlit by
+rule — this is `onBeforeCompile` on `MeshBasicMaterial`, not a lighting change.
+
+**Picking moves from texel to instance.** `pickedCell` reads a texel of the flat field today; on
+columns it is an instance id from the raycaster. The readout — name, country, population — already
+has its data: `cities.json` carries `country`.
 
 **The growth is the argument, not a transition.** A static circle with a caption states a fact; a
 circle that grows while a counter climbs makes the reader feel the curve flatten. The curve is the
@@ -87,10 +108,14 @@ number and footnote the method** rather than implying a precision the field does
 
 ## Tasks
 
-- [ ] Regenerate the region field on 18.7912/99.0043, with the byte-identical re-run test
+- [ ] Regenerate **three** artefacts on 18.7912/99.0043 — the 3,437 km field, the 12,000 km world
+      field, and `cities.json`, whose `km` coordinates are AEQD from the old centre — each with the
+      byte-identical re-run test
 - [ ] `halfPopulationRadius()` and the cumulative curve, derived at build time and committed
 - [ ] The base — a still frame on Wat Ket, before anything grows
-- [ ] Extrude the field — instanced columns, height by population, LOD by block-sum
+- [ ] Extrude the field — instanced columns at 512², height by population
+- [ ] The radius as a shader uniform on the unlit material; inside/outside by distance from origin
+- [ ] Picking by instance id, replacing the texel lookup
 - [ ] The stem — circle growth driven by the chapter score, counter reading the curve
 - [ ] Camera zooms out as the circle grows, so the ring holds a roughly constant share of screen
 - [ ] Hand the bowl its release: pan, zoom and hover stay locked until the stem ends
@@ -193,8 +218,9 @@ half-grown circle is not a claim.
 5. After the stem, drag to pan and pinch or `+`/`-` to zoom. Both were inert before and work now.
 6. Hover or tap a tall column — name, country and population. Distance from Wat Ket is measured
    from Wat Ket, not from 21.00/100.29.
-9. Check the frame rate with the full field on a phone, then with the 128-block-summed one. If the
-   full field does not hold, the decimation is the answer and it is already exact.
+9. On the exhibition machine at projector resolution: the full 512² field holds a smooth frame
+   rate through the whole growth animation. Note the number; it is the baseline every later chapter
+   is measured against.
 7. Narrow to 390 px: the counter stays legible and nothing overflows.
 8. `1`/`2`/`3` still move between chapters from anywhere in the sequence.
 

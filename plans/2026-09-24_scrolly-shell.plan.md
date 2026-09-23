@@ -62,17 +62,85 @@ to the valley once the city items are done. That is a view change inside a chapt
 plans did not anticipate. It is legitimate because the beat *names* the view explicitly; it would
 not be legitimate if the view were derived from a zoom level.
 
+**One camera controller, and `registers.ts` dismantled.** Camera logic is currently split four
+ways: `views.ts` has the ranges, `tween.ts` the easing, `Diorama`'s rig tweens on a view change, and
+`Diorama` still imports `registerState`, `zoomLadder`, `tToZoom`, `worldMinZoom`, `regionScale` and
+`stageFit` from `registers.ts` — the module whose concept was killed on 23 Sep. Present wants a
+scroll-driven zoom-out, Futures wants a pose per beat, and a beat "names a camera pose" with nothing
+to hand it to. So: **`camera.ts` with one API, `goTo({ view, zoom, target }, duration)`**, called by
+the switcher and by the beat score alike. The two things `registers.ts` still legitimately does —
+`stockTint` and the city's zoom ladder — move out, and the rest is deleted. Without this, Present
+and Futures each write a fifth ad hoc tween.
+
+**`ChapterId` exists, and the rail is driven by it.** `Rail` takes `views` and a `ViewId`;
+`VIEW_TENSE` maps valley → "Past". Both were correct at one view per chapter. The moment Futures
+enters the valley the rail's current node is wrong and the header says *Past*. Introduce
+`ChapterId = 'past' | 'present' | 'futures'` and `CHAPTER_VIEWS: Record<ChapterId, ViewId[]>`; the
+rail, the `1`/`2`/`3` keys and the tense labels move to chapters, `VIEW_PLACE` stays on views.
+
+**The terminal beat releases; it does not switch chapter.** Two plans currently have a last beat
+that both "hands over to the next chapter" and "reveals the bowl", which cannot both be the end.
+Resolved: the terminal beat unlocks explore, and **moving on is a control** — the rail, or a
+"next" affordance inside the bowl — never an automatic transition. A visitor who wants to stay
+in the bowl stays.
+
+**Hotspots are the document's, not a parallel data file.** `scene.ts` already has
+`Hotspot { id, target?, at?, label: LocaleMap, body: LocaleMap, image? }` in a `hotspots: []` the
+roadmap lists under *protect: authored content*. The Futures plan's `pins.ts` and the Past plan's
+point items would be two more schemas for the same thing, outside the document. **Extend `Hotspot`**
+with `chapter: ChapterId`, `view: ViewId`, `icon`, `date` — and every pin and point item lives in
+`wat-ket.json`. That also gives `validateScene` a new invariant: hotspots are overlay, overlay
+carries tense, so **every hotspot must declare a chapter**. The substrate/overlay rule, checkable at
+the data level.
+
+**The layout changes, and it is written down here.** The viewer is `100dvh; overflow: hidden` — the
+diorama owns the viewport. Pudding-style scrolling needs a tall scroll track over a fixed canvas,
+which is a `page.tsx` / `globals.css` change, and it meets TODO 7 head-on: in the stem the wheel
+scrolls, in explore the wheel zooms. The shell owns that switch.
+
+**Progress is continuous inside a beat.** `IntersectionObserver` yields a beat index; Present's
+growing circle and its zoom-out want a 0–1 *within* the beat. The shell exposes both, and a beat
+may bind either.
+
+**All copy is `LocaleMap`.** `locale.ts` exists and the scene document already uses it;
+`VIEW_TENSE` and `VIEW_PLACE` are bare strings and every chapter plan says "EN and TH" as a task.
+The beat score takes a locale and every string is a `LocaleMap`, or four plans invent copy handling
+four times. It also keeps the roadmap's deferred Burmese / Lanna item free.
+
+**A story is a full-viewport overlay state.** Not a modal — a newspaper article in a modal on a
+phone is a scroll inside a scroll — and not a route, which would unmount the scene. An overlay with
+its own scroll container, the scene dimmed and still mounted behind it. One state, no rebuild.
+
+**The attract loop falls out of the stems.** The on-ramp is gone; with three stems and a dwell per
+beat, the projector's loop is *auto-advance the stems and cycle*. That is a driver over the same
+beat score and it lives here, because nothing else owns it.
+
+**Line hit-testing is a one-liner.** Under an orthographic camera,
+`Raycaster.params.Line.threshold = px / camera.zoom` keeps the tolerance constant in screen pixels.
+It is a task, not a spike.
+
 **Rejected: a scrollytelling library.** `IntersectionObserver` plus a beat index is about forty
 lines, and the hard part here is the camera and layer state, which no library knows about.
 
 ## Tasks
 
-- [ ] `Scrolly.tsx` — full-bleed slot, centred cards, `IntersectionObserver` → beat index
-- [ ] `chapters.ts` — the beat score: camera pose, layer state, copy, terminal flag. Pure, tested
-- [ ] `Explore.tsx` — the release: layer toggles, pan and zoom unlocked
-- [ ] `Hotspot.tsx` — hover blurb and click modal, for icons and for lines
-- [ ] Hit-testing for thin line geometry, with a tap-friendly tolerance
-- [ ] The icon system: a sprite registry shared by Past point items and Futures pins
+- [ ] `camera.ts` — `goTo({ view, zoom, target }, duration)`; absorb `Diorama`'s rig and what
+      `registers.ts` still does; delete the rest of `registers.ts`
+- [ ] `ChapterId`, `CHAPTER_VIEWS`, tense labels keyed by chapter; `Rail` and the number keys move
+      to chapters
+- [ ] Extend `Hotspot` with `chapter`, `view`, `icon`, `date`; `validateScene` requires `chapter`
+- [ ] The layout change — scroll track over a fixed canvas; wheel is scroll in the stem, zoom in
+      explore
+- [ ] `chapters.ts` — the beat score: view, camera pose, layer state, `LocaleMap` copy, terminal
+      flag; beat index plus continuous 0–1 progress. Pure, tested
+- [ ] `Scrolly.tsx` — full-bleed slot, centred cards, `IntersectionObserver` → beat and progress
+- [ ] `Explore.tsx` — the release: layer toggles, pan and zoom unlocked, a "next chapter" control
+- [ ] `Hotspot.tsx` — hover blurb, click modal for short items, click overlay for stories
+- [ ] `Story.tsx` — the full-viewport overlay state with its own scroll container
+- [ ] Line hit-testing with a screen-pixel threshold
+- [ ] The icon sprite registry, shared by Past point items and Futures pins
+- [ ] The nested rail — three chapter stops, N beats inside the open one
+- [ ] The attract loop — a timer driver over the beat score, cycling the three stems
 - [ ] `/jig` — icon comparison page, for iterating Higgsfield prompts and results
 
 ## UI mockups (ASCII)
@@ -140,8 +208,17 @@ page behind it.
 
 ## Test list (TDD)
 
-- `beatAt(scrollProgress, beats)` returns a beat index, never a camera — unit —
+- `beatAt(scrollProgress, beats)` returns a beat index and a 0–1 progress, never a camera — unit —
   `src/engine/__tests__/chapters.test.ts`
+- progress is continuous across a beat boundary — 1.0 at the end of beat *n* meets 0.0 at the
+  start of *n+1* with no jump — unit
+- `CHAPTER_VIEWS` covers every `ViewId` and every chapter has at least one view — unit —
+  `views.test.ts`
+- `chapterOf(view)` is ambiguous for the valley and the caller must pass the chapter — unit; pins
+  the reason `ChapterId` exists
+- `camera.goTo` clamps zoom to the named view's range and never changes view on its own — unit —
+  `camera.test.ts`
+- `validateScene` rejects a hotspot without a `chapter` — unit — `scene.test.ts`
 - …is monotonic in progress, and stable at exact beat boundaries — unit
 - a beat that names a view returns that view unchanged; **no beat derives a view from a zoom** —
   unit. This is the invariant the 21 Sep rail removal bought and it should be pinned, not trusted
@@ -178,8 +255,8 @@ page behind it.
 - [ ] Does the explore mode keep the rail visible, or is the rail only for the scrolly?
 - [ ] Do cards advance one beat per card, or can a beat hold several cards? Pudding does the
       latter, and it matters for how copy is written.
-- [ ] Modal or full page for the Futures stories? The modal pattern is shared with Past, but a
-      newspaper article is much longer than a station blurb.
+- [ ] ~~Modal or full page for the Futures stories?~~ Resolved: a full-viewport overlay state. See
+      Approach.
 
 ## Outcome
 
