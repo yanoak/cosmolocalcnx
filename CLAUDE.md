@@ -264,9 +264,12 @@ Do not build these before 24 Sep, however reasonable they sound in isolation:
   of the chapter rather than a convention a control has to respect. That holds whether there is one
   2045 or several, and since 23 Sep there is one.
 
-- **No extruded population columns before 24 Sep.** The region register renders flat. The
-  committed field is already shaped for the December extrusion — 512 cells, and population is
-  additive so 256 and 128 are exact block-sums off it.
+- **~~No extruded population columns before 24 Sep.~~ Expired 24 Sep 2026 — they are now the
+  Present chapter's whole visualisation.** The field was always shaped for this: 512 cells, and
+  population is additive, so 256 and 128 are exact block-sums off it and give the phone its LOD for
+  free. The camera needs no change — it is already isometric, so extruding the cells produces the
+  "mountains" look directly, without the tilt the Pudding piece uses a Mapbox camera for.
+  See `plans/2026-09-23_present-chapter.plan.md`.
 
 ## Working conventions
 

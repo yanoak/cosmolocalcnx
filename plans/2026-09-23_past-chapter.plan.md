@@ -32,6 +32,20 @@ The last thread has no route to draw, and that is what hands the chapter over to
 
 ## Approach
 
+**Built on the scrolly shell.** The scroll section, the explore release, the layer toggles and the
+hover-blurb / click-modal pair are all `2026-09-24_scrolly-shell`. This plan owns the five layers,
+their geometry, their copy and their camera beats — nothing else.
+
+**Point items share the Futures icon system.** The airport and the railway station are drawn with
+the same iconography as the 2045 pins, specified 24 Sep 2026. The two chapters that share the
+valley therefore share a visual language, so a visitor reads the same grammar in both — and the
+icon production run is one set rather than two.
+
+**Lines are hoverable, not just icons.** A road or a rail alignment answers on hover with a blurb
+and on click with a modal, the same as a point. That is a real constraint on the shell: hit-testing
+has to work on thin geometry with a screen-space tolerance, or a line becomes untappable as soon as
+it is zoomed out.
+
 **Five layers, not four.** An earlier shorthand said "caravans, roads, rail, airport" and dropped
 the river. The Ping is the strongest confirmed thread in the whole chapter and the argument opens
 with it. The research also separates caravans from modern roads deliberately — different eras,
@@ -74,8 +88,9 @@ obliged to repeat its sibling and should not.
 - [ ] `threads.ts` — layer definitions with an explicit `certainty` field, and an OSM fetch for the
       confirmed alignments
 - [ ] Line styles per certainty, from the KV: solid, dashed corridor, node-and-arc
-- [ ] The stem — five beats on the chapter score, each arriving over the hillshade
-- [ ] The timeline bowl — scrub, toggle layers, read the dated detail
+- [ ] The stem — five beats, one layer arriving per beat, over the hillshade
+- [ ] Point-item icons: airport, railway station, and the rest, from the shared registry
+- [ ] Blurb and modal copy for every icon and every line
 - [ ] Copy for five layers plus the dated nuggets, EN and TH, **written from the findings file**
 - [ ] The remote-work beat as terminal, handing over to Present
 

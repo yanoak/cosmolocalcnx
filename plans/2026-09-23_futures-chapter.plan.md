@@ -33,6 +33,19 @@ a popup; the popup leads to the full story. The scene stays mounted throughout.
 
 ## Approach
 
+**Built on the scrolly shell.** Scroll section, explore release, hover blurb and click modal are
+all `2026-09-24_scrolly-shell`, shared with Past — including the icon system, which the Past
+chapter's point items use too.
+
+**The stem reveals one pin per beat, and changes view partway.** Specified 24 Sep 2026: it opens in
+the **city**, introduces the four places there one at a time, and once the city items are done it
+**shifts to the valley** for the rest. Explore then offers both views switchable.
+
+That is a view change *inside* a chapter, which the earlier plans did not anticipate. It is
+legitimate precisely because the beat **names** the view: the invariant that matters is that no view
+is ever *derived* from a zoom offset, and naming one in a score does not do that. Worth writing
+down, because it looks like the rule being bent and is not.
+
 **The editor's note is already the stem.** Faiways opens by introducing the *fai* — a weir that
 slows a river and shares its flow rather than hoarding or blocking it — and sets up **Gen C**, the
 hundred children conceived around Cosmo Local CNX in 2026 who turn eighteen in 2045. It is written
@@ -70,7 +83,8 @@ landscape you want to look around, which a repeated marker does not give you.
 - [ ] `/jig` — the icon comparison page, Higgsfield prompts in, candidates out
 - [ ] Twelve isometric icons, generated and committed as optimised assets
 - [ ] Billboarded pin rendering at both scales, with the off-frame edge arrow for Chiang Dao
-- [ ] Popup on tap, hover as the laptop bonus
+- [ ] The stem — one pin revealed per beat, city first, then the shift to valley
+- [ ] Explore: the two views switchable, both carrying the full pin set
 - [ ] The story page, as a state over the mounted scene
 - [ ] Stem copy adapted from the editor's note, plus thirteen blurbs, EN and TH
 
@@ -181,8 +195,8 @@ conduit rather than stacking.
 
 - [ ] How many beats does the stem have? The editor's note suggests three — the fai, Gen C, the
       handover — but it has never been cut to length.
-- [ ] Do city-scale pins differ from valley-scale pins, or is the inset the same pins closer in?
-      Leaning same: the pin set is the content, the zoom is a camera.
+- [ ] Where exactly does the stem hand over from city to valley — on the last city pin, or on a
+      dedicated transition beat that earns the move?
 - [ ] Does the chapter end anywhere, or is the bowl terminal? It is the last chapter, so there is
       nothing to hand to — which may mean an idle reset is the only exit.
 - [ ] Icon style: the KV's beaded roundels as a frame around each isometric scene, or bare sprites

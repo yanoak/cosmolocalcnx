@@ -39,6 +39,19 @@ screen is computed from committed data rather than asserted.
 
 ## Approach
 
+**The field is extruded, not flat.** Specified 24 Sep 2026: the visualisation stops being a heat
+map lying on the ground and becomes the Pudding piece's "mountains" — one column per cell, height
+by population. That retires the *no extruded population columns before 24 Sep* non-goal, which has
+expired on its own terms.
+
+Two things make it cheaper than it sounds. **The camera needs no change**: it is already isometric,
+so extruding cells gives the mountains look directly, without the tilt the Pudding piece needs a
+Mapbox camera for. And **population is additive**, so the committed 512-cell field block-sums
+exactly to 256 and 128 — which is the phone's LOD, free and lossless rather than approximated.
+
+One instanced mesh, one column per populated cell. The 3,437 km field has 89,051 populated cells of
+262,144, so the instance count is tractable; the decimated field is what a phone draws.
+
 **The growth is the argument, not a transition.** A static circle with a caption states a fact; a
 circle that grows while a counter climbs makes the reader feel the curve flatten. The curve is the
 content:
@@ -77,8 +90,11 @@ number and footnote the method** rather than implying a precision the field does
 - [ ] Regenerate the region field on 18.7912/99.0043, with the byte-identical re-run test
 - [ ] `halfPopulationRadius()` and the cumulative curve, derived at build time and committed
 - [ ] The base — a still frame on Wat Ket, before anything grows
+- [ ] Extrude the field — instanced columns, height by population, LOD by block-sum
 - [ ] The stem — circle growth driven by the chapter score, counter reading the curve
-- [ ] Hand the bowl its release: pan, zoom and tap stay locked until the stem ends
+- [ ] Camera zooms out as the circle grows, so the ring holds a roughly constant share of screen
+- [ ] Hand the bowl its release: pan, zoom and hover stay locked until the stem ends
+- [ ] Hover readout on a column — name, country, population
 - [ ] Copy, EN and TH
 - [ ] Update `aeqd.test.ts` — the 279.98 km anchor is no longer the claim
 
@@ -112,17 +128,31 @@ number and footnote the method** rather than implying a precision the field does
 └──────────────────────────────────────┘
 ```
 
-**Bowl.** The ring stops, the controls unlock, the readout becomes the tap target.
+**Stem, later.** The camera has zoomed out to keep the ring a constant share of screen, so the
+world shrinks behind a ring that appears to stay still. The columns are the visualisation.
 
 ```
 ┌──────────────────────────────────────┐
-│          ╭────────────╮              │
-│        ╭─╯  ░░▓▓██▓░  ╰─╮            │
-│        │   ░▓███▓⊙░░    │  ← tapped  │
-│        ╰─╮  ·Wat Ket  ╭─╯            │
-│          ╰────────────╯              │
-│  Dhaka · 22,478,116 people           │
-│  2,190 km from Wat Ket               │
+│     ╭──────────────────────╮         │
+│    ╭╯    ▂▃ ▅▇█▆▃  ▂       ╰╮        │
+│    │  ▂▃▅███████▇▅▃▂  ▃▂    │        │
+│    │     ▃▅█▇▅▃ ·Wat Ket    │        │
+│    ╰╮   ▂▃▅▃▂        ▂▃    ╭╯        │
+│     ╰──────────────────────╯         │
+│  3,000 km          3.60 bn   50.4%   │
+└──────────────────────────────────────┘
+```
+
+**Bowl.** The ring stops, the controls unlock, a column answers on hover or tap.
+
+```
+┌──────────────────────────────────────┐
+│     ╭──────────────────────╮         │
+│    ╭╯    ▂▃ ▅▇█▆▃ ╭──────────────╮   │
+│    │  ▂▃▅███████▇▅│ Dhaka        │   │
+│    │     ▃▅█▇▅▃ · │ Bangladesh   │   │
+│    ╰╮   ▂▃▅▃▂     │ 22,478,116   │   │
+│     ╰─────────────╰──────────────╯   │
 └──────────────────────────────────────┘
 ```
 
@@ -161,14 +191,15 @@ half-grown circle is not a claim.
 3. It stops at roughly 3,400 km and about half. The number shown is rounded and footnoted.
 4. Press `Escape` mid-growth — jumps to the end state rather than freezing part-grown.
 5. After the stem, drag to pan and pinch or `+`/`-` to zoom. Both were inert before and work now.
-6. Tap a bright cell — name, population and distance from Wat Ket. Distance is measured from
-   Wat Ket, not from 21.00/100.29.
+6. Hover or tap a tall column — name, country and population. Distance from Wat Ket is measured
+   from Wat Ket, not from 21.00/100.29.
+9. Check the frame rate with the full field on a phone, then with the 128-block-summed one. If the
+   full field does not hold, the decimation is the answer and it is already exact.
 7. Narrow to 390 px: the counter stays legible and nothing overflows.
 8. `1`/`2`/`3` still move between chapters from anywhere in the sequence.
 
 ## Out of scope
 
-- **Extruded population columns.** Still a December item; the field renders flat.
 - The Past and Futures chapters, and the shared `chapters.ts` module beyond what this needs.
 - Any change to `aeqd.ts` itself — the projection is unchanged, only its centre argument moves.
 - Re-fetching GHS-POP for a true global total. The bracket is honest; closing it is a separate,
