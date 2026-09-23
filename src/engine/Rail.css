@@ -1,0 +1,94 @@
+/* Colour tokens are injected in layout.tsx from src/engine/theme.ts.
+   Never write a hex value in this file. */
+
+.rail {
+  display: flex;
+  align-items: center;
+}
+
+.rail-stop {
+  display: flex;
+  align-items: center;
+}
+
+/* The pipe between two nodes. Orange at full strength, because it is a surface here
+   and not text — the contrast floor that forces the kicker to derive does not apply. */
+.rail-conduit {
+  width: 22px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--cosmo-orange);
+  flex: none;
+}
+
+.rail-node {
+  /* Overrides the global 44px button chrome: the hit target is kept by padding, but
+     the border and background belong to the ring, not to the button. */
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+}
+
+.rail-ring {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 50%;
+  border: 5px solid var(--cosmo-orange);
+  background: var(--register-page-ground);
+  transition: border-width 120ms ease, background-color 120ms ease;
+}
+
+/* The current view reads as a filled bead; the others are hollow. One glance, no
+   colour change — the fill is the only variable, so it survives a projector.
+
+   The `background` reset is not redundant: globals.css styles ALL pressed buttons with
+   a tinted pill, which outranks `.rail-node` on specificity (element + attribute beats
+   one class) and put a lozenge behind the current node. The rail draws its own state. */
+.rail-node[aria-pressed='true'] {
+  background: transparent;
+}
+.rail-node[aria-pressed='true'] .rail-ring {
+  border-width: 9px;
+}
+
+.rail-label {
+  font-size: 0.875rem;
+  color: var(--ui-text);
+  white-space: nowrap;
+}
+.rail-node[aria-pressed='true'] .rail-label { font-weight: 600; }
+
+/* The button is transparent, so the focus outline has to land on the whole stop
+   rather than on an invisible box. */
+.rail-node:focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+
+/* Phones: only the current view keeps its label. Three unlabelled beads would be a
+   progress indicator for something the visitor cannot name, but three labels do not
+   fit — so the rail says where you ARE and the other stops are positions. They stay
+   in the accessibility tree either way; this hides them from sight, not from a
+   screen reader. */
+@media (max-width: 560px) {
+  .rail-node:not([aria-pressed='true']) .rail-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .rail-node { padding: 0 6px; }
+  .rail-conduit { width: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-ring { transition: none; }
+}

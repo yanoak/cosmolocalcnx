@@ -105,21 +105,7 @@
 
 .specimen p { margin: 0 0 10px; }
 
-/* ------------------------------------------------------------------ proposed */
-
-.proposed { position: relative; }
-.proposed > h2::after {
-  content: 'not yet in theme.ts';
-  margin-left: 10px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  vertical-align: middle;
-  color: var(--ui-accent);
-  border: 1px solid color-mix(in srgb, var(--ui-accent) 45%, transparent);
-}
+/* ------------------------------------------------------------------ registers */
 
 .registers {
   display: grid;
@@ -141,20 +127,4 @@
 .r-body { margin: 0 0 20px; font-size: 0.95rem; }
 .r-label { margin: 0; font-size: 0.7rem; opacity: 0.72; }
 
-/* ------------------------------------------------------------------ rail preview */
-
-.rail { display: flex; align-items: center; gap: 0; margin: 16px 0 8px; flex-wrap: wrap; }
-.node-wrap { display: flex; align-items: center; gap: 8px; }
-.node {
-  width: 22px; height: 22px; flex: none;
-  border-radius: 50%;
-  border-width: 5px;
-  border-style: solid;
-}
-.node.current { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 30%, transparent); }
-.node-label { font-size: 0.875rem; font-weight: 600; }
-.conduit { width: 48px; height: 5px; margin: 0 10px; border-radius: 3px; }
-
-@media (max-width: 480px) {
-  .conduit { width: 20px; margin: 0 6px; }
-}
+/* The rail is the real component; its styles live in engine/Rail.css. Nothing here. */

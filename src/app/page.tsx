@@ -21,6 +21,7 @@ import {
   saveSettings,
 } from '@/engine/settings';
 import { availableViews, resolveView, VIEW_ORDER, type ViewId } from '@/engine/views';
+import { Rail } from '@/engine/Rail';
 import type { ValleyStyle } from '@/engine/valley';
 import { BACKDROP_ASSETS } from '@/scenes/backdrop';
 import { VALLEY_ASSETS } from '@/scenes/valley';
@@ -327,19 +328,13 @@ export default function Page() {
         <div className="controls">
           {pending && <span className="lod-status">loading full geometry…</span>}
           {VIEWS.length > 1 && (
-            <div className="registers" role="group" aria-label="View">
-              {VIEWS.map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  aria-pressed={view === id}
-                  aria-keyshortcuts={String(VIEW_ORDER.indexOf(id) + 1)}
-                  onClick={() => goToView(id)}
-                >
-                  {VIEW_LABELS[id]}
-                </button>
-              ))}
-            </div>
+            <Rail
+              views={VIEWS}
+              current={view}
+              labels={VIEW_LABELS}
+              onSelect={goToView}
+              shortcutFor={(id) => VIEW_ORDER.indexOf(id) + 1}
+            />
           )}
           <button
             type="button"

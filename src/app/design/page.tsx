@@ -5,6 +5,7 @@ import {
   PALETTE,
   PALETTE_EXTENDED,
   POPULATION_RAMP,
+  REGISTERS,
   POPULATION_RAMP_OUTSIDE,
   RELIEF_RAMP,
   ROAD_TONES,
@@ -14,6 +15,7 @@ import {
   type Hex,
   type Ramp,
 } from '@/engine/theme';
+import { RailDemo } from './RailDemo';
 import './design.css';
 
 /**
@@ -253,51 +255,46 @@ export default function DesignSystemPage() {
         </div>
       </section>
 
-      <section className="proposed">
-        <h2>Proposed — the two registers</h2>
+      <section>
+        <h2>Layer 2 — registers</h2>
         <p>
-          <strong>Not yet in <code>theme.ts</code>.</strong> The printed panels use two registers
-          and the token table currently has one. These are composed from existing Layer 1 values,
-          so adopting them adds roles without adding colours. See{' '}
-          <code>plans/2026-09-23_kv-design-system.plan.md</code>.
+          A register is a ground and the three text weights that sit on it. The printed panels use
+          two and the token table used to have one. Composed entirely from Layer 1, so this adds
+          roles without adding colours &mdash; and rendered below straight from{' '}
+          <code>REGISTERS</code>, so the cards cannot disagree with the tokens.
         </p>
 
         <div className="registers">
-          <div
-            className="register"
-            style={{ background: PALETTE_EXTENDED['cosmo.offWhite'], color: PALETTE_EXTENDED['cosmo.charcoal'] }}
-          >
-            <p className="r-kicker" style={{ color: PALETTE['cosmo.orange'] }}>
-              Nomad Futures Lab:
-            </p>
-            <p className="r-head">Nomads as bridges to today&rsquo;s new rivers of opportunity</p>
-            <p className="r-body">
-              Chiang Mai has always been shaped by the routes that connect it to the world, with
-              digital remote work offering the newest opportunity.
-            </p>
-            <p className="r-label">
-              page · ground <code>cosmo.offWhite</code> · ink <code>cosmo.charcoal</code> · kicker{' '}
-              <code>cosmo.orange</code>
-            </p>
-          </div>
-
-          <div
-            className="register"
-            style={{ background: PALETTE['cosmo.purple'], color: PALETTE_EXTENDED['cosmo.offWhite'] }}
-          >
-            <p className="r-kicker" style={{ color: PALETTE['cosmo.orange'] }}>
-              Dreamers, it&rsquo;s your turn:
-            </p>
-            <p className="r-head">What are your dreams for Chiang Mai?</p>
-            <p className="r-body">
-              Whether you live here, work here, have just arrived, or come back every year, what do
-              you dream of for Chiang Mai?
-            </p>
-            <p className="r-label">
-              invert · ground <code>cosmo.purple</code> · ink <code>cosmo.offWhite</code> · kicker{' '}
-              <code>cosmo.orange</code>
-            </p>
-          </div>
+          {(['page', 'invert'] as const).map((name) => {
+            const r = REGISTERS[name];
+            return (
+              <div
+                key={name}
+                className="register"
+                style={{ background: r.ground, color: r.ink }}
+              >
+                <p className="r-kicker" style={{ color: r.kicker }}>
+                  {name === 'page' ? 'Nomad Futures Lab:' : "Dreamers, it's your turn:"}
+                </p>
+                <p className="r-head">
+                  {name === 'page'
+                    ? "Nomads as bridges to today's new rivers of opportunity"
+                    : 'What are your dreams for Chiang Mai?'}
+                </p>
+                <p className="r-body">
+                  {name === 'page'
+                    ? 'Chiang Mai has always been shaped by the routes that connect it to the world, with digital remote work offering the newest opportunity.'
+                    : 'Whether you live here, work here, have just arrived, or come back every year, what do you dream of for Chiang Mai?'}
+                </p>
+                <p className="r-body" style={{ color: r.muted }}>
+                  Muted text, for anything the headline outranks.
+                </p>
+                <p className="r-label">
+                  {name} · {r.ground} · {r.ink} · {r.kicker} · {r.muted}
+                </p>
+              </div>
+            );
+          })}
         </div>
 
         <h3>Contrast, at the size each is used</h3>
@@ -308,66 +305,58 @@ export default function DesignSystemPage() {
         </p>
         <table className="tokens">
           <tbody>
+            {(['page', 'invert'] as const).flatMap((name) => {
+              const r = REGISTERS[name];
+              return [
+                ['ink', r.ink],
+                ['kicker', r.kicker],
+                ['muted', r.muted],
+              ].map(([slot, value]) => (
+                <tr key={`${name}-${slot}`}>
+                  <td>
+                    <code>
+                      {name}.{slot}
+                    </code>{' '}
+                    on its ground
+                  </td>
+                  <td>
+                    <span className="hex">{value}</span>
+                  </td>
+                  <td>
+                    <Contrast fg={value as string} bg={r.ground} />
+                  </td>
+                </tr>
+              ));
+            })}
             <tr>
               <td>
-                <code>page</code> ink on ground
+                the print&rsquo;s raw <code>cosmo.orange</code> on the page ground
               </td>
               <td>
-                <Contrast fg={PALETTE_EXTENDED['cosmo.charcoal']} bg={PALETTE_EXTENDED['cosmo.offWhite']} />
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <code>page</code> kicker on ground, as large text
+                <span className="hex">{PALETTE['cosmo.orange']}</span>
               </td>
               <td>
-                <Contrast fg={PALETTE['cosmo.orange']} bg={PALETTE_EXTENDED['cosmo.offWhite']} large />
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <code>page</code> kicker on ground, at body size
-              </td>
-              <td>
-                <Contrast fg={PALETTE['cosmo.orange']} bg={PALETTE_EXTENDED['cosmo.offWhite']} />
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <code>invert</code> ink on ground
-              </td>
-              <td>
-                <Contrast fg={PALETTE_EXTENDED['cosmo.offWhite']} bg={PALETTE['cosmo.purple']} />
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <code>invert</code> kicker on ground, as large text
-              </td>
-              <td>
-                <Contrast fg={PALETTE['cosmo.orange']} bg={PALETTE['cosmo.purple']} large />
+                <Contrast fg={PALETTE['cosmo.orange']} bg={REGISTERS.page.ground} large />
               </td>
             </tr>
           </tbody>
         </table>
+        <p className="note">
+          That last row is why <code>page.kicker</code> derives. The panels set kickers at 80&nbsp;pt
+          in raw orange and it works on paper under gallery light; on this ground it fails even the
+          3:1 large-text floor. On purple the same value passes outright, which is the asymmetry
+          that makes two registers worth having.
+        </p>
 
         <h3>The rail</h3>
         <p>
-          The pipe-and-node graphic on p22 of the panels, which is already a chapter rail in print.
-          Built against the three views first; it gains chapters as a data change.
+          The pipe-and-node graphic on p22 of the panels. This is the real component, with local
+          state — selecting here switches nothing. It is built against the three views first.{' '}
+          <strong>The upgrade to chapters is not free:</strong> the printed rail marks sections
+          within one panel, so once chapters land a visitor needs three view stops and N chapter
+          stops at once, which is a nested rail rather than a data change.
         </p>
-        <nav className="rail" aria-label="Rail preview (static)">
-          {['Past', 'Present', 'Futures'].map((label, i) => (
-            <span key={label} className="node-wrap">
-              <span
-                className={i === 0 ? 'node current' : 'node'}
-                style={{ borderColor: PALETTE['cosmo.orange'], background: GROUND.ground }}
-              />
-              <span className="node-label">{label}</span>
-              {i < 2 && <span className="conduit" style={{ background: PALETTE['cosmo.orange'] }} />}
-            </span>
-          ))}
-        </nav>
+        <RailDemo />
       </section>
 
       <footer className="colophon">

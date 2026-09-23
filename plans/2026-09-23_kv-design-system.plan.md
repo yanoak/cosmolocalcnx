@@ -1,6 +1,6 @@
 ---
 slug: 2026-09-23_kv-design-system
-status: draft
+status: active
 started: 2026-09-23
 finished:
 issue:
@@ -106,9 +106,9 @@ Kept as an open question rather than a silent change.
       muted — with the contrast tests written first
 - [x] Repoint `UI_TOKENS` at `REGISTERS.page`, and emit both registers from
       `cssCustomProperties()`
-- [ ] Kicker + headline type scale in `globals.css`, matching the panels' hierarchy
-- [ ] `Rail.tsx` — the orange conduit with beaded ring nodes, wired to the three views
-- [ ] Replace the view switcher chips with `Rail`
+- [x] Kicker + headline type scale in `globals.css`, matching the panels' hierarchy
+- [x] `Rail.tsx` — the orange conduit with beaded ring nodes, wired to the three views
+- [x] Replace the view switcher chips with `Rail`
 - [ ] `InvertPanel.tsx` — the purple register, for the piece's one invitation
 - [ ] `posterise()` in `theme.ts`, tested, and `RELIEF_RAMP_THREAD` as purple tonal bands
 - [ ] `?relief=thread` wired through `relief.ts`, with the byte-identical re-run test
