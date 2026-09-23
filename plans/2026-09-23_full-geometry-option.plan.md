@@ -125,6 +125,8 @@ a fetch and a prop.
 
 ## Out of scope
 
+- **A settings page.** Added the same day — see `plans/2026-09-23_settings.plan.md`. The
+  parameter still works and still wins; it is now the override rather than the only way in.
 - **The tile pyramid.** December, and on the roadmap with its numbers.
 - **Any change to the default.** The phone build is untouched.
 - **Making the near/far split adjustable at runtime.** The 1,250 m radius is baked into the
@@ -163,6 +165,11 @@ That is acceptable for what this is — a setting applied once when the installa
 starts — and it is NOT acceptable as something to press during a show. Pressing `f` in
 front of an audience freezes the projection for six seconds. Documented in CLAUDE.md as
 a start-of-day setting rather than a live control.
+
+*Corrected later the same day, measured on the static export rather than the dev server:*
+the configured path fetches 13.8 MB and fires `load` at 5.1 s, then freezes for the
+merge. The 26 s was Turbopack serving unminified JSON and is not what the laptop does.
+The default path on the export fetches 4.89 MB in total.
 
 Deliberately not fixed tonight: the obvious wins are chunking the merge across frames,
 dropping `computeVertexNormals` from `buildingGeometry`, and storing vertex colours as

@@ -13,9 +13,15 @@ import {
   type BaselineBuilding,
   type SceneDocument,
 } from '@/engine/scene';
-import { chooseLod, LOD_MODES, type LodMode } from '@/engine/lod';
+import { chooseLod, type LodMode } from '@/engine/lod';
+import {
+  browserStorage,
+  loadSettings,
+  resolveSettings,
+  saveSettings,
+} from '@/engine/settings';
 import { availableViews, resolveView, VIEW_ORDER, type ViewId } from '@/engine/views';
-import { VALLEY_STYLES, type ValleyStyle } from '@/engine/valley';
+import type { ValleyStyle } from '@/engine/valley';
 import { BACKDROP_ASSETS } from '@/scenes/backdrop';
 import { VALLEY_ASSETS } from '@/scenes/valley';
 import { REGION_ASSETS } from '@/scenes/regions';
@@ -182,19 +188,22 @@ export default function Page() {
    */
   const [deepLinked, setDeepLinked] = useState(false);
   useEffect(() => {
+    // Stored settings first, then the URL over the top of them. `resolveSettings` is
+    // pure and tested, including the case that matters most: an ABSENT parameter must
+    // leave a stored value alone rather than reset it, or visiting `/` at all would
+    // wipe the machine's configuration.
     const params = new URLSearchParams(window.location.search);
-    const style = params.get('relief');
-    if (style && (VALLEY_STYLES as readonly string[]).includes(style)) {
-      setRelief(style as ValleyStyle);
-    }
-    const wantedLod = params.get('lod');
-    if (wantedLod && (LOD_MODES as readonly string[]).includes(wantedLod)) {
-      setLod(wantedLod as LodMode);
-    }
-    const wanted = params.get('view');
-    if (wanted && (VIEW_ORDER as readonly string[]).includes(wanted)) {
-      setView(resolveView(wanted as ViewId, HAS_VIEWS));
+    const settings = resolveSettings(loadSettings(browserStorage()), params);
+
+    setRelief(settings.relief);
+    setLod(settings.lod);
+    setLocale(settings.locale);
+
+    if (settings.view) {
+      setView(resolveView(settings.view, HAS_VIEWS));
       setEra('futures');
+      // The on-ramp is skipped whether the view came from the URL or from settings:
+      // both are somebody having said where to start, which is what the on-ramp is for.
       setDeepLinked(true);
     }
   }, []);
@@ -338,7 +347,18 @@ export default function Page() {
       if (e.key.toLowerCase() === 'w') setWireframe((v) => !v);
       // Reachable only from a keyboard, which is the laptop-and-projector surface that
       // can afford a million triangles. A visitor on a phone cannot trigger the fetch.
-      if (e.key.toLowerCase() === 'f') setLod((m) => (m === 'full' ? 'near' : 'full'));
+      //
+      // It SAVES what it toggled to, so what somebody judged on the machine is what the
+      // machine keeps. A toggle that forgets is worse than no toggle: it would look
+      // configured and come back wrong after a restart.
+      if (e.key.toLowerCase() === 'f') {
+        setLod((m) => {
+          const next: LodMode = m === 'full' ? 'near' : 'full';
+          const storage = browserStorage();
+          saveSettings(storage, { ...loadSettings(storage), lod: next });
+          return next;
+        });
+      }
       if (e.key === '1' && hasRegion) goToView('circle');
       if (e.key === '2' && VALLEY) goToView('valley');
       if (e.key === '3') goToView('city');

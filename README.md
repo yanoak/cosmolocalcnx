@@ -41,14 +41,19 @@ npm run typecheck
 
 ### Setting up the exhibition machine
 
-The viewer takes three URL parameters, so the laptop or the projector can be pointed at a fixed
-state and left alone. None is a debug flag; all three survive a reload.
+**Open `/settings`.** Opening view, topography style, level of detail and language, kept in that
+browser's `localStorage` — so the laptop and the projector are each set up once and stay set
+across restarts. Visitors' phones have nothing stored and get the defaults, which is the point.
+
+The same four are also URL parameters, and a parameter **wins for the load it is on** without
+changing what the machine has stored — so a QR code can still aim somewhere specific.
 
 | | |
 |---|---|
 | `?view=circle\|valley\|city` | open on one of the three views instead of running the on-ramp |
-| `?relief=hillshade\|hypsometric\|terraced` | how the valley's topography is drawn |
-| `?lod=full` | render all 68,704 buildings as geometry and drop the backdrop raster |
+| `?relief=hillshade\|gradient\|terraced` | how the valley's topography is drawn |
+| `?lod=near\|full` | backdrop raster, or all 68,704 buildings as real geometry |
+| `?locale=en\|th` | opening language |
 
 **`?lod=full` is what the laptop and the projector want.** The default trades sharpness for a
 phone's budget: everything beyond 1,250 m is a pre-rendered raster at 4.80 m per texel, which is
@@ -57,7 +62,12 @@ draws every building for real — crisp at any zoom, about a million triangles, 
 phone cannot do.
 
 Set it at the start of the day, not during a show: the merge is synchronous and freezes the page
-for about six seconds. `f` toggles it on a keyboard, which is there for judging it on the machine.
+for about six seconds. `f` toggles it on a keyboard and saves what it toggled to, which is there
+for judging it on the machine rather than in front of an audience.
+
+Measured on the static export — the thing the laptop actually runs — a default load fetches
+4.89 MB; with full geometry turned on it fetches 13.8 MB, fires `load` at 5.1 s, and then spends
+about six seconds merging.
 
 ### The print tool
 

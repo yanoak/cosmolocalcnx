@@ -95,7 +95,9 @@ there. `?lod=full` loads the full 68,704-building document and renders every one
 no raster at all — crisp at any zoom, ~1M triangles, and exactly what a phone cannot do. It is a
 **start-of-day setting for the laptop and the projector, not a live control**: `mergeBuildings` is
 synchronous, so the switch freezes the main thread for ~6 s, and `f` toggles it for comparing on
-the machine rather than in front of an audience. The real fix is a tiled backdrop pyramid, which is
+the machine rather than in front of an audience. Set it at `/settings`; `?lod=full` still works
+and still wins for the load it is on. Measured on the static export: 4.89 MB for a default load,
+13.8 MB and 5.1 s when it is turned on. The real fix is a tiled backdrop pyramid, which is
 on the December roadmap with its numbers. Added 23 Sep 2026, see
 `plans/2026-09-23_full-geometry-option.plan.md`.
 
@@ -106,6 +108,17 @@ on the December roadmap with its numbers. Added 23 Sep 2026, see
 - **Not Godot, not Unity.** Considered and rejected: large wasm payloads, flaky iOS Safari, and the
   content is text panels over a 3D scene — which is DOM's job, not a game engine's.
 - Viewer at `/`, editor at `/admin`. Shared renderer components in `src/engine/`.
+- **`/settings` configures the machine, `/` is the piece.** Added 23 Sep 2026. Opening view,
+  topography style, level of detail and language, kept in `localStorage` — so the exhibition
+  laptop and the projector are set up once and survive a restart, and a visitor's phone has
+  nothing stored and gets the defaults. There is no server, so per-machine is the only
+  granularity available, and it happens to be the right one for an installation.
+  **Precedence is URL parameter > stored setting > default**, and the rule that matters is
+  that an ABSENT parameter leaves a stored value alone — otherwise merely opening `/` would
+  wipe the machine's configuration. `resolveSettings` is pure and that case is the test worth
+  having. Not linked from the viewer's control row: those controls are about Wat Ket, and a
+  rendering-quality switch beside them would be the first one that is about the software.
+  See `plans/2026-09-23_settings.plan.md`.
 - **`/print` is internal and is not on the public URL.** An STL exporter for the exhibition's
   3D print, added 22 Sep 2026. `src/app/print/` is listed in `.vercelignore`, so the Vercel
   build never receives the directory and the deployed export has no such page and no chunk —
