@@ -26,8 +26,42 @@
 
 export type ViewId = 'circle' | 'valley' | 'city';
 
-/** Presentation order, outermost first. Also the chip order and the `1`/`2`/`3` keys. */
-export const VIEW_ORDER: readonly ViewId[] = ['circle', 'valley', 'city'] as const;
+/**
+ * Presentation order, EARLIEST FIRST. Also the rail order and the `1`/`2`/`3` keys.
+ *
+ * Temporal since 23 Sep 2026. It used to run outermost-first, by scale — which is an
+ * author's concern: a visitor has no reason to care that one view is 3,437 km wide and
+ * another is eight. Once space was locked to time period the views had an order of their
+ * own, and it is this one.
+ */
+export const VIEW_ORDER: readonly ViewId[] = ['valley', 'circle', 'city'] as const;
+
+/**
+ * Every view is named twice, and the piece shows both.
+ *
+ * The tense is what the rail says, because three words in temporal order are what make
+ * the order legible at a glance. The place is the subhead under the header, because
+ * "Past" does not tell a visitor what they are about to look at.
+ *
+ * Deliberately not localised here. The bilingual pass (roadmap item 5) owns all viewer
+ * copy at once, and half-translating it now would leave two mechanisms to unpick.
+ */
+export const VIEW_TENSE: Record<ViewId, string> = {
+  valley: 'Past',
+  circle: 'Present',
+  city: 'Futures',
+};
+
+/**
+ * Plural on the city, and it is load-bearing. The piece asks "which of these?" rather
+ * than "is this an improvement?" — a singular "Future" quietly flattens several arguable
+ * scenarios back into one, which is the smaller question the whole design avoids.
+ */
+export const VIEW_PLACE: Record<ViewId, string> = {
+  valley: 'The valley',
+  circle: 'The circle',
+  city: 'Wat Ket',
+};
 
 /**
  * Which views a scene actually has.

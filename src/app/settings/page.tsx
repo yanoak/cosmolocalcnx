@@ -29,7 +29,7 @@ import './settings.css';
  */
 
 const VIEW_CHOICES = [
-  { value: '', label: "The piece's default", hint: 'Whatever the piece opens on. The default.' },
+  { value: '', label: "The piece's default", hint: 'The valley — the earliest view it has. The default.' },
   { value: 'valley', label: 'The valley', hint: 'Open on the basin. The past.' },
   { value: 'circle', label: 'The circle', hint: 'Open on the Valeriepieris claim. The present.' },
   { value: 'city', label: 'Wat Ket', hint: 'Open on the diorama. 2045.' },

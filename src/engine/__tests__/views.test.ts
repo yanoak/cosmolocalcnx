@@ -7,6 +7,8 @@ import {
   resolveView,
   stepView,
   VIEW_ORDER,
+  VIEW_PLACE,
+  VIEW_TENSE,
   VIEW_RANGE,
   viewSpec,
   type ViewId,
@@ -17,9 +19,14 @@ const ALL = { circle: true, valley: true };
 const CITY_ONLY = { circle: false, valley: false };
 
 describe('availableViews', () => {
-  it('is outermost first, which is the chip order and the 1/2/3 keys', () => {
-    expect(availableViews(ALL)).toEqual(['circle', 'valley', 'city']);
-    expect(VIEW_ORDER).toEqual(['circle', 'valley', 'city']);
+  /**
+   * Temporal since 23 Sep 2026, when space was locked to time period. It used to run
+   * outermost-first, by scale, which ordered the views by an author's concern rather
+   * than by the piece's argument.
+   */
+  it('is earliest first, which is the rail order and the 1/2/3 keys', () => {
+    expect(availableViews(ALL)).toEqual(['valley', 'circle', 'city']);
+    expect(VIEW_ORDER).toEqual(['valley', 'circle', 'city']);
   });
 
   /** A second neighbourhood has a city and nothing else until the generators run. */
@@ -137,9 +144,9 @@ describe('detailWithin', () => {
 
 describe('stepView', () => {
   it('walks the order', () => {
-    expect(stepView('circle', 1, ALL)).toBe('valley');
-    expect(stepView('valley', 1, ALL)).toBe('city');
-    expect(stepView('city', -1, ALL)).toBe('valley');
+    expect(stepView('valley', 1, ALL)).toBe('circle');
+    expect(stepView('circle', 1, ALL)).toBe('city');
+    expect(stepView('city', -1, ALL)).toBe('circle');
   });
 
   /**
@@ -148,11 +155,20 @@ describe('stepView', () => {
    */
   it('stops at the ends rather than wrapping', () => {
     expect(stepView('city', 1, ALL)).toBeNull();
-    expect(stepView('circle', -1, ALL)).toBeNull();
+    expect(stepView('valley', -1, ALL)).toBeNull();
   });
 
   it('skips a view that is not there', () => {
     expect(stepView('circle', 1, { circle: true, valley: false })).toBe('city');
+  });
+
+  /** The tense labels are the rail's whole text, so an empty one is a blank node. */
+  it('names every view twice, and the city is plural', () => {
+    for (const id of VIEW_ORDER) {
+      expect(VIEW_TENSE[id]).toBeTruthy();
+      expect(VIEW_PLACE[id]).toBeTruthy();
+    }
+    expect(VIEW_TENSE.city).toBe('Futures');
   });
 
   it('recovers from a view that is not in the list', () => {

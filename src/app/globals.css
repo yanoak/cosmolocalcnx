@@ -57,7 +57,7 @@ button[aria-pressed='true'] { background: color-mix(in srgb, var(--ui-focus) 18%
 /* What the visitor is looking at, under the diorama. Sits over the canvas rather
    than taking layout, so the stage keeps every pixel it can — the projector and a
    phone in portrait both need the height more than the caption does. */
-.register-caption {
+.view-caption {
   position: absolute;
   left: 16px; right: 16px; bottom: 12px;
   margin: 0;
@@ -68,7 +68,7 @@ button[aria-pressed='true'] { background: color-mix(in srgb, var(--ui-focus) 18%
   text-wrap: balance;
   pointer-events: none;
 }
-.register-caption p { margin: 0; }
+.view-caption p { margin: 0; }
 .city-readout strong { font-weight: 600; }
 .city-readout span { color: var(--ui-text-muted); }
 
@@ -208,6 +208,17 @@ button[aria-pressed='true'] { background: color-mix(in srgb, var(--ui-focus) 18%
   font-size: 0.95rem;
 }
 .body--muted { color: var(--register-page-muted); }
+
+/* A subhead sits UNDER its headline, where a kicker sits above it. The panels use the
+   kicker to say what section you are in and the headline to say the thing; a subhead is
+   for when the headline needs a second, quieter name rather than a category. */
+.subhead {
+  margin: 0;
+  color: var(--register-page-muted);
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+.invert .subhead { color: var(--register-invert-muted); }
 
 /* The inverted register: the piece's one invitation, not a general surface.
    Here the kicker IS the print's raw orange — on purple it is 6.64:1 and passes. */

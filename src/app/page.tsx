@@ -20,8 +20,15 @@ import {
   resolveSettings,
   saveSettings,
 } from '@/engine/settings';
-import { availableViews, resolveView, VIEW_ORDER, type ViewId } from '@/engine/views';
+import {
+  availableViews,
+  resolveView,
+  VIEW_ORDER,
+  VIEW_TENSE,
+  type ViewId,
+} from '@/engine/views';
 import { Rail } from '@/engine/Rail';
+import { ViewHeader } from '@/engine/ViewHeader';
 import type { ValleyStyle } from '@/engine/valley';
 import { BACKDROP_ASSETS } from '@/scenes/backdrop';
 import { VALLEY_ASSETS } from '@/scenes/valley';
@@ -124,17 +131,6 @@ const VIEWS = availableViews(HAS_VIEWS);
  * See "a view owns a tense" in CLAUDE.md.
  */
 
-/**
- * Three worlds, named for what they are rather than for a zoom level.
- *
- * "Asia" became "The circle" because the view is not a continent — it is a claim with a
- * boundary, and the caption underneath states the claim.
- */
-const VIEW_LABELS: Record<ViewId, string> = {
-  circle: 'The circle',
-  valley: 'The valley',
-  city: 'Wat Ket',
-};
 export default function Page() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [locale, setLocale] = useState('en');
@@ -159,7 +155,9 @@ export default function Page() {
   const stage = useRef<HTMLDivElement>(null);
 
   const hasRegion = REGION !== null;
-  const [view, setView] = useState<ViewId>(resolveView(hasRegion ? 'circle' : 'city', HAS_VIEWS));
+  // Opens on the earliest view it has. `resolveView` falls through to the city when the
+  // valley field is absent, so a scene with no DEM still opens on something.
+  const [view, setView] = useState<ViewId>(resolveView(VIEW_ORDER[0], HAS_VIEWS));
 
   /**
    * `?view=`, `?relief=` and `?lod=` — deep links into a view, a topography style and
@@ -324,14 +322,14 @@ export default function Page() {
   return (
     <main className="viewer">
       <div className="topbar">
-        <h1>Wat Ket 2045</h1>
+        <ViewHeader view={view} />
         <div className="controls">
           {pending && <span className="lod-status">loading full geometry…</span>}
           {VIEWS.length > 1 && (
             <Rail
               views={VIEWS}
               current={view}
-              labels={VIEW_LABELS}
+              labels={VIEW_TENSE}
               onSelect={goToView}
               shortcutFor={(id) => VIEW_ORDER.indexOf(id) + 1}
             />
@@ -388,7 +386,7 @@ export default function Page() {
             />
           </div>
         </div>
-        <div className="register-caption" aria-live="polite">
+        <div className="view-caption" aria-live="polite">
           {view === 'circle' ? (
             pickedCities.length > 0 ? (
               <p className="city-readout">

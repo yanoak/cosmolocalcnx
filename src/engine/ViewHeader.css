@@ -1,0 +1,47 @@
+/* Colour tokens are injected in layout.tsx from src/engine/theme.ts.
+   Never write a hex value in this file. */
+
+.view-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+}
+
+.view-header-tense {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--register-page-ink);
+  white-space: nowrap;
+}
+
+/* The subhead. Quieter and lighter, so the pair reads as one name with a hierarchy
+   rather than as two labels that happen to sit together. */
+.view-header-place {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--register-page-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Phones: the rail already shows the tense, so the header leads with the place and
+   drops the duplicate. It stays in the accessibility tree — the heading is still the
+   whole name. */
+@media (max-width: 560px) {
+  .view-header-tense {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .view-header-place {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--register-page-ink);
+  }
+}
