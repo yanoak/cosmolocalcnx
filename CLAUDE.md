@@ -401,6 +401,9 @@ the code they describe, never left untracked.
 
 ## Docs
 
+- `docs/handover.md` — **read this first after a context refresh.** A dated snapshot: what is
+  built, what is unverified, the decisions and where they live, the build order, the gotchas.
+  It is a reading order, not a source of truth; this file and the plans outrank it.
 - `docs/programme-context.md` — the exhibition, the people, the audience. **Local only, never
   committed** — see the public-repo note in Working conventions.
 - `docs/architecture.md` — scene schema, OSM pipeline, perf budget, asset strategy
