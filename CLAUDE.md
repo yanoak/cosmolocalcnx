@@ -255,6 +255,14 @@ Solo development with LLMs, over three months. The failure mode is architectural
   gitignored and local only. Do not commit it and do not quote its contents into files that are
   committed — refer to "the local programme notes" instead. This rule exists because the file was
   committed on 12 Sep 2026 and had to be pulled back out of public history.
+
+  **The one exception is a credit the piece deliberately shows.** A name that appears on the
+  website — in the footer, in an authored credit line — is published on purpose and belongs
+  wherever the viewer renders it from. Everything else is not a credit, including a designer or
+  author named in passing inside a source file or a doc. `docs/design-system.md` carried its
+  designer's name from 16 to 23 Sep 2026 for no reason other than that someone typed it, which is
+  exactly the case this exception does not cover. **Default to no name; add one only when it is
+  going on the site.**
 - **A pre-commit hook enforces the rule above**, because the rule on its own did not — it was
   broken within the hour by the session that wrote it. `scripts/hooks/pre-commit` blocks staged
   content matching a name or private-link pattern, and blocks `docs/programme-context.md` outright.
