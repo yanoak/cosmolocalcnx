@@ -1,0 +1,160 @@
+/* Colour tokens are injected in layout.tsx from src/engine/theme.ts.
+   Never write a hex value in this file — every colour here is either a var()
+   or an inline style driven by the token it is displaying. */
+
+.design {
+  height: 100dvh;
+  overflow-y: auto;              /* html/body own no scroll; the diorama owns the viewport */
+  padding: 0 16px 96px;          /* 16px side gutter, phone-first */
+  max-width: 68rem;
+  margin: 0 auto;
+}
+
+.masthead { padding: 40px 0 8px; }
+.masthead h1 { margin: 0 0 8px; font-size: clamp(1.8rem, 6vw, 2.6rem); line-height: 1.1; }
+.lede { max-width: 46rem; color: var(--ui-text-muted); }
+
+.kicker {
+  margin: 0 0 4px;
+  color: var(--ui-accent);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.design section {
+  padding-top: 40px;
+  border-top: 1px solid color-mix(in srgb, var(--ui-text) 14%, transparent);
+  margin-top: 40px;
+}
+.design h2 { font-size: 1.4rem; margin: 0 0 8px; }
+.design h3 { font-size: 1rem; margin: 32px 0 6px; }
+.design p { max-width: 46rem; margin: 0 0 14px; }
+.design .note { color: var(--ui-text-muted); font-size: 0.875rem; margin-top: 18px; }
+.design code { font-size: 0.85em; }
+.design a { color: var(--ui-accent); }
+
+/* ------------------------------------------------------------------ swatches */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 16px 0 8px;
+}
+
+.swatch { margin: 0; }
+.swatch .chip {
+  height: 64px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--ui-text) 16%, transparent);
+}
+/* Top, side, shade — the three faces in the order the diorama shows them. */
+.swatch .chip.tri { display: flex; overflow: hidden; }
+.swatch .chip.tri span { flex: 1; }
+
+.swatch figcaption { display: flex; flex-direction: column; gap: 1px; padding-top: 6px; }
+.hex {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  color: var(--ui-text-muted);
+}
+
+/* ------------------------------------------------------------------ roads */
+
+.roads { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+.road { display: flex; align-items: center; gap: 12px; }
+.road .bar {
+  height: 14px;
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--ui-text) 14%, transparent);
+}
+/* Width carries the hierarchy here exactly as it does on the ground plane. */
+.road:nth-child(1) .bar { width: 220px; }
+.road:nth-child(2) .bar { width: 180px; }
+.road:nth-child(3) .bar { width: 140px; }
+.road:nth-child(4) .bar { width: 100px; }
+.road:nth-child(5) .bar { width: 64px; }
+
+/* ------------------------------------------------------------------ ramps */
+
+.rampbar {
+  display: flex;
+  height: 44px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ui-text) 16%, transparent);
+}
+.rampbar span { flex: 1; }
+
+/* ------------------------------------------------------------------ tokens table */
+
+.tokens { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.875rem; }
+.tokens th { text-align: left; font-weight: 600; padding: 6px 10px 6px 0; }
+.tokens td { padding: 8px 10px 8px 0; vertical-align: middle; }
+.tokens tbody tr + tr { border-top: 1px solid color-mix(in srgb, var(--ui-text) 10%, transparent); }
+.tokens td:last-child { padding: 8px 10px; border-radius: 4px; }
+
+.ratio { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; }
+.ratio.pass { color: var(--ui-text); }
+.ratio.fail { color: var(--ui-accent); font-weight: 600; }
+.ratio .need { color: var(--ui-text-muted); font-weight: 400; }
+
+/* ------------------------------------------------------------------ specimen */
+
+.specimen p { margin: 0 0 10px; }
+
+/* ------------------------------------------------------------------ proposed */
+
+.proposed { position: relative; }
+.proposed > h2::after {
+  content: 'not yet in theme.ts';
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  color: var(--ui-accent);
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 45%, transparent);
+}
+
+.registers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin: 16px 0 8px;
+}
+.register {
+  padding: 22px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--ui-text) 16%, transparent);
+}
+.r-kicker {
+  margin: 0 0 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.r-head { margin: 0 0 12px; font-weight: 600; font-size: 1.5rem; line-height: 1.15; }
+.r-body { margin: 0 0 20px; font-size: 0.95rem; }
+.r-label { margin: 0; font-size: 0.7rem; opacity: 0.72; }
+
+/* ------------------------------------------------------------------ rail preview */
+
+.rail { display: flex; align-items: center; gap: 0; margin: 16px 0 8px; flex-wrap: wrap; }
+.node-wrap { display: flex; align-items: center; gap: 8px; }
+.node {
+  width: 22px; height: 22px; flex: none;
+  border-radius: 50%;
+  border-width: 5px;
+  border-style: solid;
+}
+.node.current { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 30%, transparent); }
+.node-label { font-size: 0.875rem; font-weight: 600; }
+.conduit { width: 48px; height: 5px; margin: 0 10px; border-radius: 3px; }
+
+@media (max-width: 480px) {
+  .conduit { width: 20px; margin: 0 6px; }
+}
