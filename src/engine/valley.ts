@@ -135,9 +135,14 @@ export function cityPatchExtent(bounds: [number, number, number, number]): {
 // mountains. Three ways of drawing the same field, chosen by the scene rather than
 // hard-coded, so the choice can be made by looking at all three.
 
-export type ValleyStyle = 'gradient' | 'terraced' | 'hillshade';
+export type ValleyStyle = 'gradient' | 'terraced' | 'hillshade' | 'thread';
 
-export const VALLEY_STYLES: readonly ValleyStyle[] = ['gradient', 'terraced', 'hillshade'];
+export const VALLEY_STYLES: readonly ValleyStyle[] = [
+  'gradient',
+  'terraced',
+  'hillshade',
+  'thread',
+];
 
 /**
  * `hillshade`, chosen 21 Sep 2026 by rendering all three and looking at them.
@@ -151,6 +156,12 @@ export const VALLEY_STYLES: readonly ValleyStyle[] = ['gradient', 'terraced', 'h
  * vertices a terrace is often one cell wide, so treads and risers alternate per cell and
  * the mountains come out as confetti. Both are kept, switchable with `?relief=`, because
  * the argument for terracing is still right and only the resolution is wrong.
+ *
+ * `thread` was added 23 Sep 2026 from the exhibition's key visual, where the ranges are
+ * embroidered in five flat tones of purple. It is the terracing argument won on a
+ * different field: it quantises the SHADING and leaves the mesh alone, so the 469 m
+ * vertex spacing that turned terraced contours into confetti does not apply to it. Same
+ * smooth geometry as `hillshade`, posterised and mapped onto RELIEF_RAMP_THREAD.
  */
 export const DEFAULT_VALLEY_STYLE: ValleyStyle = 'hillshade';
 

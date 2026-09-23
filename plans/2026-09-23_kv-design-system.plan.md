@@ -109,9 +109,13 @@ Kept as an open question rather than a silent change.
 - [x] Kicker + headline type scale in `globals.css`, matching the panels' hierarchy
 - [x] `Rail.tsx` — the orange conduit with beaded ring nodes, wired to the three views
 - [x] Replace the view switcher chips with `Rail`
-- [ ] `InvertPanel.tsx` — the purple register, for the piece's one invitation
-- [ ] `posterise()` in `theme.ts`, tested, and `RELIEF_RAMP_THREAD` as purple tonal bands
-- [ ] `?relief=thread` wired through `relief.ts`, with the byte-identical re-run test
+- [ ] ~~`InvertPanel.tsx`~~ — **deferred, no call site.** The `invert` register exists as
+      tokens and as `.invert` in `globals.css`, and is demonstrated on `/design`. The piece
+      has no invitation yet: the exhibition's is a physical card wall, and the viewer's
+      equivalent is most likely the city's terminal chapter releasing to free interaction.
+      A component with no caller is dead code; this is ten lines whenever a use appears
+- [x] `posterise()` in `theme.ts`, tested, and `RELIEF_RAMP_THREAD` as purple tonal bands
+- [x] `?relief=thread` wired through `relief.ts`, with the byte-identical re-run test
 - [ ] Rewrite `docs/design-system.md` around the two registers; note why the panels supersede
       the deck
 

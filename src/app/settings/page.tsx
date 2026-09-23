@@ -39,6 +39,11 @@ const RELIEF_CHOICES = [
   { value: 'hillshade', label: 'Hillshade', hint: 'A plaster relief model. The default.' },
   { value: 'gradient', label: 'Gradient', hint: 'Hypsometric tint by height.' },
   { value: 'terraced', label: 'Terraced', hint: 'Stepped contours.' },
+  {
+    value: 'thread',
+    label: 'Thread',
+    hint: 'Five flat tones of purple, off the exhibition key visual.',
+  },
 ] as const;
 
 const LOD_CHOICES = [

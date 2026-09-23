@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   GROUND,
   PALETTE,
+  PALETTE_EXTENDED,
   SURFACE_ROLES,
+  RELIEF_RAMP_THREAD,
   REGISTERS,
   UI_TOKENS,
   cssCustomProperties,
   contrastRatio,
+  posterise,
   ramp,
   roleForKind,
   shiftLightness,
@@ -168,5 +171,65 @@ describe('registers', () => {
         expect(css).toContain(`--register-${name}-${slot}:`);
       }
     }
+  });
+});
+
+describe('posterise', () => {
+  // Flat bands of tone are what make the KV's mountains read as embroidery rather than
+  // as a gradient. See RELIEF_RAMP_THREAD and valley.ts.
+
+  it('returns exactly as many distinct values as there are bands', () => {
+    for (const bands of [2, 3, 5, 8]) {
+      const seen = new Set<number>();
+      for (let i = 0; i <= 200; i++) seen.add(posterise(i / 200, bands));
+      expect(seen.size, `${bands} bands`).toBe(bands);
+    }
+  });
+
+  it('spans the full range — the darkest band is 0 and the lightest is 1', () => {
+    expect(posterise(0, 5)).toBe(0);
+    expect(posterise(1, 5)).toBe(1);
+  });
+
+  it('never decreases as t rises', () => {
+    let last = -1;
+    for (let i = 0; i <= 500; i++) {
+      const v = posterise(i / 500, 6);
+      expect(v).toBeGreaterThanOrEqual(last);
+      last = v;
+    }
+  });
+
+  it('clamps outside [0,1] rather than running off the ramp', () => {
+    expect(posterise(-3, 5)).toBe(0);
+    expect(posterise(9, 5)).toBe(1);
+  });
+
+  it('is constant for a single band, rather than dividing by zero', () => {
+    expect(posterise(0, 1)).toBe(0);
+    expect(posterise(0.5, 1)).toBe(0);
+    expect(posterise(1, 1)).toBe(0);
+  });
+
+  it('is deterministic', () => {
+    expect(posterise(0.37, 5)).toBe(posterise(0.37, 5));
+  });
+});
+
+describe('RELIEF_RAMP_THREAD', () => {
+  it('runs dark to light, so a shaded face is the deep end', () => {
+    for (let i = 1; i < RELIEF_RAMP_THREAD.length; i++) {
+      expect(contrastRatio(RELIEF_RAMP_THREAD[i], '#000000')).toBeGreaterThan(
+        contrastRatio(RELIEF_RAMP_THREAD[i - 1], '#000000'),
+      );
+    }
+  });
+
+  it('is drawn entirely from the palette — no raw colours', () => {
+    const known = new Set<string>([
+      ...Object.values(PALETTE),
+      ...Object.values(PALETTE_EXTENDED),
+    ]);
+    for (const stop of RELIEF_RAMP_THREAD) expect(known).toContain(stop);
   });
 });

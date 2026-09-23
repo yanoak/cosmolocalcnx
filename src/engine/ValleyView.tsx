@@ -5,7 +5,16 @@ import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { decodeRelief, reliefColour, reliefShade, type ReliefMeta } from './relief';
 import { toneForNormal } from './shading';
-import { GROUND, PALETTE_EXTENDED, ramp, UI_TOKENS } from './theme';
+import {
+  GROUND,
+  PALETTE_EXTENDED,
+  posterise,
+  ramp,
+  RELIEF_RAMP_THREAD,
+  sampleRamp,
+  THREAD_BANDS,
+  UI_TOKENS,
+} from './theme';
 import {
   cityPatchExtent,
   hillshade,
@@ -231,6 +240,22 @@ export function valleyGeometry(
       colours[k * 3] = base.r * shade;
       colours[k * 3 + 1] = base.g * shade;
       colours[k * 3 + 2] = base.b * shade;
+    } else if (style === 'thread') {
+      /**
+       * The same light as `hillshade`, quantised to five flat tones and mapped onto
+       * purple — the exhibition's key visual draws these ranges as embroidery, and an
+       * embroidered hill has a countable number of thread colours with visible
+       * boundaries between them.
+       *
+       * Note what is NOT quantised: the mesh. Terracing stepped the geometry and lost
+       * at this resolution; this steps only the shading, so the surface stays smooth
+       * and the 469 m vertex spacing never enters into it.
+       */
+      const shade = hillshade(normals.getX(k), normals.getY(k), normals.getZ(k));
+      const [r, g, b] = sampleRamp(RELIEF_RAMP_THREAD, posterise(shade, THREAD_BANDS));
+      colours[k * 3] = r / 255;
+      colours[k * 3 + 1] = g / 255;
+      colours[k * 3 + 2] = b / 255;
     } else {
       const [r, g, b] = reliefColour(trueHeight[k]);
       const shade = reliefShade(normals.getY(k));

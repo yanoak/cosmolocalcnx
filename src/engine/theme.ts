@@ -274,6 +274,49 @@ export const RELIEF_RAMP = [
   PALETTE_EXTENDED['cosmo.deepViolet'],
 ] as const satisfies readonly Hex[];
 
+/**
+ * Quantise `t` into `bands` flat steps, returning the band's own position in [0,1].
+ *
+ * Flat bands of tone are what make the KV's mountains read as stitched cloth rather
+ * than as a gradient — an embroidered hill has a finite number of thread colours and
+ * the boundaries between them are visible.
+ *
+ * This quantises COLOUR, not geometry, and that distinction is the whole reason the
+ * thread style is worth trying where `terraced` failed. Terracing lost because at 469 m
+ * between vertices a contour band is often one cell wide, so treads and risers
+ * alternate per cell and the mountains come out as confetti. Nothing here touches a
+ * vertex: the surface stays smooth and only its shading steps, so the mesh resolution
+ * that defeated terracing does not apply.
+ *
+ * One band is a legal degenerate case and returns 0 rather than dividing by zero.
+ */
+export function posterise(t: number, bands: number): number {
+  const n = Math.max(1, Math.floor(bands));
+  if (n === 1) return 0;
+  const u = t < 0 ? 0 : t > 1 ? 1 : t;
+  const index = Math.min(Math.floor(u * n), n - 1);
+  return index / (n - 1);
+}
+
+/**
+ * The valley in thread: a shaded face is deep purple, a lit one is pale lilac.
+ *
+ * Dark to light, because it is indexed by a light multiplier rather than by height —
+ * `RELIEF_RAMP` above is hypsometric and answers "how high", this answers "how lit".
+ * Five stops is what the printed key visual uses, and it is also about as many tones as
+ * a satin stitch reads as distinct at this size.
+ */
+export const RELIEF_RAMP_THREAD = [
+  PALETTE['cosmo.purple'],
+  PALETTE_EXTENDED['cosmo.deepViolet'],
+  PALETTE['cosmo.violet'],
+  PALETTE['cosmo.lilac'],
+  PALETTE_EXTENDED['cosmo.softLilac'],
+] as const satisfies readonly Hex[];
+
+/** How many thread tones the valley is quantised to. See `posterise`. */
+export const THREAD_BANDS = 5;
+
 /** Linear interpolation along a ramp. `t` outside [0,1] clamps to an end stop. */
 export function sampleRamp(stops: readonly string[], t: number): [number, number, number] {
   if (stops.length === 0) return [0, 0, 0];
