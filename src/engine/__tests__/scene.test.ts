@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateScene } from '@/engine/scene';
+import { validateCopyJoin, validateScene } from '@/engine/scene';
 
 const minimal = () => ({
   id: 'wat-ket',
@@ -61,19 +61,19 @@ describe('validateScene', () => {
     const both = minimal();
     both.hotspots.push({
       id: 'h1',
+      chapter: 'futures',
+      view: 'city',
       target: 'osm/way/1',
       at: [1, 2],
-      label: { en: 'x' },
-      body: { en: 'y' },
     } as never);
     expect(validateScene(both).join(' ')).toMatch(/target|at/i);
 
     const neither = minimal();
-    neither.hotspots.push({ id: 'h2', label: { en: 'x' }, body: { en: 'y' } } as never);
+    neither.hotspots.push({ id: 'h2', chapter: 'futures', view: 'city' } as never);
     expect(validateScene(neither).join(' ')).toMatch(/target|at/i);
   });
 
-  it('requires at least one scenario, because the toggle is the whole interaction', () => {
+  it('requires at least one scenario, because 2045 is built as edits over the baseline', () => {
     const doc = minimal();
     doc.scenarios = [];
     expect(validateScene(doc).join(' ')).toMatch(/scenario/i);
@@ -148,5 +148,95 @@ describe('the region register', () => {
       };
       expect(validateScene(doc as never).join(' ')).toMatch(/radiusKm must be/);
     }
+  });
+});
+
+/**
+ * Hotspots carry a chapter, 24 Sep 2026. A view is a timeless substrate plus a
+ * period-bearing overlay; hotspots are overlay; so a hotspot must say which period it
+ * belongs to. This is the substrate/overlay rule made checkable at the data level.
+ */
+describe('hotspots and chapters', () => {
+  const at = (extra: object) => ({ id: 'h', at: [10, 20], ...extra }) as never;
+
+  it('rejects a hotspot without a chapter', () => {
+    const doc = minimal();
+    doc.hotspots.push(at({ view: 'valley' }));
+    expect(validateScene(doc).join(' ')).toMatch(/chapter/i);
+  });
+
+  it('rejects a chapter that is not one of the three', () => {
+    const doc = minimal();
+    doc.hotspots.push(at({ chapter: 'yesterday', view: 'valley' }));
+    expect(validateScene(doc).join(' ')).toMatch(/chapter/i);
+  });
+
+  it('rejects a view the chapter does not use — Past has no city', () => {
+    const doc = minimal();
+    doc.hotspots.push(at({ chapter: 'past', view: 'city' }));
+    expect(validateScene(doc).join(' ')).toMatch(/view/i);
+  });
+
+  it('accepts the valley in both chapters that use it, and the city in Futures', () => {
+    for (const [chapter, view] of [['past', 'valley'], ['futures', 'valley'], ['futures', 'city'], ['present', 'circle']]) {
+      const doc = minimal();
+      doc.hotspots.push(at({ chapter, view }));
+      expect(validateScene(doc), `${chapter}/${view}`).toEqual([]);
+    }
+  });
+
+  it('requires a scenario hotspot to be futures — a scenario IS a future', () => {
+    const doc = minimal();
+    doc.scenarios[0].hotspots.push(at({ chapter: 'past', view: 'valley' }));
+    expect(validateScene(doc).join(' ')).toMatch(/futures/i);
+  });
+
+  it('lets label and body be absent, because the copy doc is authoritative for them', () => {
+    const doc = minimal();
+    doc.hotspots.push(at({ chapter: 'futures', view: 'city', icon: 'shed' }));
+    expect(validateScene(doc)).toEqual([]);
+  });
+});
+
+/**
+ * The join between the scene document (coordinates, icons, views) and the copy doc
+ * (labels, blurbs, bodies) is by id. A hotspot on one side with nothing on the other is a
+ * build error, not a silent gap — that is the promise the copy plan makes to the writer.
+ */
+describe('validateCopyJoin', () => {
+  const doc = () => {
+    const d = minimal();
+    d.hotspots.push({ id: 'station', chapter: 'past', view: 'valley', at: [1, 1] } as never);
+    d.hotspots.push({ id: 'wua-lai', chapter: 'futures', view: 'city', at: [2, 2] } as never);
+    return d;
+  };
+  const copy = (ids: Record<string, string[]>) =>
+    Object.fromEntries(Object.entries(ids).map(([c, list]) => [c, { hotspots: list.map((id) => ({ id })) }]));
+
+  it('is silent when every hotspot has copy and every copy has a hotspot', () => {
+    expect(validateCopyJoin(doc(), copy({ past: ['station'], futures: ['wua-lai'] }))).toEqual([]);
+  });
+
+  it('names a hotspot that has coordinates but no copy', () => {
+    const out = validateCopyJoin(doc(), copy({ past: ['station'], futures: [] }));
+    expect(out.join(' ')).toMatch(/wua-lai/);
+    expect(out.join(' ')).toMatch(/no copy/i);
+  });
+
+  it('names copy that has no hotspot to land on', () => {
+    const out = validateCopyJoin(doc(), copy({ past: ['station', 'khun-tan'], futures: ['wua-lai'] }));
+    expect(out.join(' ')).toMatch(/khun-tan/);
+    expect(out.join(' ')).toMatch(/no hotspot/i);
+  });
+
+  it('joins within a chapter, so the same id in two chapters is two things', () => {
+    const d = doc();
+    d.hotspots.push({ id: 'station', chapter: 'futures', view: 'valley', at: [3, 3] } as never);
+    const out = validateCopyJoin(d, copy({ past: ['station'], futures: ['wua-lai'] }));
+    expect(out.join(' ')).toMatch(/futures.*station|station.*futures/);
+  });
+
+  it('treats a chapter with no copy tab as having no copy, not as an error in itself', () => {
+    expect(validateCopyJoin(minimal(), {})).toEqual([]);
   });
 });

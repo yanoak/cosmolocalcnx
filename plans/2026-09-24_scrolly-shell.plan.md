@@ -128,7 +128,10 @@ lines, and the hard part here is the camera and layer state, which no library kn
       `registers.ts` still does; delete the rest of `registers.ts`
 - [x] `ChapterId`, `CHAPTER_VIEWS`, tense labels keyed by chapter; `Rail` and the number keys move
       to chapters
-- [ ] Extend `Hotspot` with `chapter`, `view`, `icon`, `date`; `validateScene` requires `chapter`
+- [x] Extend `Hotspot` with `chapter`, `view`, `icon`; `validateScene` requires `chapter` and a
+      view the chapter uses; `validateCopyJoin` checks the id join both ways. **No `date`** — the
+      line above a name is a kicker from the copy doc, and a date field is how the time slider
+      would creep back
 - [ ] The layout change — scroll track over a fixed canvas; wheel is scroll in the stem, zoom in
       explore
 - [ ] `chapters.ts` — the beat score: view, camera pose, layer state, `LocaleMap` copy, terminal

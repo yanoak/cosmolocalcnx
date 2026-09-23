@@ -8,6 +8,7 @@
 
 import { greatCircle } from './aeqd';
 import type { LocaleMap } from './locale';
+import { CHAPTER_ORDER, CHAPTER_VIEWS, type ChapterId, type ViewId } from './views';
 import type { Point2 } from './extrude';
 import { projectToLocalMetres } from './project';
 
@@ -78,13 +79,36 @@ export const EDIT_OPS = ['add', 'remove', 'replace'] as const;
  * A hotspot names a `target` where an object exists, and carries a bare `at`
  * position where it does not — one or the other, never both.
  */
+/**
+ * A place a visitor can hover and click — a pin in the future, a point item in the past.
+ *
+ * Since 24 Sep 2026 a hotspot is the DATA half of a thing whose copy lives in the Google
+ * Doc: coordinates, icon, which chapter and which view. Label, blurb and body come from
+ * the copy doc, joined by `id` — see `validateCopyJoin` and docs/copy-schema.md. `label`
+ * and `body` are kept optional here as an inline fallback for a scene with no copy doc.
+ *
+ * `chapter` is required, and the reason is the piece's strongest rule: a view is a
+ * timeless substrate plus a period-bearing overlay, hotspots are overlay, so every hotspot
+ * must say which period it belongs to. The valley appears in two chapters, which is why
+ * `view` alone could never tell you.
+ *
+ * There is deliberately no `date` or `year`. The small line above a hotspot's name is a
+ * KICKER — display copy, from the doc — not a machine date. The time slider was cut on
+ * 12 Sep 2026 and the way it would creep back is a field like this one.
+ */
 export interface Hotspot {
   id: string;
+  chapter: ChapterId;
+  /** Must be one of `CHAPTER_VIEWS[chapter]`. */
+  view: ViewId;
   target?: OsmId;
+  /** Local metres from the scene origin — the same frame for the city and the valley. */
   at?: Point2;
-  label: LocaleMap;
-  body: LocaleMap;
+  /** Sprite registry id. Absent means a plain node. */
+  icon?: string;
   image?: string;
+  label?: LocaleMap;
+  body?: LocaleMap;
 }
 
 export interface Scenario {
@@ -219,7 +243,12 @@ export interface RegionRef {
  */
 const FORBIDDEN_EDIT_FIELDS = ['year', 'date', 'when', 'phase'];
 
-function checkHotspot(h: Hotspot, where: string, errors: string[]): void {
+function checkHotspot(
+  h: Hotspot,
+  where: string,
+  errors: string[],
+  requiredChapter?: ChapterId,
+): void {
   const hasTarget = typeof h.target === 'string' && h.target !== '';
   const hasAt = Array.isArray(h.at);
   if (hasTarget && hasAt) {
@@ -228,6 +257,59 @@ function checkHotspot(h: Hotspot, where: string, errors: string[]): void {
   if (!hasTarget && !hasAt) {
     errors.push(`${where}: hotspot "${h.id}" has neither target nor at — use exactly one`);
   }
+
+  if (!CHAPTER_ORDER.includes(h.chapter)) {
+    errors.push(
+      `${where}: hotspot "${h.id}" has no chapter — hotspots are overlay, and overlay carries ` +
+        `the tense. One of ${CHAPTER_ORDER.join(', ')}`,
+    );
+    return; // the view check needs a chapter to check against
+  }
+  if (requiredChapter && h.chapter !== requiredChapter) {
+    errors.push(
+      `${where}: hotspot "${h.id}" is "${h.chapter}" but a scenario is a future — ` +
+        `its hotspots must be "${requiredChapter}"`,
+    );
+  }
+  const views = CHAPTER_VIEWS[h.chapter];
+  if (!views.includes(h.view)) {
+    errors.push(
+      `${where}: hotspot "${h.id}" is placed in view "${h.view}", which the ${h.chapter} ` +
+        `chapter does not use — one of ${views.join(', ')}`,
+    );
+  }
+}
+
+/** The shape of one chapter's tab in copy.json, as far as the join cares. */
+export interface CopyTab {
+  hotspots?: Array<{ id: string }>;
+}
+
+/**
+ * The join between the scene document and the copy doc is by id, within a chapter.
+ *
+ * A hotspot with coordinates but no copy would render as a blank pin; copy with no hotspot
+ * would be words the visitor can never reach. Both are build errors rather than silent
+ * gaps — that is the promise docs/copy-schema.md makes to the writer. A chapter with no
+ * copy tab at all is simply "no copy yet", which is a state every new scene starts in.
+ */
+export function validateCopyJoin(
+  doc: SceneDocument,
+  copy: Partial<Record<string, CopyTab>>,
+): string[] {
+  const errors: string[] = [];
+  const all = [...(doc.hotspots ?? []), ...(doc.scenarios ?? []).flatMap((s) => s.hotspots ?? [])];
+  for (const chapter of CHAPTER_ORDER) {
+    const inDoc = new Set(all.filter((h) => h.chapter === chapter).map((h) => h.id));
+    const inCopy = new Set((copy[chapter]?.hotspots ?? []).map((h) => h.id));
+    for (const id of inDoc) {
+      if (!inCopy.has(id)) errors.push(`${chapter}: hotspot "${id}" has no copy in the doc`);
+    }
+    for (const id of inCopy) {
+      if (!inDoc.has(id)) errors.push(`${chapter}: copy "${id}" has no hotspot to land on`);
+    }
+  }
+  return errors;
 }
 
 /** Returns a list of problems. Empty means valid. */
@@ -239,7 +321,7 @@ export function validateScene(doc: SceneDocument): string[] {
   }
 
   if (!Array.isArray(doc.scenarios) || doc.scenarios.length === 0) {
-    errors.push('at least one scenario is required — the toggle is the whole interaction');
+    errors.push('at least one scenario is required — 2045 is built as edits over the baseline');
   }
 
   for (const scenario of doc.scenarios ?? []) {
@@ -260,7 +342,8 @@ export function validateScene(doc: SceneDocument): string[] {
     }
 
     for (const hotspot of scenario.hotspots ?? []) {
-      checkHotspot(hotspot, `scenario "${scenario.id}"`, errors);
+      // A scenario IS a future, so its hotspots are.
+      checkHotspot(hotspot, `scenario "${scenario.id}"`, errors, 'futures');
     }
   }
 
