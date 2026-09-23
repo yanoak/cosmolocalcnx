@@ -136,8 +136,10 @@ lines, and the hard part here is the camera and layer state, which no library kn
       would creep back
 - [ ] The layout change — scroll track over a fixed canvas; wheel is scroll in the stem, zoom in
       explore
-- [ ] `chapters.ts` — the beat score: view, camera pose, layer state, `LocaleMap` copy, terminal
-      flag; beat index plus continuous 0–1 progress. Pure, tested
+- [x] `chapters.ts` — the beat score: view, relative camera pose, layers, hotspots, terminal flag;
+      `beatAt` gives beat index plus continuous 0–1 progress; `resolvePose` → `CameraPose`;
+      `validateScore`, `releasedAt`, `joinBeatCopy`. Copy is joined by id from the doc, not
+      carried on the beat. 21 tests
 - [ ] `Scrolly.tsx` — full-bleed slot, centred cards, `IntersectionObserver` → beat and progress
 - [ ] `Explore.tsx` — the release: layer toggles, pan and zoom unlocked, a "next chapter" control
 - [ ] `Hotspot.tsx` — hover blurb, click modal for short items, click overlay for stories
