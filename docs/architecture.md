@@ -429,9 +429,17 @@ therefore carry their own before-and-after, and the hotspot copy is where that l
 hotspot says what is there now and what replaced it. This is a content requirement, not a
 rendering one, and it should shape how the 2045 material is written.
 
-**Two scenarios is the minimum.** With one, the toggle is dead, nothing can be compared, and the
-whole methodological argument for this piece collapses into a single prediction. If only one
-scenario is ready by 24 Sep, that is a schedule emergency, not a soft landing.
+**~~Two scenarios is the minimum.~~ Superseded 23 Sep 2026: there is one 2045.** The argument
+below was that with a single scenario the toggle is dead and the piece collapses into a single
+prediction. That was sound while the future was the thing being argued over. It is not what the
+piece became: the 2045 material is the world of *Faiways*, the fictional newspaper printed for the
+exhibition, and it is one coherent future explored through a landscape of icons rather than a
+choice between competing ones.
+
+What replaces the comparison is exploration — twelve places, each with a story, spread across the
+valley and the district. The schema is unchanged and a second scenario is still nearly free, so
+this is a content decision rather than an architectural one. See
+`docs/research/2026-09-23_futures-chapter.context.md`.
 
 Still open: whether switching states hard-cuts or gets a short transition. That is a presentation
 choice with no schema consequence, so it can wait until there is something on screen to judge.

@@ -168,10 +168,53 @@ Both Past and Futures have an internal order, which is what the chapter rail is 
 | 2042 | First Lanna cohort graduates: 38 of 41. |
 | **2045** | 5,000th Journeyfolk Mark. The farm closes. Arusha becomes the 67th Plexus member. |
 
+## Everything is a pin
+
+**Decided 23 Sep 2026, and it settles the buildings question: nothing is extruded.** Every location
+— including the four inside the diorama — is an oversized icon standing on the landscape, in the
+manner of an isometric landmark map. Hover or tap gives a popup; the popup links to the full story
+on its own page. No site has a real footprint and none uses `building.intervention`.
+
+Each icon is **distinct**. They are landmarks, not a marker set: the point is a landscape you can
+read at a glance and want to look around, which a repeated pin shape does not give you.
+
+### Why isometric sprites are not a compromise
+
+The pins only ever need an **isometric view**, and that is worth more than it sounds. The camera is
+orthographic and never rotates — the same property that makes the backdrop raster *exact rather
+than approximate*. Under a camera that cannot orbit, **a 2D isometric sprite and a modelled `.glb`
+are indistinguishable**. Full 3D buys nothing at all until orbit is enabled, which would already
+break the backdrop.
+
+So the production route is generated isometric artwork rather than modelling: iterate prompts and
+results through the Higgsfield API, with a jig page to compare candidates — the same pattern as
+`/design`, `/settings` and `/print`, which is where this project puts its internal tools. Twelve
+fictional institutions have nothing to photograph, so every icon is invented regardless of the
+technique.
+
+**If orbit is ever wanted, the pins and the backdrop raster fail together.** That is one more
+reason it stays disabled, and a reason worth writing beside the other one.
+
+## Interaction
+
+Hover is decoration — phones are the primary surface. So the sequence is **tap → popup → link**,
+with hover as the laptop's bonus. That shapes the popup: it must be dismissible and it must hold a
+tappable link, which a hover tooltip does not.
+
+**Story pages are a new kind of route.** The viewer is one viewport with `overflow: hidden`; a full
+story page is the first time the piece leaves the diorama. It is also the first real consumer of
+the type scale built on 23 Sep, and the newspaper is already written in exactly that hierarchy —
+kicker (the byline and correspondent title), headline, standfirst, body.
+
+Labels want the conduit: the reference hangs labels off leader lines, and the KV's pipe-and-node is
+a leader-line system already drawn. A label on an orange conduit with a beaded node is the rail's
+component, rotated.
+
 ## Open
 
-- Does each of the eight pieces become a chapter, or do they group? Eight is a lot for one rail.
-- Which sites are *buildings* in the diorama — needing `building.intervention` treatment and a real
-  footprint — and which are map markers only? The four city sites are candidates for the first.
+- Does each of the eight pieces become a chapter, or do they group? Eight is a lot for one rail,
+  and the date sequence suggests grouping by era rather than by story.
+- Do the city-zoom pins differ from the valley-zoom pins, or is the city inset the same pins closer
+  in? Leaning same — the pin set is the content and the zoom is a camera.
 - The newspaper's masthead names real editors, designers and authors. Those are credits and belong
   wherever the site credits people; they are deliberately not recorded here.

@@ -2,17 +2,23 @@
 
 ## What this is
 
-A 3D isometric web app about **Wat Ket district, Chiang Mai**, in three views — the valley it sits
-in as the past, the Valeriepieris circle as the present, and the district itself in **2045**.
-Visitors switch between two or three arguable futures for the neighbourhood and tap things to read
-about them.
+A 3D isometric web app about **Wat Ket district, Chiang Mai**, in three chapters — the valley it
+sits in as the past, the Valeriepieris circle as the present, and **2045** across both the valley
+and the district. Visitors explore a landscape of oversized icons and tap them to read the stories
+behind them.
+
+**There is one 2045, not several. Decided 23 Sep 2026.** The future is the world of *Faiways*, the
+fictional 2045 newspaper printed for the exhibition — one coherent, richly furnished future you
+explore, rather than two or three you choose between. The schema keeps `scenarios` as an array and
+a second one stays nearly free, but nothing is being authored against that and the comparison
+control has nothing to compare. See `docs/research/2026-09-23_futures-chapter.context.md`.
 
 **No 2045 Wat Ket is ever shown against a 2026 one.** Each future is built as a diff over an
 OpenStreetMap baseline of the real neighbourhood — so the streets, the river and most of the
 building stock are the ones Wat Ket actually has — but that baseline is a substrate, not a view,
-and there is no "today" state to switch to. Several futures invite argument; a future measured
-against the present invites a verdict on whether it is an improvement, which is a different and
-smaller question.
+and there is no "today" state to switch to. The reason is unchanged by there being one future: a
+2045 measured against a 2026 invites a verdict on whether it is an improvement, which is a smaller
+and duller question than what the place could be.
 
 Past and present belong to the region and the world. **The district has one tense and it is 2045.**
 See "Three views are the spine" below, which is where that rule is stated properly.
@@ -42,12 +48,18 @@ Rewritten 21 Sep 2026, and again on the 23rd. **Three discrete views**, moved be
 deliberately. Zoom and pan stay inside whichever one is open and can never reach another:
 
 ```
- ┌── VALLEY ────────┐   ┌── CIRCLE ────────┐   ┌── CITY ──────────┐
- │ DEM, 120 km      │ ⇄ │ AEQD, kilometres │ ⇄ │ diorama, 8 km    │
- │ 2,565 m relief   │   │ 3,437 km radius  │   │ district ⇄ block │
- │ PAST             │   │ PRESENT          │   │ 2045             │
- └──────────────────┘   └──────────────────┘   └──────────────────┘
+  CHAPTER     PAST            PRESENT          FUTURES
+              ┌── VALLEY ──┐  ┌── CIRCLE ──┐   ┌── VALLEY ──┬── CITY ──┐
+  SCALE       │ DEM 120 km │  │ AEQD       │   │ DEM 120 km │ 8 km     │
+              │ 2,565 m    │  │ r 3,437 km │   │            │ diorama  │
+              └────────────┘  └────────────┘   └────────────┴──────────┘
 ```
+
+**Scale and tense are different axes. Decided 23 Sep 2026.** Valley and city are *scales*; past,
+present and futures are *tenses*. Futures needs both scales because most of its material is
+regional — only four of its twelve places sit inside the 8 km diorama — so the valley appears in
+two chapters with two different overlays. That is not a violation of the rule below; it is the
+clearest demonstration of it.
 
 **Space is locked to time period. Decided 23 Sep 2026 and it is the strongest rule the piece has:
 a view owns one tense, and nothing of another period renders in it.** The city view is 2045 because
@@ -59,9 +71,9 @@ overlay**:
 
 | View | Substrate — no tense | Overlay — carries the tense |
 |---|---|---|
-| Valley | DEM, ridgelines | river · roads · rail · remote work |
+| Valley | DEM, ridgelines | past: river · roads · rail · remote work — futures: pins |
 | Circle | AEQD graticule, landmass | the GHS-POP field |
-| City | OSM footprints | `edits` |
+| City | OSM footprints | pins, and `edits` if any are ever authored |
 
 Geology and building outlines do not have a tense. The claim is in the overlay, and in the material
 rather than the caption — GHS-POP *is* contemporary data, the same way the DEM is timeless data.
@@ -83,11 +95,12 @@ which existed only because zooming out shrank the district onto the circle befor
 arrived. Splitting them was mostly deletion. `views.ts` enforces it, and **no function there returns
 a view from a zoom** — the only way out of a view is the switcher.
 
-The middle view is new: the basin Chiang Mai grew in, drawn as a **hillshade** — a plaster relief
-model in the city's own Warm White, form from a north-west light, heights exaggerated four times
-with the caption saying so. A hypsometric gradient and a terraced contour style are both still
-behind `?relief=`; terracing is what the project's own rules argued for and it lost on resolution.
-See "Three views" in `docs/architecture.md`.
+The valley — the basin Chiang Mai grew in — is drawn as a **hillshade**: a plaster relief model in
+the city's own Warm White, form from a north-west light, heights exaggerated four times with the
+caption saying so. A hypsometric gradient and a terraced contour style are both still behind
+`?relief=`, and `?relief=thread` renders it as five flat tones of purple off the exhibition's key
+visual — the terracing argument won on a different field, because it quantises the shading and
+leaves the mesh alone. See "Three views" in `docs/architecture.md`.
 
 **A view builds on first visit and is kept.** Never pay for a world nobody is looking at.
 
@@ -221,9 +234,9 @@ Do not build these before 24 Sep, however reasonable they sound in isolation:
   **"registers" as a concept**, which existed only to describe a thing that could be walked through
   but not chosen. Sections in `docs/architecture.md` still using that vocabulary are stale.
 
-  What this *strengthens*: the comparison control cannot leak a "today" option, because 2045 is now
-  a property of the view rather than a convention the control has to respect. The piece asks "which
-  of these?" rather than "is this an improvement?" structurally.
+  What this *strengthens*: no "today" can leak into the future chapter, because 2045 is a property
+  of the chapter rather than a convention a control has to respect. That holds whether there is one
+  2045 or several, and since 23 Sep there is one.
 
 - **No extruded population columns before 24 Sep.** The region register renders flat. The
   committed field is already shaped for the December extrusion — 512 cells, and population is
