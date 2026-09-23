@@ -405,9 +405,10 @@ showing the present.
 **`baseline` stays in the schema and stays essential.** It is what every scenario diffs against,
 and it is why 2045 Wat Ket is recognisably Wat Ket rather than a generic block of invention — the
 streets, the river and most of the building stock are the real ones. It is a substrate, not a view.
-Rendering it alone was a development and editor concern until 16 Sep 2026, when the on-ramp made
-it visitor-*reachable*. It is still never visitor-*selectable*: there is no control that returns to
-it. See "Futures only, and the 2026 on-ramp" under Registers.
+Rendering it alone was a development and editor concern until 16 Sep 2026, when an on-ramp briefly
+made it visitor-*reachable*. **That on-ramp was cut on 23 Sep 2026** when space was locked to time
+period, and with it the reachable/selectable distinction: `baseline` is now purely substrate and is
+never rendered to a visitor in any view. See "a view owns a tense" in `CLAUDE.md`.
 
 What the two cuts remove from the schema and the renderer:
 
@@ -435,18 +436,23 @@ scenario is ready by 24 Sep, that is a schedule emergency, not a soft landing.
 Still open: whether switching states hard-cuts or gets a short transition. That is a presentation
 choice with no schema consequence, so it can wait until there is something on screen to judge.
 
-## Three views — the circle, the valley, the city
+## Three views — the valley, the circle, the city
+
+> **Partly stale as of 23 Sep 2026.** The mechanism below is current; the *ordering* and the
+> "registers" vocabulary are not. Space is now locked to time period — a view owns one tense, the
+> order is temporal rather than by scale, and "registers" is a dead concept. `CLAUDE.md` has the
+> rule; this section has not been reworked around it yet.
 
 **Rewritten 21 Sep 2026.** From 16 to 21 Sep this was one rail: three registers a visitor moved
 through with a single gesture, from the Valeriepieris circle to a shophouse. That is gone. The
 scene now has **three discrete views**, and zoom stays inside whichever one is open.
 
 ```
- ┌── CIRCLE ────────┐   ┌── VALLEY ────────┐   ┌── CITY ──────────┐
- │ AEQD, kilometres │   │ local metres     │   │ local metres     │
- │ population field │ ⇄ │ DEM, 120 km      │ ⇄ │ diorama, 8 km    │
- │ 3,437 km radius  │   │ 2,565 m relief   │   │ district ⇄ block │
- │ a claim          │   │ a landscape      │   │ a place          │
+ ┌── VALLEY ────────┐   ┌── CIRCLE ────────┐   ┌── CITY ──────────┐
+ │ local metres     │   │ AEQD, kilometres │   │ local metres     │
+ │ DEM, 120 km      │ ⇄ │ population field │ ⇄ │ diorama, 8 km    │
+ │ 2,565 m relief   │   │ 3,437 km radius  │   │ district ⇄ block │
+ │ PAST             │   │ PRESENT          │   │ 2045             │
  └──────────────────┘   └──────────────────┘   └──────────────────┘
      zoom inside          zoom inside             zoom inside
 ```

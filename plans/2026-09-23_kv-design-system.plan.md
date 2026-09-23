@@ -102,9 +102,9 @@ Kept as an open question rather than a silent change.
 - [x] `/design` — the system rendered from the system, every value imported from `theme.ts` so it
       cannot drift. Built first deliberately: it is what measured the kicker and disproved this
       plan's original contrast approach
-- [ ] Add `REGISTERS` to `theme.ts` — `page` and `invert`, each naming ground, ink, kicker and
+- [x] Add `REGISTERS` to `theme.ts` — `page` and `invert`, each naming ground, ink, kicker and
       muted — with the contrast tests written first
-- [ ] Repoint `UI_TOKENS` at `REGISTERS.page`, and emit both registers from
+- [x] Repoint `UI_TOKENS` at `REGISTERS.page`, and emit both registers from
       `cssCustomProperties()`
 - [ ] Kicker + headline type scale in `globals.css`, matching the panels' hierarchy
 - [ ] `Rail.tsx` — the orange conduit with beaded ring nodes, wired to the three views

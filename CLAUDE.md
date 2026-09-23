@@ -2,14 +2,20 @@
 
 ## What this is
 
-A 3D isometric web app showing **Wat Ket district, Chiang Mai, in 2045**. Visitors switch between
-two or three arguable futures for the neighbourhood and tap things to read about them.
+A 3D isometric web app about **Wat Ket district, Chiang Mai**, in three views — the valley it sits
+in as the past, the Valeriepieris circle as the present, and the district itself in **2045**.
+Visitors switch between two or three arguable futures for the neighbourhood and tap things to read
+about them.
 
-The present is never shown. Each future is built as a diff over an OpenStreetMap baseline of the
-real neighbourhood — so the streets, the river and most of the building stock are the ones Wat Ket
-actually has — but that baseline is a substrate, not a view. There is no "today" state to switch
-to. Several futures invite argument; a future measured against the present invites a verdict on
-whether it is an improvement, which is a different and smaller question.
+**No 2045 Wat Ket is ever shown against a 2026 one.** Each future is built as a diff over an
+OpenStreetMap baseline of the real neighbourhood — so the streets, the river and most of the
+building stock are the ones Wat Ket actually has — but that baseline is a substrate, not a view,
+and there is no "today" state to switch to. Several futures invite argument; a future measured
+against the present invites a verdict on whether it is an improvement, which is a different and
+smaller question.
+
+Past and present belong to the region and the world. **The district has one tense and it is 2045.**
+See "Three views are the spine" below, which is where that rule is stated properly.
 
 Built for the **Nomad Futures Lab** exhibition, one strand of Cosmo Local CNX September 2026.
 Programme context — the people, the venue, the audience — is kept **local only at
@@ -30,20 +36,41 @@ The September build is scaffolding. Expect to rewrite the renderer and the edito
 December. What must survive is the scene schema, the asset library, and the authored content —
 see `docs/roadmap.md`.
 
-## Three views are the spine
+## Three views are the spine, and a view owns a tense
 
-Rewritten 21 Sep 2026. **Three discrete views**, moved between deliberately. Zoom and pan stay
-inside whichever one is open and can never reach another:
+Rewritten 21 Sep 2026, and again on the 23rd. **Three discrete views**, moved between
+deliberately. Zoom and pan stay inside whichever one is open and can never reach another:
 
 ```
- ┌── CIRCLE ────────┐   ┌── VALLEY ────────┐   ┌── CITY ──────────┐
- │ AEQD, kilometres │ ⇄ │ DEM, 120 km      │ ⇄ │ diorama, 8 km    │
- │ 3,437 km radius  │   │ 2,565 m relief   │   │ district ⇄ block │
- │ a claim          │   │ a landscape      │   │ a place          │
+ ┌── VALLEY ────────┐   ┌── CIRCLE ────────┐   ┌── CITY ──────────┐
+ │ DEM, 120 km      │ ⇄ │ AEQD, kilometres │ ⇄ │ diorama, 8 km    │
+ │ 2,565 m relief   │   │ 3,437 km radius  │   │ district ⇄ block │
+ │ PAST             │   │ PRESENT          │   │ 2045             │
  └──────────────────┘   └──────────────────┘   └──────────────────┘
 ```
 
-The outermost is the **Valeriepieris circle** — 21.00°N 100.29°E, radius 3,437 km, containing half
+**Space is locked to time period. Decided 23 Sep 2026 and it is the strongest rule the piece has:
+a view owns one tense, and nothing of another period renders in it.** The city view is 2045 because
+the city view *is* the future view — not because a convention says so. The ordering above is
+temporal, and it replaced a scale ordering, which was an author's concern rather than a visitor's.
+
+The checkable form of the rule is that **every view is a timeless substrate plus a period-bearing
+overlay**:
+
+| View | Substrate — no tense | Overlay — carries the tense |
+|---|---|---|
+| Valley | DEM, ridgelines | river · roads · rail · remote work |
+| Circle | AEQD graticule, landmass | the GHS-POP field |
+| City | OSM footprints | `edits` |
+
+Geology and building outlines do not have a tense. The claim is in the overlay, and in the material
+rather than the caption — GHS-POP *is* contemporary data, the same way the DEM is timeless data.
+
+This also **re-justifies the no-dates-on-edits rule from a better direction**: an edit does not need
+a date because its period is whichever view it lives in. `FORBIDDEN_EDIT_FIELDS` may have a stronger
+invariant available to it than the one it currently asserts.
+
+The middle view is the **Valeriepieris circle** — 21.00°N 100.29°E, radius 3,437 km, containing half
 of humanity. **Wat Ket sits 279.98 km from its centre, 8.15% of the radius.** That number is the
 piece's argument made geographically, `src/engine/__tests__/aeqd.test.ts` pins it, and it is not up
 for renegotiation.
@@ -183,12 +210,20 @@ Do not build these before 24 Sep, however reasonable they sound in isolation:
   nothing temporally, and no scene state is ever partially applied. `validateScene` enforces this
   at the data level via `FORBIDDEN_EDIT_FIELDS`.
 
-  **The "today" view was cut with it and partly reinstated on 16 Sep 2026 as a one-way on-ramp.**
-  The piece opens on the circle, descends to Wat Ket as it is now, and hands over to the 2045
-  futures. `baseline` alone is therefore visitor-*reachable* but never visitor-*selectable* —
-  it is the room you walk through, not a door you can open. The comparison control still holds
-  only futures, so the piece asks "which of these?" rather than "is this an improvement?".
-  Returning to 2026 happens only on an idle reset. See "Registers" in `docs/architecture.md`.
+  **The "today" view was cut with it, briefly reinstated on 16 Sep as a one-way on-ramp, and cut
+  again for good on 23 Sep 2026.** The on-ramp opened on the circle, descended to Wat Ket as it
+  was, and handed over to 2045; `baseline` was therefore visitor-*reachable* but never
+  visitor-*selectable*. Locking space to time period removed the need for that distinction
+  entirely. **There is no 2026 Wat Ket state anywhere in the piece.** `baseline` is purely
+  substrate — the geometry 2045 is built from — and is never a view of anything.
+
+  Three things went with it and are not coming back: the on-ramp, the idle reset to 2026, and
+  **"registers" as a concept**, which existed only to describe a thing that could be walked through
+  but not chosen. Sections in `docs/architecture.md` still using that vocabulary are stale.
+
+  What this *strengthens*: the comparison control cannot leak a "today" option, because 2045 is now
+  a property of the view rather than a convention the control has to respect. The piece asks "which
+  of these?" rather than "is this an improvement?" structurally.
 
 - **No extruded population columns before 24 Sep.** The region register renders flat. The
   committed field is already shaped for the December extrusion — 512 cells, and population is
@@ -315,6 +350,16 @@ the code they describe, never left untracked.
 - `docs/design-system.md` — the Cosmo Local CNX brand palette, role tokens, unlit materials,
   IBM Plex Sans Thai. Replaced the 1967 PROGRESS palette on 16 Sep 2026 because the exhibition
   has print and signage the screen has to match.
+
+  **The printed panels supersede the brand deck it was derived from, decided 23 Sep 2026.** The
+  palette survived intact — every value the panels use was already in `theme.ts`, verified by
+  extracting the PDF's own span colours. What changed is that there are now **two registers**,
+  `page` and `invert`, because the panels use two and the token table had one. `UI_TOKENS` are the
+  `page` register under their older names, which moved `ui.text` from Cosmo Purple to charcoal.
+  **A kicker derives on a light ground and does not on purple** — raw `#FF8A00` is 2.27:1 on
+  off-white and fails at every size, but 6.64:1 on purple and passes; print under gallery light is
+  not evidence about a phone in a mall. `/design` renders the whole system from `theme.ts` so it
+  cannot drift. See `plans/2026-09-23_kv-design-system.plan.md`.
 - `docs/roadmap.md` — the week-one cut line and the path to December
 - `plans/` — one file per piece of substantial work: goal, approach, tasks, outcome
 - `work-diary/` — the daily record: plan of attack, what shipped, plans and their commits, decisions
