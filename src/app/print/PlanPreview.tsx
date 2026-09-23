@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { crossesWater, deckStations, waterPolys } from '@/engine/bridges';
 import { plateRing, type PrintGrid, type PrintOptions, type PrintSource } from '@/engine/print';
 import { drawRoads, metresToPixels, roadTextureLayout } from '@/engine/roads';
 import { GROUND, roadTone, SURFACE_ROLES, UI_TOKENS } from '@/engine/theme';
@@ -81,6 +82,30 @@ export function PlanPreview({
         layout,
         roadTone,
       );
+    }
+
+    // Bridges last of the ground layers and in the accent, because on a plan a solid
+    // causeway across the river is the thing most worth checking before a four-hour
+    // print — it is the only feature the crop can cut in half and still look fine.
+    if (options.layers.bridges) {
+      const polys = waterPolys([...source.water]);
+      ctx.strokeStyle = UI_TOKENS['ui.accent'];
+      ctx.lineCap = 'butt';
+      for (const road of source.roads) {
+        if (!road.bridge) continue;
+        if (!crossesWater(road.path, polys)) continue;
+        const stations = deckStations(road);
+        for (const side of ['left', 'right'] as const) {
+          ctx.beginPath();
+          stations.forEach((station, i) => {
+            const [px, py] = metresToPixels(station[side], layout);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          });
+          ctx.lineWidth = Math.max(1, layout.width / 900);
+          ctx.stroke();
+        }
+      }
     }
 
     if (options.layers.buildings) {

@@ -296,7 +296,7 @@ export default function PrintPage() {
 
           <fieldset>
             <legend>Layers</legend>
-            {(['buildings', 'water', 'green', 'roads'] as const).map((id) => (
+            {(['buildings', 'water', 'green', 'roads', 'bridges'] as const).map((id) => (
               <div className="field check" key={id}>
                 <input
                   id={`layer-${id}`}

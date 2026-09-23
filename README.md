@@ -42,8 +42,14 @@ npm run typecheck
 ### The print tool
 
 `/print` turns the scene into STLs for the exhibition's 3D print: a base plate with the buildings
-extruded on it, the Ping and the parks raised, and the wider streets as raised ribbons, tiled into
-plates that fit a Bambu A1 mini's 180 mm bed and interlock with tabs. Heights are exaggerated —
+extruded on it, the Ping and the parks raised, the wider streets as raised ribbons, and every
+water crossing as a bridge — tiled into plates that fit a Bambu A1 mini's 180 mm bed and
+interlock with tabs.
+
+Bridges print **solid to the plate**, with no void under the span. A deck on piers is an overhang
+that needs supports under every bridge and snaps when they come off, so a printed bridge is a
+causeway: the deck's height is real, its underside is the plate. Decks too thin to print are
+widened until they can be. Heights are exaggerated —
 the median Wat Ket building is 5 m, which at any printable scale is thinner than a nozzle — and
 the factor is stated on screen, in each file's header and in the README the download carries.
 

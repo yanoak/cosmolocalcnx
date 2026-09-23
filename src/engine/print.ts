@@ -38,6 +38,7 @@
  */
 
 import * as THREE from 'three';
+import { crossesWater, deckStations, waterPolys } from './bridges';
 import { clipRingToConvex, rectRing, type Ring } from './clip';
 import { footprintToExtrudeArgs, type Point2 } from './extrude';
 import type { BaselineArea, BaselineBuilding, BaselineRoad } from './scene';
@@ -46,9 +47,27 @@ import { appendSoup, emptySoup, pushQuad, pushTri, triangleCount, type PrintSoup
 /** Bambu A1 mini. The whole reason tiles exist. */
 export const A1_MINI_BED_MM = 180;
 
-export type LayerId = 'plate' | 'buildings' | 'water' | 'green' | 'roads';
+export type LayerId = 'plate' | 'buildings' | 'water' | 'green' | 'roads' | 'bridges';
 
-export const LAYER_ORDER: readonly LayerId[] = ['plate', 'buildings', 'water', 'green', 'roads'];
+export const LAYER_ORDER: readonly LayerId[] = [
+  'plate',
+  'buildings',
+  'water',
+  'green',
+  'roads',
+  'bridges',
+];
+
+/**
+ * The narrowest a printed bridge deck is allowed to be.
+ *
+ * Wat Ket has 48 bridges over the Ping and its canals and most of them are 2 m
+ * footpaths, which at 1:7,143 is a deck 0.28 mm wide standing 3 mm tall — not a
+ * bridge, a spike that snaps off the plate. Anything thinner than this is widened
+ * until it prints, and `printSummary` says so. The alternative was dropping them,
+ * which loses the crossings that make the riverbank readable.
+ */
+export const MIN_BRIDGE_MM = 1;
 
 export interface TabOptions {
   /** Along the seam. */
@@ -99,7 +118,7 @@ export const DEFAULT_PRINT_OPTIONS: PrintOptions = {
   exaggeration: 3,
   plateMm: 2,
   embedMm: 0.2,
-  layers: { buildings: true, water: true, green: true, roads: true },
+  layers: { buildings: true, water: true, green: true, roads: true, bridges: true },
   waterMm: 0.6,
   greenMm: 0.6,
   roadMm: 0.6,
@@ -270,6 +289,9 @@ export function plateRing(tile: TileSpec, tabs: TabOptions | null): Ring {
 
 type V3 = [number, number, number];
 
+/** A solid's top: one height, or a linear field over the footprint for a ramp. */
+type TopZ = number | ((p: Point2) => number);
+
 /**
  * A closed solid from a footprint, in tile-local millimetres.
  *
@@ -288,8 +310,15 @@ type V3 = [number, number, number];
  * to repair. Walls raised on the edges the triangulation actually left exposed cannot
  * disagree with it, whatever the ring did.
  */
-function solid(soup: PrintSoup, contour: Ring, holes: Ring[], z0: number, z1: number): void {
-  if (contour.length < 3 || !(z1 > z0)) return;
+function solid(soup: PrintSoup, contour: Ring, holes: Ring[], z0: number, z1: TopZ): void {
+  if (contour.length < 3) return;
+  // A flat top at or below the floor is a solid with no volume; a sloping one is
+  // clamped per vertex below instead, because a ramp is allowed to run out.
+  if (typeof z1 === 'number' && !(z1 > z0)) return;
+  // A height FIELD rather than a number, so a bridge ramp can slope. The field is
+  // linear over the footprint, which keeps the top face planar and the fan over it
+  // honest; anything curved would need the cap subdivided.
+  const topZ = typeof z1 === 'function' ? z1 : () => z1;
 
   let args;
   try {
@@ -311,7 +340,13 @@ function solid(soup: PrintSoup, contour: Ring, holes: Ring[], z0: number, z1: nu
   if (faces.length === 0) return;
 
   const flat = [outer, ...inner].flat();
-  const top = (i: number): V3 => [flat[i].x, flat[i].y, z1];
+  // Never below the floor: a solid with an inverted top is a solid turned inside out,
+  // and a ramp that runs out below the plate would do exactly that.
+  const top = (i: number): V3 => [
+    flat[i].x,
+    flat[i].y,
+    Math.max(z0, topZ([flat[i].x, flat[i].y])),
+  ];
   const bottom = (i: number): V3 => [flat[i].x, flat[i].y, z0];
 
   // Directed edges of the cap. An edge with no reverse is on the boundary, and is
@@ -434,6 +469,7 @@ export function buildTile(source: PrintSource, tile: TileSpec, options: PrintOpt
     water: emptySoup(),
     green: emptySoup(),
     roads: emptySoup(),
+    bridges: emptySoup(),
   };
 
   // Everything in the city sits on the plate and sinks `embedMm` into it, so the
@@ -486,10 +522,70 @@ export function buildTile(source: PrintSource, tile: TileSpec, options: PrintOpt
     }
   }
 
+  if (options.layers.bridges) {
+    // The deck meets the road surface at its ramp ends, so a bridge and the street it
+    // carries are one continuous solid rather than a step.
+    const deckFloorMm = plateMm + options.roadMm;
+    const polys = waterPolys([...source.water]);
+    // Widen a deck until it prints, in metres, so `deckStations` sees one width.
+    const minWidthM = MIN_BRIDGE_MM / mmPerMetre;
+
+    for (const road of source.roads) {
+      // The flag alone is not enough: OSM tags 248 ways here as bridges and only 48 of
+      // them cross water. The rest carry a road over a road, and `bridges.ts` has
+      // always insisted on the same test.
+      //
+      // `roadMinWidthM` deliberately does NOT apply. That threshold is a triangle
+      // budget for the 36,460 road segments in the scene; there are 48 bridges, and
+      // seven of the twelve inside the default crop are 2 m footpaths over the canals
+      // — which is most of how the riverbank is actually crossed. What makes a thin
+      // deck printable is the width floor below, not dropping it.
+      if (!road.bridge) continue;
+      if (bboxOutside(road.path, tile.boundsM)) continue;
+      if (!crossesWater(road.path, polys)) continue;
+
+      const stations = deckStations({ ...road, width: Math.max(road.width, minWidthM) });
+
+      for (let i = 0; i < stations.length - 1; i++) {
+        const s0 = stations[i];
+        const s1 = stations[i + 1];
+        const span: Ring = [s0.left, s1.left, s1.right, s0.right];
+        if (bboxOutside(span, tile.boundsM)) continue;
+        const clipped = clip(span);
+        if (!clipped) continue;
+
+        // Where along the span a point sits, so a clipped corner gets the height the
+        // ramp actually has there rather than the height of the station it came from.
+        // Done in millimetres because the metre-to-millimetre map is affine and the
+        // ring has already been through it.
+        const a = mid(toMm([s0.left, s0.right]));
+        const b = mid(toMm([s1.left, s1.right]));
+        const ax = b[0] - a[0];
+        const ay = b[1] - a[1];
+        const length2 = ax * ax + ay * ay;
+        const deckMm = (m: number) => base + m * exaggeration * mmPerMetre;
+
+        solid(layers.bridges, clipped, [], base, ([x, y]) => {
+          const t = length2 > 0 ? ((x - a[0]) * ax + (y - a[1]) * ay) / length2 : 0;
+          const clamped = t < 0 ? 0 : t > 1 ? 1 : t;
+          // `bottom` is ignored on purpose. A printed bridge is filled to the plate:
+          // a deck on piers is an overhang over a void, which on an A1 mini means
+          // supports under every span and a bridge that snaps when they come off.
+          return Math.max(deckFloorMm, deckMm(s0.top + (s1.top - s0.top) * clamped));
+        });
+      }
+    }
+  }
+
   const combined = emptySoup();
   for (const id of LAYER_ORDER) appendSoup(combined, layers[id]);
 
   return { tile, layers, combined, triangles: triangleCount(combined) };
+}
+
+/** Midpoint of two points. */
+function mid([a, b]: Ring): Point2 {
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
 }
 
 export function buildModel(source: PrintSource, options: PrintOptions): PrintModel {
@@ -548,6 +644,10 @@ export function printSummary(model: PrintModel, sceneId: string): string {
     `Interlocks       ${o.tabs ? `${mm(o.tabs.widthMm)} mm tabs, ${mm(o.tabs.depthMm)} mm deep, ${o.tabs.clearanceMm} mm clearance` : 'none — butt joints'}`,
     `Layers           ${LAYER_ORDER.filter((id) => id === 'plate' || o.layers[id]).join(', ')}`,
     `Roads            carriageways ${o.roadMinWidthM} m and wider, raised ${mm(o.roadMm)} mm`,
+    `Bridges          ${o.layers.bridges ? `every water crossing, solid to the plate with no void beneath;` : 'not included'}`,
+    ...(o.layers.bridges
+      ? [`                 decks narrower than ${MIN_BRIDGE_MM} mm widened to it so they print`]
+      : []),
     `Triangles        ${model.triangles.toLocaleString()}`,
     `Median building  ${model.medianBuildingMm.toFixed(2)} mm (${model.belowNozzle.toLocaleString()} under a 0.4 mm nozzle)`,
     ``,

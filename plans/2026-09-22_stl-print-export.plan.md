@@ -117,6 +117,7 @@ function with a test.
 - [x] `src/engine/print.ts` + tests — scale, tile grid, plate ring with tabs, layer extrusion
 - [x] `/print` route, `.vercelignore` entry, controls, plan preview, download
 - [x] CLAUDE.md and README notes
+- [x] Bridges as a sixth layer, solid to the plate (asked for 23 Sep, after the rest shipped)
 - [ ] **Slice a tile in Bambu Studio and print one.** The only step that needs the
       machine, and the two open questions below are what it answers.
 
@@ -215,6 +216,41 @@ States that differ materially:
 8. `npm run build` with `src/app/print/` temporarily moved aside — the export builds clean, which
    is what the Vercel build will do.
 9. `npm run build` as committed, then confirm `out/print/index.html` exists locally.
+
+## Addendum — bridges, 23 Sep 2026
+
+Asked for the day after the rest shipped: the print needs the bridges, and **they should
+protrude with no empty space below them**.
+
+That second half is the whole design. `bridges.ts` builds a deck on piers with a void
+underneath, which is right on screen and wrong on a plate: a span 2.5 mm over the plate with
+air beneath it is an overhang the slicer fills with supports, under every bridge, and the
+deck snaps when they come off. So the print reads `deckStations`' `top` and ignores its
+`bottom` — the underside of a printed bridge IS the plate. It is a causeway, not a bridge,
+and that is the honest trade at this scale.
+
+Consequences worth writing down:
+
+- **The ramp had to slope, so `solid()` now takes a height FIELD as well as a height.** A flat
+  top per segment would step down to the bank instead of ramping, and a step is both uglier
+  and a worse overhang than the thing being avoided. The field is linear over the footprint,
+  which keeps the top face planar, so the fan over the cap stays honest and the cap-boundary
+  walls still close. A clipped corner gets the height the ramp actually has at that point,
+  interpolated along the span axis.
+- **Nothing may sit below the plate.** `deckStations` buries its ramp ends at −0.6 m to hide a
+  cut edge under the ground; on a plate that is a solid dangling below the bed. Every vertex
+  is clamped to the plate floor, and a test checks it.
+- **The ramp ends at road level**, not at the plate, so a bridge and the street it carries are
+  one continuous solid.
+- **`roadMinWidthM` does not apply to bridges.** That threshold is a triangle budget for the
+  scene's 36,460 road segments. There are 48 bridges, seven of the twelve inside the default
+  crop are 2 m footpaths over the canals, and dropping them loses most of how the riverbank is
+  actually crossed. What makes a thin deck printable is `MIN_BRIDGE_MM`, which widens any deck
+  under 1 mm until it prints — a 2 m footpath becomes 7 m of model. That is a visible
+  distortion and it is stated in the download's README, like the height exaggeration.
+
+Costs 472 triangles across the four default tiles. Every bridge solid is watertight, including
+the ones the tile seams cut.
 
 ## Out of scope
 

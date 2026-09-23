@@ -6,6 +6,7 @@ import {
   buildTile,
   cropBounds,
   DEFAULT_PRINT_OPTIONS,
+  MIN_BRIDGE_MM,
   mmPerMetreFromScale,
   plateRing,
   printSummary,
@@ -204,7 +205,7 @@ describe('buildTile', () => {
   });
 
   it('cuts a building straddling the seam flush at the tile edge', () => {
-    const opts = options({ widthM: 200, heightM: 200, mmPerMetre: 0.5, layers: { buildings: true, water: false, green: false, roads: false } });
+    const opts = options({ widthM: 200, heightM: 200, mmPerMetre: 0.5, layers: { buildings: true, water: false, green: false, roads: false, bridges: false } });
     const straddler = box('osm/way/1', -10, -10, 10, 200); // runs far past the east edge
     const twoByTwo = tileGrid(opts);
     const west = twoByTwo.tiles.find((t) => t.key === 'r1c1')!;
@@ -283,7 +284,7 @@ describe('buildTile', () => {
       water: [] as BaselineArea[],
       green: [] as BaselineArea[],
     };
-    const off = options({ layers: { buildings: false, water: false, green: false, roads: false } });
+    const off = options({ layers: { buildings: false, water: false, green: false, roads: false, bridges: false } });
     const built = buildTile(source, tile, off);
     expect(triangleCount(built.layers.buildings)).toBe(0);
     expect(triangleCount(built.layers.plate)).toBeGreaterThan(0);
@@ -410,6 +411,147 @@ describe('watertightness', () => {
     for (const id of ['plate', 'buildings', 'water', 'green', 'roads'] as const) {
       expect({ [id]: openEdges(built.layers[id]) }).toEqual({ [id]: 0 });
     }
+  });
+});
+
+describe('bridges', () => {
+  /** A 40 m river running north–south, and a road crossing it west to east. */
+  const river: BaselineArea = {
+    id: 'osm/way/100',
+    footprint: [
+      [-20, -200],
+      [20, -200],
+      [20, 200],
+      [-20, 200],
+    ],
+    kind: 'water',
+  };
+  const crossing: BaselineRoad = {
+    id: 'osm/way/200',
+    path: [
+      [-60, 0],
+      [60, 0],
+    ],
+    kind: 'secondary',
+    width: 9.5,
+    bridge: true,
+  };
+
+  // Deliberately ONE tile: the road runs along y = 0, which on a 2 × 2 grid is the
+  // seam itself, and every measurement below would be of a half-deck.
+  const onlyBridges = options({
+    widthM: 300,
+    heightM: 300,
+    mmPerMetre: 0.5,
+    layers: { buildings: false, water: false, green: false, roads: false, bridges: true },
+  });
+  const grid = tileGrid(onlyBridges);
+  const tile = grid.tiles[0];
+
+  it('builds a deck for a flagged road that crosses water', () => {
+    const built = buildTile({ ...EMPTY, roads: [crossing], water: [river] }, tile, onlyBridges);
+    expect(triangleCount(built.layers.bridges)).toBeGreaterThan(0);
+  });
+
+  it('ignores a flagged road that crosses no water', () => {
+    // OSM tags 248 ways in Wat Ket as bridges and only 48 cross water; the rest carry
+    // a road over a road, and a plate has nothing for them to span.
+    const built = buildTile({ ...EMPTY, roads: [crossing], water: [] }, tile, onlyBridges);
+    expect(triangleCount(built.layers.bridges)).toBe(0);
+  });
+
+  it('ignores an unflagged road over water', () => {
+    const notABridge = { ...crossing, bridge: undefined };
+    const built = buildTile({ ...EMPTY, roads: [notABridge], water: [river] }, tile, onlyBridges);
+    expect(triangleCount(built.layers.bridges)).toBe(0);
+  });
+
+  it('is filled to the plate, with no void under the span', () => {
+    const built = buildTile({ ...EMPTY, roads: [crossing], water: [river] }, tile, onlyBridges);
+    const p = built.layers.bridges.positions;
+    const base = onlyBridges.plateMm - onlyBridges.embedMm;
+
+    let lowest = Infinity;
+    let highest = -Infinity;
+    for (let i = 2; i < p.length; i += 3) {
+      lowest = Math.min(lowest, p[i]);
+      highest = Math.max(highest, p[i]);
+    }
+    // Everything hangs off the plate: the underside IS the plate, not a deck soffit.
+    expect(lowest).toBeCloseTo(base, 6);
+    // A secondary's deck is 6.5 m; at 3× and 0.5 mm/m that is 9.75 mm over the base.
+    expect(highest).toBeCloseTo(base + 6.5 * 3 * 0.5, 6);
+  });
+
+  it('never leaves geometry below the plate, whatever the ramp does', () => {
+    // `deckStations` buries its ramp ends at −0.6 m. On screen that hides a cut edge
+    // under the ground; on a plate it would be a solid dangling below the bed.
+    const built = buildTile({ ...EMPTY, roads: [crossing], water: [river] }, tile, onlyBridges);
+    const p = built.layers.bridges.positions;
+    for (let i = 2; i < p.length; i += 3) {
+      expect(p[i]).toBeGreaterThanOrEqual(onlyBridges.plateMm - onlyBridges.embedMm - 1e-9);
+    }
+  });
+
+  it('ramps down to road level at its ends rather than stepping', () => {
+    const built = buildTile({ ...EMPTY, roads: [crossing], water: [river] }, tile, onlyBridges);
+    const p = built.layers.bridges.positions;
+    const deckFloor = onlyBridges.plateMm + onlyBridges.roadMm;
+
+    // The far west end of the structure sits at road level; the middle is up in the air.
+    let westmost = Infinity;
+    let westZ = 0;
+    for (let i = 0; i < p.length; i += 3) {
+      if (p[i] < westmost) {
+        westmost = p[i];
+        westZ = p[i + 2];
+      }
+    }
+    expect(westZ).toBeLessThanOrEqual(deckFloor + 1e-6);
+  });
+
+  it('widens a footbridge until it prints', () => {
+    // 2 m at 1:7,143 is a 0.28 mm deck standing 3 mm tall — a spike, not a bridge.
+    const foot: BaselineRoad = { ...crossing, id: 'osm/way/300', kind: 'path', width: 2 };
+    const built = buildTile({ ...EMPTY, roads: [foot], water: [river] }, tile, onlyBridges);
+    const p = built.layers.bridges.positions;
+
+    let minY = Infinity;
+    let maxY = -Infinity;
+    for (let i = 1; i < p.length; i += 3) {
+      minY = Math.min(minY, p[i]);
+      maxY = Math.max(maxY, p[i]);
+    }
+    // The road runs west to east, so the deck's width is its extent in Y.
+    expect(maxY - minY).toBeGreaterThanOrEqual(MIN_BRIDGE_MM - 1e-6);
+  });
+
+  it('keeps a footbridge that the roads threshold would drop', () => {
+    // The roads threshold is a triangle budget for 36,460 segments. Seven of the
+    // twelve crossings inside the default crop are 2 m footpaths over the canals,
+    // and dropping them would lose most of how the riverbank is crossed.
+    const foot: BaselineRoad = { ...crossing, id: 'osm/way/300', kind: 'path', width: 2 };
+    const strict = { ...onlyBridges, roadMinWidthM: 20 };
+    const built = buildTile({ ...EMPTY, roads: [foot], water: [river] }, tile, strict);
+    expect(triangleCount(built.layers.bridges)).toBeGreaterThan(0);
+  });
+
+  it('closes every bridge solid, including one the tile seam cuts', () => {
+    // 240 mm across the bed's 176 mm usable, so 2 × 2 — and the seams fall on x = 0
+    // and y = 0, straight down the middle of the crossing.
+    const cut = { ...onlyBridges, widthM: 120, heightM: 120, mmPerMetre: 2 };
+    const seam = tileGrid(cut);
+    expect(seam.tiles.length).toBeGreaterThan(1);
+    for (const t of seam.tiles) {
+      const built = buildTile({ ...EMPTY, roads: [crossing], water: [river] }, t, cut);
+      expect({ [t.key]: openEdges(built.layers.bridges) }).toEqual({ [t.key]: 0 });
+    }
+  });
+
+  it('is off when the layer is off', () => {
+    const off = { ...onlyBridges, layers: { ...onlyBridges.layers, bridges: false } };
+    const built = buildTile({ ...EMPTY, roads: [crossing], water: [river] }, tile, off);
+    expect(triangleCount(built.layers.bridges)).toBe(0);
   });
 });
 
