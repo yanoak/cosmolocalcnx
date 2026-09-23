@@ -149,6 +149,11 @@ gesture in the city alone.
 
 ## Content, one per view
 
+> **Items 8–10 are superseded by three plans written 23 Sep 2026** —
+> `2026-09-23_past-chapter`, `2026-09-23_present-chapter`, `2026-09-23_futures-chapter`. They are
+> left here because the notes under them record what was thought before the research and the
+> Faiways material arrived, and a few of those notes turned out to be wrong in instructive ways.
+
 ### 8. `valley-threads` — river, roads, rail, remote work
 
 The first content drawn *in* the valley rather than as its surface. Four threads across the basin,

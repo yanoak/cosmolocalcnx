@@ -49,7 +49,8 @@ a way it would not be in the past chapter.
 | Wat Umong | Baan Wat Rong Rueng — Waste for Merit, the food forest, the Fab Lab | 6.1 km W | valley |
 | Doi Suthep | L-Pop — the ridgeline resonance | 8.9 km W | valley |
 | Doi Saket | Uncareering Farm | 16 km NE | valley |
-| Lamphun | Drone agriculture — the semiconductor factories and the mountains east and south | 24 km S | valley |
+| Lamphun — the mountains E and S | Drone agriculture, the first hard test period | 24 km S | valley |
+| Lamphun — the town | **Ping Plexus**, an early member | 24 km S | valley |
 | Mae Taeng | The highland tea plantations | 37 km N | valley |
 | **Chiang Dao** | Drone agriculture, and Ping Pass | **64 km N** | **off-frame** |
 | **Mae Chaem** | Reforestation plots | **75 km SW** | **off-frame** |
@@ -59,6 +60,22 @@ a way it would not be in the past chapter.
 The valley field is ±60 km. **Decided: draw them as an arrow at the frame edge** — direction and
 distance — rather than extending the field. Chiang Dao carries two stories and cannot simply be
 dropped; the range itself does reach into frame even though the town does not.
+
+### Arusha has no pin — Lamphun carries the Plexus instead
+
+Decided 23 Sep 2026. Arusha is in Tanzania, joining a network of cities; it is not on any map we
+draw. Rather than leave the Plexus story unpinned, **Lamphun town becomes an early Ping Plexus
+member**, and its blurb reaches outward: the network now has 67 members, the newest in Tanzania.
+
+That is the one pin whose job is to point off the edge of the world rather than at something in
+frame — the same move as the Chiang Dao arrow, but for a place too far to arrow at.
+
+It also makes the story-to-pin map complete: **all eight pieces now have at least one pin.**
+
+**Lamphun gets two pins, not one story on one pin.** The meeting separates "Lamphun City" from "the
+mountains to the south and east", so the drone-agriculture test sites sit in the hills and the
+Plexus membership sits in the town. Two places, two icons — which keeps the rule that every icon is
+distinct and avoids a pin that has to explain two unrelated things.
 
 ### Ban Tawan — west, not east
 

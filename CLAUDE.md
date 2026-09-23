@@ -82,10 +82,36 @@ This also **re-justifies the no-dates-on-edits rule from a better direction**: a
 a date because its period is whichever view it lives in. `FORBIDDEN_EDIT_FIELDS` may have a stronger
 invariant available to it than the one it currently asserts.
 
-The middle view is the **Valeriepieris circle** — 21.00°N 100.29°E, radius 3,437 km, containing half
-of humanity. **Wat Ket sits 279.98 km from its centre, 8.15% of the radius.** That number is the
-piece's argument made geographically, `src/engine/__tests__/aeqd.test.ts` pins it, and it is not up
-for renegotiation.
+**The circle is centred on Wat Ket. Changed 23 Sep 2026.**
+
+It used to be the **Valeriepieris circle** — 21.00°N 100.29°E, radius 3,437 km, containing half of
+humanity, with Wat Ket 279.98 km from its centre at 8.15% of the radius. That figure was called
+non-negotiable here and it is superseded rather than renegotiated: the circle is no longer somebody
+else's, so Wat Ket's offset inside it is not the claim any more.
+
+The claim now is **how far you have to go from Wat Ket to cover half the world's population**, and
+the answer is about **3,400 km** — computed from the committed 12,000 km GHS-POP field, bracketed
+3,303 / 3,416 / 3,524 km for a world of 7.8 / 8.0 / 8.2 billion. The bracket exists because an AEQD
+disc of 12,000 km excludes everything further than that from its centre — the Americas, essentially
+— which is pure denominator and does not change the shape of the curve.
+
+**That is a stronger claim than the one it replaces**, and the reason is that 3,437 km was the
+optimum: moving the centre 280 km to Wat Ket costs almost nothing. The piece stops asserting that
+Wat Ket sits near somebody else's centre and starts asserting that Wat Ket *is* one.
+
+The curve is the thing to show, because it flattens hard:
+
+| From Wat Ket | Share of the field |
+|---|---|
+| 1,000 km | 4.0% |
+| 2,000 km | 22.6% |
+| 3,000 km | 50.4% |
+| 6,000 km | 66.6% |
+
+`aeqd.ts` is unchanged — the projection is the same, the centre is a parameter. The committed
+region field is still centred on 21.00/100.29 and **must be regenerated on 18.7912/99.0043**, or a
+constant-distance-from-Wat-Ket circle is not a circle in that frame. `build-region.py` already
+takes `--centre` and `--radius-km`.
 
 **This replaced one rail**, which from 16 to 21 Sep ran the circle, the district and the block
 through a single gesture. It went because a 3,437 km population raster and an 8 km building diorama
