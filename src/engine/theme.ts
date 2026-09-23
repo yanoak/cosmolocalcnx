@@ -291,18 +291,64 @@ export function sampleRamp(stops: readonly string[], t: number): [number, number
   ];
 }
 
+// ------------------------------------------------------------------ registers
+
+/**
+ * A register is a ground and the three text weights that sit on it.
+ *
+ * The printed exhibition panels use TWO of these and this table used to have one. The
+ * quiet register is for reading — charcoal ink on a near-white page, an orange kicker
+ * above the headline. The loud one is for invitation: purple ground, pale ink, and it
+ * appears once in a piece rather than wherever a surface is wanted.
+ *
+ * Composed entirely from Layer 1, so this adds roles without adding colours.
+ */
+export interface Register {
+  ground: Hex;
+  ink: Hex;
+  /** The line above the headline. Always the accent family, never the ink. */
+  kicker: Hex;
+  muted: Hex;
+}
+
+export const REGISTERS = {
+  page: {
+    ground: PALETTE_EXTENDED['cosmo.offWhite'],
+    ink: PALETTE_EXTENDED['cosmo.charcoal'],
+    /**
+     * DERIVED, and it has to be. The panels set kickers at 80 pt in raw Cosmo Orange,
+     * which on this ground is 2.27:1 — it fails at every size, not merely at body
+     * size. Print under gallery light is not evidence about a phone in a mall. −24%
+     * is the first step that clears body text, at 6.89:1.
+     */
+    kicker: shiftLightness(PALETTE['cosmo.orange'], -0.24),
+    muted: PALETTE_EXTENDED['cosmo.slate'],
+  },
+  invert: {
+    ground: PALETTE['cosmo.purple'],
+    ink: PALETTE_EXTENDED['cosmo.offWhite'],
+    /** Raw, and unchanged from the wall: on purple the print value is 6.64:1 and
+     *  passes outright. This asymmetry is the whole reason two registers beat one. */
+    kicker: PALETTE['cosmo.orange'],
+    /** Lilac rather than a grey — the quiet end of the brand's dominant family, so
+     *  muted text on purple reads as the same material rather than as a third thing. */
+    muted: PALETTE['cosmo.lilac'],
+  },
+} as const satisfies Record<string, Register>;
+
 /**
  * UI tokens are DERIVED DARKER from the palette, never taken from it. The raw values
  * fail contrast badly as text — the rose reaches 2.6:1 and the yellow 1.1:1 — and the
  * audience reads this standing in a bright mall on their own phone. A test enforces it.
+ *
+ * These are now the `page` register under their older names, so the viewer's chrome and
+ * a text panel cannot drift apart. Kept as a separate export because the DOM refers to
+ * them everywhere and renaming is not what this change is about.
  */
 export const UI_TOKENS = {
-  /** Cosmo Purple is already a text-weight colour; it needs no derivation. */
-  'ui.text': PALETTE['cosmo.purple'],
-  'ui.text.muted': PALETTE_EXTENDED['cosmo.slate'],
-  /** Orange at full strength is 2.2:1 on Warm White — fine as a surface, illegible
-   *  as text. Darkened until it clears 4.5:1, which is why this is derived. */
-  'ui.accent': shiftLightness(PALETTE['cosmo.orange'], -0.24),
+  'ui.text': REGISTERS.page.ink,
+  'ui.text.muted': REGISTERS.page.muted,
+  'ui.accent': REGISTERS.page.kicker,
   'ui.focus': PALETTE['cosmo.violet'],
 } as const satisfies Record<string, Hex>;
 
@@ -317,6 +363,11 @@ export function cssCustomProperties(): string {
   }
   for (const [name, value] of Object.entries(GROUND)) {
     entries.push(`  --${name}: ${value};`);
+  }
+  for (const [name, register] of Object.entries(REGISTERS)) {
+    for (const [slot, value] of Object.entries(register)) {
+      entries.push(`  --register-${name}-${slot}: ${value};`);
+    }
   }
   return `:root {\n${entries.join('\n')}\n}`;
 }
