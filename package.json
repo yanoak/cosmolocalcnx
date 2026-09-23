@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
+    "fetch:copy": "tsx scripts/fetch-copy.ts",
     "fetch:osm": "tsx scripts/fetch-osm.ts",
     "fetch:buildings": "python3 scripts/fetch-buildings.py",
     "fetch:elevation": "tsx scripts/fetch-elevation.ts",
@@ -23,6 +24,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",
+    "archieml": "^0.5.0",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "vitest": "^5.0.0"
