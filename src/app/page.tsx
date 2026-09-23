@@ -7,7 +7,13 @@ import { pickLabels } from '@/engine/cities';
 import { TokenSwatches } from '@/engine/DebugOverlay';
 import { SelectPanel, type Selection } from '@/engine/SelectPanel';
 import { step } from '@/engine/ordering';
-import { sceneBoundsMetres, validateScene, type SceneDocument } from '@/engine/scene';
+import {
+  sceneBoundsMetres,
+  validateScene,
+  type BaselineBuilding,
+  type SceneDocument,
+} from '@/engine/scene';
+import { chooseLod, LOD_MODES, type LodMode } from '@/engine/lod';
 import { availableViews, resolveView, VIEW_ORDER, type ViewId } from '@/engine/views';
 import { VALLEY_STYLES, type ValleyStyle } from '@/engine/valley';
 import { BACKDROP_ASSETS } from '@/scenes/backdrop';
@@ -144,6 +150,17 @@ export default function Page() {
    * machine can be set once and so the three can be compared side by side.
    */
   const [relief, setRelief] = useState<ValleyStyle>('hillshade');
+  /**
+   * Whether the far city is a raster or real geometry.
+   *
+   * `near` is the default and is what the phone gets: 7,588 buildings and a
+   * pre-rendered backdrop for the other 61,116. `full` is for the exhibition laptop
+   * and the projector, which have no phone budget to keep and are the surfaces where
+   * somebody actually stands and zooms in. See
+   * plans/2026-09-23_full-geometry-option.plan.md.
+   */
+  const [lod, setLod] = useState<LodMode>('near');
+  const [fullBuildings, setFullBuildings] = useState<BaselineBuilding[] | null>(null);
   const stage = useRef<HTMLDivElement>(null);
 
   const hasRegion = REGION !== null;
@@ -151,12 +168,17 @@ export default function Page() {
   const [era, setEra] = useState<Era>(hasRegion ? 'now' : 'futures');
 
   /**
-   * `?view=` and `?relief=` — deep links into a view and a topography style.
+   * `?view=`, `?relief=` and `?lod=` — deep links into a view, a topography style and
+   * a level of detail.
    *
    * Not a debug hatch: the exhibition machine opens on a fixed view, and a QR code that
    * lands somebody on the valley rather than on the circle is a real thing to want. It
    * also means a view can be looked at without clicking, which is what made it possible
    * to compare the relief styles at all.
+   *
+   * `?lod=full` is the one that changes what is rendered rather than what is shown:
+   * the laptop and the projector draw every building as geometry and skip the raster
+   * entirely. It is set once on the machine that runs the installation.
    */
   const [deepLinked, setDeepLinked] = useState(false);
   useEffect(() => {
@@ -165,6 +187,10 @@ export default function Page() {
     if (style && (VALLEY_STYLES as readonly string[]).includes(style)) {
       setRelief(style as ValleyStyle);
     }
+    const wantedLod = params.get('lod');
+    if (wantedLod && (LOD_MODES as readonly string[]).includes(wantedLod)) {
+      setLod(wantedLod as LodMode);
+    }
     const wanted = params.get('view');
     if (wanted && (VIEW_ORDER as readonly string[]).includes(wanted)) {
       setView(resolveView(wanted as ViewId, HAS_VIEWS));
@@ -172,6 +198,28 @@ export default function Page() {
       setDeepLinked(true);
     }
   }, []);
+
+  /**
+   * The full document, fetched only when somebody asks for it.
+   *
+   * NEVER a static import: `wat-ket.json` is 19 MB and a top-level import would put it
+   * in the shared chunk, so every phone would pay for it and the whole reason the
+   * viewer document exists would be gone. `await import()` gives it its own chunk that
+   * is requested once, cached, and never touched on a default load.
+   */
+  useEffect(() => {
+    if (lod !== 'full' || fullBuildings) return;
+    let cancelled = false;
+    void (async () => {
+      const doc = await import('@/scenes/wat-ket.json');
+      if (cancelled) return;
+      const full = doc as unknown as { default: SceneDocument };
+      setFullBuildings(full.default.baseline.buildings);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [lod, fullBuildings]);
 
   /**
    * The on-ramp, rebuilt for discrete views.
@@ -243,7 +291,19 @@ export default function Page() {
    * puts this inside the budget in `docs/architecture.md` for the first time since
    * the scene took in the old city.
    */
-  const buildings = DOC.baseline.buildings;
+  /**
+   * Near or full, and the backdrop that goes with it.
+   *
+   * The raster is dropped only once the geometry has ARRIVED, never when it is asked
+   * for — otherwise there is a hole where the far city was for as long as a 19 MB
+   * fetch takes. `chooseLod` is pure and tested for exactly that.
+   */
+  const { buildings, backdrop, pending } = chooseLod(
+    lod,
+    DOC.baseline.buildings,
+    fullBuildings,
+    BACKDROP,
+  );
   const bounds = useMemo(() => sceneBoundsMetres(DOC), []);
 
   // Surfaces a bad hand-edit immediately rather than rendering something wrong.
@@ -276,6 +336,9 @@ export default function Page() {
       if (e.key === 'Escape') close();
       if (e.key.toLowerCase() === 'd') setDebug((v) => !v);
       if (e.key.toLowerCase() === 'w') setWireframe((v) => !v);
+      // Reachable only from a keyboard, which is the laptop-and-projector surface that
+      // can afford a million triangles. A visitor on a phone cannot trigger the fetch.
+      if (e.key.toLowerCase() === 'f') setLod((m) => (m === 'full' ? 'near' : 'full'));
       if (e.key === '1' && hasRegion) goToView('circle');
       if (e.key === '2' && VALLEY) goToView('valley');
       if (e.key === '3') goToView('city');
@@ -288,6 +351,7 @@ export default function Page() {
       <div className="topbar">
         <h1>Wat Ket 2045</h1>
         <div className="controls">
+          {pending && <span className="lod-status">loading full geometry…</span>}
           {VIEWS.length > 1 && (
             <div className="registers" role="group" aria-label="View">
               {VIEWS.map((id) => (
@@ -347,7 +411,7 @@ export default function Page() {
               wireframe={wireframe}
               region={REGION}
               relief={RELIEF}
-              backdrop={BACKDROP}
+              backdrop={backdrop}
               heroIds={HERO_IDS}
               view={view}
               valley={VALLEY}

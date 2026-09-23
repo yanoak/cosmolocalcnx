@@ -198,6 +198,54 @@ Judge every decision between now and December against whether it makes the secon
 This is another argument for procedural generators (tier 2 in `architecture.md`) over hand-modelled
 assets: generators travel, hand-placed buildings do not.
 
+### A tiled backdrop pyramid — the one renderer change with numbers behind it
+
+Raised 23 Sep 2026, after the raster was seen going soft on a laptop at two or three times
+district fit.
+
+**The problem.** The backdrop is one 2048 px sheet over 9,839 m, so a texel is 4.80 m. On a
+retina laptop the city view fits at 0.130 px/m, which puts a texel at ~1.25 device pixels —
+already at its limit at the default view, and magnified from there. `--width 4096` buys
+exactly one doubling and then the same wall is back.
+
+**Why a pyramid rather than a bigger sheet.** VRAM for a flat sheet is set by how big the
+WORLD is; for a pyramid it is set by how big the SCREEN is. Zoom in 2× and the visible ground
+area quarters while the texel halves, so the texel count is constant. Both slices resident, one
+texel per device pixel, 1440 × 800 at dpr 2:
+
+| zoom | texel needed | tile pyramid | flat sheet |
+|---|---|---|---|
+| fit | 3.86 m | 30 MB | 30 MB |
+| 2× fit | 1.93 m | **64 MB** | 120 MB |
+| 4× fit | 0.96 m | **64 MB** | 480 MB |
+| 8× fit | 0.48 m | **64 MB** | 1.9 GB |
+| 40× fit | 0.10 m | **64 MB** | 48 GB |
+
+A phone at dpr 3 plateaus around 41 MB. Those are floors — tile granularity and rounding to a
+power-of-two level add maybe 1.5–2.5× in practice. The flat sheet cannot be crisp past about
+2× fit at any resolution that could ship, which is the whole case.
+
+It is also *exact* here rather than an approximation, for the same reason the existing backdrop
+is: the camera is orthographic and never rotates, so each level is the same picture at more
+resolution. **Enabling orbit would destroy that** — see "Level of detail" in `architecture.md`.
+
+**What it touches**, and why it is December work rather than September:
+
+- `scripts/render-backdrop.ts` emits levels × tiles × 2 slices instead of two sheets
+- `BackdropRef` in the schema becomes a tile manifest — a **schema change**, which is why it
+  belongs with the renderer rewrite rather than bolted onto it
+- `BackdropPlane.tsx` becomes a tile manager: level from zoom, visible range, create and dispose
+  as the visitor pans, coarser level held underneath while tiles load
+- seams — adjacent tiles need a half-texel inset or clamp-to-edge, or the grid shows under
+  linear filtering
+- `frameloop="demand"` means an arriving tile must `invalidate()` or it never draws
+
+**September ships the escape hatch instead**: `?lod=full` drops the raster and renders all
+68,704 buildings as real geometry, which is crisp at any zoom and is what the exhibition laptop
+and the projector run. That is not a substitute — it costs ~1M triangles and a 19 MB document,
+so it is exactly what a phone cannot do, and the pyramid is what makes crispness affordable
+on the surface that actually has the budget problem.
+
 ### Deferred until after 28 Sep
 
 All of this is a shell around a core that by then will already work and have been proven by real

@@ -184,3 +184,43 @@ export function sliceFor(depth: number, range: DepthRange): BackdropSlice {
   if (range.min > range.max) return 'behind';
   return depth >= range.min ? 'front' : 'behind';
 }
+
+// ------------------------------------------------- choosing a source at runtime
+
+/**
+ * Which building source and backdrop the viewer draws.
+ *
+ * The partition above happens in the GENERATOR and is baked into the committed
+ * document. This is the one runtime choice built on top of it: the exhibition laptop
+ * and the projector can afford every building as geometry, and the raster exists only
+ * because a phone cannot. See plans/2026-09-23_full-geometry-option.plan.md.
+ */
+export type LodMode = 'near' | 'full';
+
+export const LOD_MODES: readonly LodMode[] = ['near', 'full'] as const;
+
+export interface LodChoice<B, D> {
+  buildings: B;
+  backdrop: D | null;
+  /** True while `full` was asked for and the document has not arrived. */
+  pending: boolean;
+}
+
+/**
+ * Pure, because the failure here is silent and visual: dropping the backdrop at the
+ * moment `full` is REQUESTED rather than when it ARRIVES leaves a hole where the far
+ * city was, for however long a 19 MB fetch takes. That is a bug with no stack trace,
+ * which CLAUDE.md says belongs in a tested function.
+ */
+export function chooseLod<B, D>(
+  mode: LodMode,
+  near: B,
+  full: B | null,
+  backdrop: D | null,
+): LodChoice<B, D> {
+  if (mode === 'full' && full !== null) {
+    // Every building is geometry, so there is nothing for a backdrop to stand in for.
+    return { buildings: full, backdrop: null, pending: false };
+  }
+  return { buildings: near, backdrop, pending: mode === 'full' };
+}

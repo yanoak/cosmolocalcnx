@@ -39,6 +39,26 @@ npm test             # the pure functions — projection, clipping, height synth
 npm run typecheck
 ```
 
+### Setting up the exhibition machine
+
+The viewer takes three URL parameters, so the laptop or the projector can be pointed at a fixed
+state and left alone. None is a debug flag; all three survive a reload.
+
+| | |
+|---|---|
+| `?view=circle\|valley\|city` | open on one of the three views instead of running the on-ramp |
+| `?relief=hillshade\|hypsometric\|terraced` | how the valley's topography is drawn |
+| `?lod=full` | render all 68,704 buildings as geometry and drop the backdrop raster |
+
+**`?lod=full` is what the laptop and the projector want.** The default trades sharpness for a
+phone's budget: everything beyond 1,250 m is a pre-rendered raster at 4.80 m per texel, which is
+at its limit at district fit and softens as you zoom. `?lod=full` fetches the 19 MB document and
+draws every building for real — crisp at any zoom, about a million triangles, and the one thing a
+phone cannot do.
+
+Set it at the start of the day, not during a show: the merge is synchronous and freezes the page
+for about six seconds. `f` toggles it on a keyboard, which is there for judging it on the machine.
+
 ### The print tool
 
 `/print` turns the scene into STLs for the exhibition's 3D print: a base plate with the buildings

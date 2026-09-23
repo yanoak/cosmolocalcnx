@@ -27,7 +27,11 @@ html, body {
 }
 .topbar h1 { margin: 0; font-size: 1rem; letter-spacing: 0.01em; }
 
-.controls { display: flex; gap: 8px; }
+.controls { display: flex; gap: 8px; align-items: center; }
+
+/* Only on screen while the 19 MB full document is in flight, and only ever on a
+   machine somebody asked for it on. See ?lod= in page.tsx. */
+.lod-status { font-size: 0.75rem; color: var(--ui-text-muted); white-space: nowrap; }
 
 /* Thumb-sized hit targets everywhere, including on desktop. */
 button {

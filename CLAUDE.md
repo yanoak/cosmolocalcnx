@@ -89,6 +89,16 @@ orthographic and never rotates, so zoom is a 2D scale and pan a 2D translation. 
 would silently turn it into a lie.** See "Level of detail" in `docs/architecture.md` and
 `plans/2026-09-21_backdrop-lod.plan.md`. The device test on a cheap Android is still outstanding.
 
+**What the raster costs is sharpness, and `?lod=full` is the way out of it.** One texel is 4.80 m,
+so on a retina laptop the backdrop is already at its limit at district fit and is magnified from
+there. `?lod=full` loads the full 68,704-building document and renders every one as geometry with
+no raster at all — crisp at any zoom, ~1M triangles, and exactly what a phone cannot do. It is a
+**start-of-day setting for the laptop and the projector, not a live control**: `mergeBuildings` is
+synchronous, so the switch freezes the main thread for ~6 s, and `f` toggles it for comparing on
+the machine rather than in front of an audience. The real fix is a tiled backdrop pyramid, which is
+on the December roadmap with its numbers. Added 23 Sep 2026, see
+`plans/2026-09-23_full-geometry-option.plan.md`.
+
 ## Stack (decided — do not relitigate)
 
 - **Next.js App Router + TypeScript**, deployed on **Vercel**. Public URL matters because of the QR.
