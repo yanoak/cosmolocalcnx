@@ -30,12 +30,15 @@ export const SETTINGS_KEY = 'cosmolocalcnx.settings';
 
 export interface Settings {
   /**
-   * Which view to open on, or `null` to run the on-ramp.
+   * Which view to open on, or `null` to use the piece's own default.
    *
-   * `null` is a real value and not "unset": the piece opening on the circle and handing
-   * over to Wat Ket is the default behaviour, and choosing a view deliberately turns it
-   * off. Collapsing the two would make "run the on-ramp" unselectable once anything had
-   * ever been stored.
+   * `null` is a real value and not "unset": it means "whatever the piece opens on",
+   * which is a choice a machine can make and then change its mind about. Collapsing the
+   * two would make the default unselectable once anything had ever been stored.
+   *
+   * Until 23 Sep 2026 `null` meant "run the on-ramp" — the circle, then a 2026 Wat Ket,
+   * then the futures. The on-ramp went when space was locked to time period. The
+   * mechanism here is unchanged; only what `null` means is.
    */
   view: ViewId | null;
   relief: ValleyStyle;
@@ -97,7 +100,7 @@ export function parseSettings(raw: string | null | undefined): Settings {
   const stored = value as Record<string, unknown>;
   return {
     // `view` is the one field whose default IS null, so an unknown value and an absent
-    // one land in the same place, which is correct: run the on-ramp.
+    // one land in the same place, which is correct: use the piece's own default.
     view: asView(stored.view),
     relief: asRelief(stored.relief) ?? DEFAULT_SETTINGS.relief,
     lod: asLod(stored.lod) ?? DEFAULT_SETTINGS.lod,

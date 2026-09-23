@@ -126,8 +126,8 @@ function RedrawOnVisible() {
 
 /**
  * Moves the camera along the rail over time, for jumps the visitor did not make
- * with their fingers: a register chip, and the on-ramp that plays the whole rail
- * on load.
+ * with their fingers: a view chip. (An on-ramp used to play the whole rail on
+ * load; it went with the rail.)
  *
  * Deliberately NOT `useFrame`. A useFrame callback runs on every frame the scene
  * renders for any reason, and would have to decide each time whether a tween is in

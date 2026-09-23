@@ -73,7 +73,7 @@ describe('parseSettings', () => {
     });
   });
 
-  it('treats a missing view as "run the on-ramp"', () => {
+  it('treats a missing view as the default opening view', () => {
     expect(parseSettings(JSON.stringify({ lod: 'full' })).view).toBeNull();
   });
 });
@@ -108,7 +108,7 @@ describe('resolveSettings', () => {
     expect(resolveSettings(stored, params('relief=rainbow')).relief).toBe('terraced');
   });
 
-  it('lets an explicit empty view parameter mean the on-ramp', () => {
+  it('lets an explicit empty view parameter mean the default opening view', () => {
     // `?view=` with nothing after it is a deliberate "do the default thing".
     expect(resolveSettings(stored, params('view=')).view).toBeNull();
   });

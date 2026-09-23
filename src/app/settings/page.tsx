@@ -29,10 +29,10 @@ import './settings.css';
  */
 
 const VIEW_CHOICES = [
-  { value: '', label: 'Run the on-ramp', hint: 'The circle, then Wat Ket. The default.' },
-  { value: 'circle', label: 'The circle', hint: 'Open on the Valeriepieris claim.' },
-  { value: 'valley', label: 'The valley', hint: 'Open on the basin.' },
-  { value: 'city', label: 'Wat Ket', hint: 'Open on the diorama.' },
+  { value: '', label: "The piece's default", hint: 'Whatever the piece opens on. The default.' },
+  { value: 'valley', label: 'The valley', hint: 'Open on the basin. The past.' },
+  { value: 'circle', label: 'The circle', hint: 'Open on the Valeriepieris claim. The present.' },
+  { value: 'city', label: 'Wat Ket', hint: 'Open on the diorama. 2045.' },
 ] as const;
 
 const RELIEF_CHOICES = [

@@ -5,7 +5,7 @@
  * different questions. The crossfade is a pure function of camera zoom and needs no
  * clock at all — every pinch already produces a frame. Only a jump the visitor did
  * not make with their fingers needs to be animated over time: pressing a register
- * chip, and the on-ramp that plays the whole rail on load.
+ * chip. (It also served an on-ramp that played the whole rail on load; both went.)
  */
 
 /** Smooth at both ends, linear through the middle. */

@@ -112,28 +112,16 @@ const HAS_VIEWS = { circle: REGION !== null, valley: VALLEY !== null };
 const VIEWS = availableViews(HAS_VIEWS);
 
 /**
- * 2026 is an ON-RAMP, not a state you can select.
+ * There is no 2026 here, and there is no `era`.
  *
- * The piece opens on the circle, descends to Wat Ket as it is now, and hands over
- * to the 2045 futures. The present does the job it was cut for doing — establishing
- * what is actually there — but the comparison control still holds only futures, so
- * the piece asks "which of these?" rather than "is this an improvement?".
+ * Both were cut on 23 Sep 2026 when space was locked to time period. This view IS the
+ * future view, so 2045 is a property of the view rather than a state the file holds:
+ * the on-ramp that descended through a 2026 Wat Ket, the hold before the futures took
+ * over, and the idle reset back to it are all gone. `baseline` is the geometry 2045 is
+ * built from and is never shown as itself.
  *
- * This is NOT the time slider cut on 12 Sep 2026. There are two discrete states and
- * one one-way transition between them; edits carry no date, no scene state is ever
- * partially applied, and scene.ts's FORBIDDEN_EDIT_FIELDS guard is untouched.
- * `era === 'now'` is literally "apply zero edits", which is what this file has
- * rendered since day one. Going back to 2026 happens only on an idle reset, never
- * by zooming out — that would make the rail a scrub, which IS the cut feature.
- *
- * Until roadmap item 3 lands there is one scenario with an empty edit list, so the
- * two eras render identically and only the caption changes. The machinery is here
- * so that item 3 is a rendering change and not an architectural one.
+ * See "a view owns a tense" in CLAUDE.md.
  */
-type Era = 'now' | 'futures';
-
-/** How long the diorama sits in 2026 before the futures take over. */
-const ON_RAMP_HOLD_MS = 1100;
 
 /**
  * Three worlds, named for what they are rather than for a zoom level.
@@ -171,7 +159,6 @@ export default function Page() {
 
   const hasRegion = REGION !== null;
   const [view, setView] = useState<ViewId>(resolveView(hasRegion ? 'circle' : 'city', HAS_VIEWS));
-  const [era, setEra] = useState<Era>(hasRegion ? 'now' : 'futures');
 
   /**
    * `?view=`, `?relief=` and `?lod=` — deep links into a view, a topography style and
@@ -186,7 +173,6 @@ export default function Page() {
    * the laptop and the projector draw every building as geometry and skip the raster
    * entirely. It is set once on the machine that runs the installation.
    */
-  const [deepLinked, setDeepLinked] = useState(false);
   useEffect(() => {
     // Stored settings first, then the URL over the top of them. `resolveSettings` is
     // pure and tested, including the case that matters most: an ABSENT parameter must
@@ -201,10 +187,6 @@ export default function Page() {
 
     if (settings.view) {
       setView(resolveView(settings.view, HAS_VIEWS));
-      setEra('futures');
-      // The on-ramp is skipped whether the view came from the URL or from settings:
-      // both are somebody having said where to start, which is what the on-ramp is for.
-      setDeepLinked(true);
     }
   }, []);
 
@@ -229,33 +211,6 @@ export default function Page() {
       cancelled = true;
     };
   }, [lod, fullBuildings]);
-
-  /**
-   * The on-ramp, rebuilt for discrete views.
-   *
-   * It opens on the circle and hands over to the city. What it no longer does is
-   * TRAVEL there — with three discrete views the descent was the rail, and the rail is
-   * what went. The visitor is shown the claim, then shown the place.
-   *
-   * Still the attract loop's return path (roadmap item 6), and still one-way: going
-   * back to 2026 happens only on an idle reset, never by switching view.
-   */
-  useEffect(() => {
-    if (!hasRegion || deepLinked) return;
-    const handover = window.setTimeout(() => setView('city'), 2600);
-    return () => window.clearTimeout(handover);
-  }, [hasRegion, deepLinked]);
-
-  const onArrive = useCallback(() => {
-    // A beat in 2026 before the futures take over, so the present registers as a
-    // place rather than as a loading state.
-    window.setTimeout(() => setEra((e) => (e === 'now' ? 'futures' : e)), ON_RAMP_HOLD_MS);
-  }, []);
-
-  /** Any deliberate input takes control: the visitor is driving, not watching. */
-  const takeControl = useCallback(() => {
-    setEra('futures');
-  }, []);
 
   /**
    * What the visitor is pointing at on the circle.
@@ -286,7 +241,6 @@ export default function Page() {
   }, [pickedCell, pickedKm]);
 
   const goToView = useCallback((next: ViewId) => {
-    setEra('futures');
     setView(resolveView(next, HAS_VIEWS));
     if (next !== 'circle') {
       setPickedCell(null);
@@ -415,8 +369,6 @@ export default function Page() {
           role="application"
           aria-label="Wat Ket diorama. Arrow keys move between buildings, Enter opens details, Escape closes."
           onKeyDown={onKeyDown}
-          onPointerDown={takeControl}
-          onWheel={takeControl}
         >
           <div className="canvas-fill">
             <Diorama
@@ -436,7 +388,6 @@ export default function Page() {
               view={view}
               valley={VALLEY}
               reliefStyle={relief}
-              onArrive={onArrive}
               onPickCell={onPickCell}
               highlight={pickedCell}
             />
@@ -474,7 +425,7 @@ export default function Page() {
               </span>
             </p>
           ) : (
-            <p>{era === 'now' ? 'Wat Ket, 2026.' : 'Wat Ket, 2045.'}</p>
+            <p>Wat Ket, 2045.</p>
           )}
         </div>
 
