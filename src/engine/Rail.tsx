@@ -1,21 +1,21 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ViewId } from './views';
 import './Rail.css';
 
 /**
  * The conduit with beaded ring nodes, off page 22 of the exhibition panels.
  *
  * It is drawn there as a vertical pipe with a ring node beside each section heading —
- * a chapter rail, in print, by the same designer. This builds it against the three
- * views first so it is exercised and styled before `chapters.ts` exists.
+ * a chapter rail, in print, by the same designer. Since 24 Sep 2026 it is keyed on
+ * chapters — past, present, futures — and is generic over the stop id so the same
+ * component can carry beats inside a chapter later.
  *
  * **It does not yet do what the print does.** The printed rail marks sections WITHIN one
- * panel; this marks whole views. When chapters land, a visitor needs both levels at once
- * — three view stops, and N chapter stops inside whichever is open — which is a nested
- * rail or a second control, not a data change. The plan originally claimed the upgrade
- * would be free. It will not be.
+ * panel; this marks whole chapters. When beats land, a visitor needs both levels at once
+ * — three chapter stops, and N beat stops inside whichever is open — which is a nested
+ * rail, not a data change. The plan originally claimed the upgrade would be free. It will
+ * not be.
  *
  * Horizontal only, also deliberately. The mockup in the plan has a vertical variant for
  * wide viewports, but the control lives in the topbar, and standing it upright means
@@ -30,19 +30,33 @@ import './Rail.css';
  * See plans/2026-09-23_kv-design-system.plan.md.
  */
 
-export interface RailProps {
-  /** In presentation order. Absent views are already filtered out by `availableViews`. */
-  views: readonly ViewId[];
-  current: ViewId;
-  labels: Record<ViewId, string>;
-  onSelect: (id: ViewId) => void;
+/**
+ * Generic over the stop id. It was keyed on ViewId until 24 Sep 2026; it is keyed on
+ * ChapterId now, and when chapters gain beats it will be keyed on those too. The rail does
+ * not know what a stop IS — only that there is an ordered list of them and one is current.
+ */
+export interface RailProps<T extends string> {
+  /** In presentation order. Absent stops are already filtered out by the caller. */
+  stops: readonly T[];
+  current: T;
+  labels: Record<T, string>;
+  onSelect: (id: T) => void;
   /** 1-based, for `aria-keyshortcuts`. Keeps the rail honest about the number keys. */
-  shortcutFor?: (id: ViewId) => number;
+  shortcutFor?: (id: T) => number;
+  /** Accessible name for the group — "Chapter", "Beat". */
+  label?: string;
 }
 
-export function Rail({ views, current, labels, onSelect, shortcutFor }: RailProps) {
-  const [focused, setFocused] = useState<ViewId>(current);
-  const refs = useRef(new Map<ViewId, HTMLButtonElement>());
+export function Rail<T extends string>({
+  stops: views,
+  current,
+  labels,
+  onSelect,
+  shortcutFor,
+  label = 'Chapter',
+}: RailProps<T>) {
+  const [focused, setFocused] = useState<T>(current);
+  const refs = useRef(new Map<T, HTMLButtonElement>());
 
   // The ring follows the view when it changes from anywhere else — a number key, a deep
   // link, a future chapter handover. Without this the rail can point at a view that is
@@ -88,7 +102,7 @@ export function Rail({ views, current, labels, onSelect, shortcutFor }: RailProp
   );
 
   return (
-    <div className="rail" role="group" aria-label="View" onKeyDown={onKeyDown}>
+    <div className="rail" role="group" aria-label={label} onKeyDown={onKeyDown}>
       {views.map((id, i) => (
         <span className="rail-stop" key={id}>
           {i > 0 && <span className="rail-conduit" aria-hidden="true" />}

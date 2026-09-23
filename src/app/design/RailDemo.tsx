@@ -2,21 +2,21 @@
 
 import { useState } from 'react';
 import { Rail } from '@/engine/Rail';
-import type { ViewId } from '@/engine/views';
+import { CHAPTER_ORDER, CHAPTER_TENSE, type ChapterId } from '@/engine/views';
 
 /**
  * The real `Rail`, not a picture of one — so this page keeps its one useful property.
  * Its state is local and goes nowhere; selecting here switches nothing.
  */
 export function RailDemo() {
-  const [view, setView] = useState<ViewId>('valley');
+  const [chapter, setChapter] = useState<ChapterId>('past');
   return (
     <Rail
-      views={['valley', 'circle', 'city'] as const}
-      current={view}
-      labels={{ valley: 'The valley', circle: 'The circle', city: 'Wat Ket' }}
-      onSelect={setView}
-      shortcutFor={(id) => ['valley', 'circle', 'city'].indexOf(id) + 1}
+      stops={CHAPTER_ORDER}
+      current={chapter}
+      labels={CHAPTER_TENSE}
+      onSelect={setChapter}
+      shortcutFor={(id) => CHAPTER_ORDER.indexOf(id) + 1}
     />
   );
 }

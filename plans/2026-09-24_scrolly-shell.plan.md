@@ -126,7 +126,7 @@ lines, and the hard part here is the camera and layer state, which no library kn
 
 - [ ] `camera.ts` — `goTo({ view, zoom, target }, duration)`; absorb `Diorama`'s rig and what
       `registers.ts` still does; delete the rest of `registers.ts`
-- [ ] `ChapterId`, `CHAPTER_VIEWS`, tense labels keyed by chapter; `Rail` and the number keys move
+- [x] `ChapterId`, `CHAPTER_VIEWS`, tense labels keyed by chapter; `Rail` and the number keys move
       to chapters
 - [ ] Extend `Hotspot` with `chapter`, `view`, `icon`, `date`; `validateScene` requires `chapter`
 - [ ] The layout change — scroll track over a fixed canvas; wheel is scroll in the stem, zoom in

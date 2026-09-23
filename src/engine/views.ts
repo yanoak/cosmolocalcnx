@@ -37,25 +37,11 @@ export type ViewId = 'circle' | 'valley' | 'city';
 export const VIEW_ORDER: readonly ViewId[] = ['valley', 'circle', 'city'] as const;
 
 /**
- * Every view is named twice, and the piece shows both.
+ * A view's place name — the subhead under the header, because a tense on its own does not
+ * tell a visitor what they are about to look at. The tense itself belongs to the CHAPTER,
+ * below: a view can appear in more than one.
  *
- * The tense is what the rail says, because three words in temporal order are what make
- * the order legible at a glance. The place is the subhead under the header, because
- * "Past" does not tell a visitor what they are about to look at.
- *
- * Deliberately not localised here. The bilingual pass (roadmap item 5) owns all viewer
- * copy at once, and half-translating it now would leave two mechanisms to unpick.
- */
-export const VIEW_TENSE: Record<ViewId, string> = {
-  valley: 'Past',
-  circle: 'Present',
-  city: 'Futures',
-};
-
-/**
- * Plural on the city, and it is load-bearing. The piece asks "which of these?" rather
- * than "is this an improvement?" — a singular "Future" quietly flattens several arguable
- * scenarios back into one, which is the smaller question the whole design avoids.
+ * Deliberately not localised here. The bilingual pass owns all viewer copy at once.
  */
 export const VIEW_PLACE: Record<ViewId, string> = {
   valley: 'The valley',
@@ -71,6 +57,62 @@ export const VIEW_PLACE: Record<ViewId, string> = {
  * has a city view and nothing else until someone runs the generators. A view with
  * nothing in it must be unreachable rather than empty.
  */
+// ----------------------------------------------------------------- chapters
+
+/**
+ * Scale and tense are different axes. Decided 24 Sep 2026.
+ *
+ * Valley and city are VIEWS — scales, kinds of rendering. Past, present and futures are
+ * CHAPTERS — tenses, the piece's argument. Until today they were one-to-one and the code
+ * keyed the rail, the number keys and the tense labels on views. Then the Futures material
+ * turned out to be mostly regional, so Futures uses the valley AND the city, and the valley
+ * appears in two chapters with two different overlays.
+ *
+ * That is not a violation of "a view owns a tense": a view is a timeless substrate plus a
+ * period-bearing overlay, and geology has no tense. What it does mean is that the valley
+ * alone cannot tell you which chapter you are in — so the caller passes the chapter, and
+ * nothing here infers one from a view or from a zoom.
+ */
+export type ChapterId = 'past' | 'present' | 'futures';
+
+/** Temporal, and also the rail order and the `1`/`2`/`3` keys. */
+export const CHAPTER_ORDER: readonly ChapterId[] = ['past', 'present', 'futures'] as const;
+
+/**
+ * Which views a chapter uses, opening view first. Futures opens in the city — the stem
+ * introduces the four places there before shifting to the valley for the rest — and the
+ * city is always the scene, which is why Futures survives a scene with no region or valley
+ * field.
+ */
+export const CHAPTER_VIEWS: Record<ChapterId, readonly ViewId[]> = {
+  past: ['valley'],
+  present: ['circle'],
+  futures: ['city', 'valley'],
+};
+
+/**
+ * What the rail says. Three words in temporal order are what make the order legible at a
+ * glance. Plural on Futures, and it is load-bearing: the piece asks what the place could be,
+ * and a singular "Future" reads as a prediction.
+ *
+ * Not localised here; the bilingual pass owns all viewer copy at once.
+ */
+export const CHAPTER_TENSE: Record<ChapterId, string> = {
+  past: 'Past',
+  present: 'Present',
+  futures: 'Futures',
+};
+
+/** The chapters a view appears in. Two for the valley — which is the whole point. */
+export function chaptersOf(view: ViewId): ChapterId[] {
+  return CHAPTER_ORDER.filter((c) => CHAPTER_VIEWS[c].includes(view));
+}
+
+/** The view a chapter opens on. */
+export function defaultView(chapter: ChapterId): ViewId {
+  return CHAPTER_VIEWS[chapter][0];
+}
+
 export interface ViewAvailability {
   circle: boolean;
   valley: boolean;
@@ -176,6 +218,21 @@ export function stepView(
  * Always the city: it is the only view guaranteed to have something in it, and it is
  * what the piece is about.
  */
+/**
+ * A chapter is available when its OPENING view is. Past needs the valley field, Present the
+ * region field, and Futures needs only the city, which is always there — so a second
+ * neighbourhood with nothing generated yet still has a Futures chapter.
+ */
+export function availableChapters(has: ViewAvailability): ChapterId[] {
+  return CHAPTER_ORDER.filter((c) => isAvailable(defaultView(c), has));
+}
+
+/** The wanted chapter if it is available, else the first that is. Never an empty result. */
+export function resolveChapter(wanted: ChapterId | null, has: ViewAvailability): ChapterId {
+  const open = availableChapters(has);
+  return wanted && open.includes(wanted) ? wanted : open[0];
+}
+
 export function resolveView(wanted: ViewId | null, has: ViewAvailability): ViewId {
   return wanted && isAvailable(wanted, has) ? wanted : 'city';
 }

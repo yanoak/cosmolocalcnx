@@ -8,10 +8,17 @@ import {
   stepView,
   VIEW_ORDER,
   VIEW_PLACE,
-  VIEW_TENSE,
   VIEW_RANGE,
   viewSpec,
   type ViewId,
+  CHAPTER_ORDER,
+  CHAPTER_VIEWS,
+  CHAPTER_TENSE,
+  chaptersOf,
+  defaultView,
+  availableChapters,
+  resolveChapter,
+  type ChapterId,
 } from '../views';
 import { DEFAULT_BLOCK_IN } from '../registers';
 
@@ -163,12 +170,8 @@ describe('stepView', () => {
   });
 
   /** The tense labels are the rail's whole text, so an empty one is a blank node. */
-  it('names every view twice, and the city is plural', () => {
-    for (const id of VIEW_ORDER) {
-      expect(VIEW_TENSE[id]).toBeTruthy();
-      expect(VIEW_PLACE[id]).toBeTruthy();
-    }
-    expect(VIEW_TENSE.city).toBe('Futures');
+  it('names every view by place', () => {
+    for (const id of VIEW_ORDER) expect(VIEW_PLACE[id]).toBeTruthy();
   });
 
   it('recovers from a view that is not in the list', () => {
@@ -191,6 +194,68 @@ describe('resolveView', () => {
     const has = { circle: false, valley: true };
     for (const wanted of [...VIEW_ORDER, null] as (ViewId | null)[]) {
       expect(isAvailable(resolveView(wanted, has), has)).toBe(true);
+    }
+  });
+});
+
+/**
+ * Chapters, 24 Sep 2026. Scale and tense are different axes: valley and city are views,
+ * past / present / futures are chapters, and Futures uses two views. The rail, the number
+ * keys and the tense labels key on chapters — keying them on views was correct at one view
+ * per chapter and wrong the moment Futures entered the valley.
+ */
+describe('chapters', () => {
+  const ALL_VIEWS = { circle: true, valley: true };
+  const CITY_ONLY = { circle: false, valley: false };
+
+  it('run past, present, futures — the temporal order, and the 1/2/3 keys', () => {
+    expect(CHAPTER_ORDER).toEqual(['past', 'present', 'futures']);
+  });
+
+  it('covers every view, and every chapter has at least one view', () => {
+    const covered = new Set<ViewId>();
+    for (const id of CHAPTER_ORDER) {
+      expect(CHAPTER_VIEWS[id].length).toBeGreaterThan(0);
+      for (const v of CHAPTER_VIEWS[id]) covered.add(v);
+    }
+    for (const v of VIEW_ORDER) expect(covered.has(v)).toBe(true);
+  });
+
+  /** The reason ChapterId exists: the valley alone cannot tell you which chapter you are in. */
+  it('cannot infer the chapter from the valley — that is why the caller passes it', () => {
+    expect(chaptersOf('valley')).toEqual(['past', 'futures']);
+    expect(chaptersOf('circle')).toEqual(['present']);
+    expect(chaptersOf('city')).toEqual(['futures']);
+  });
+
+  it('opens Futures in the city — the stem starts there and shifts to the valley later', () => {
+    expect(defaultView('futures')).toBe('city');
+    expect(defaultView('past')).toBe('valley');
+    expect(defaultView('present')).toBe('circle');
+  });
+
+  it('is plural on Futures, and that is load-bearing', () => {
+    expect(CHAPTER_TENSE.futures).toBe('Futures');
+    for (const id of CHAPTER_ORDER) expect(CHAPTER_TENSE[id]).toBeTruthy();
+  });
+
+  it('is available when its opening view is — so a city-only scene still has Futures', () => {
+    expect(availableChapters(ALL_VIEWS)).toEqual(['past', 'present', 'futures']);
+    expect(availableChapters(CITY_ONLY)).toEqual(['futures']);
+    expect(availableChapters({ circle: true, valley: false })).toEqual(['present', 'futures']);
+  });
+
+  it('resolves a wanted chapter, and falls to the first available otherwise', () => {
+    expect(resolveChapter('past', ALL_VIEWS)).toBe('past');
+    expect(resolveChapter('past', CITY_ONLY)).toBe('futures');
+    expect(resolveChapter(null, ALL_VIEWS)).toBe('past');
+    expect(resolveChapter(null, CITY_ONLY)).toBe('futures');
+  });
+
+  it('never resolves to a chapter whose opening view is missing', () => {
+    for (const id of CHAPTER_ORDER as ChapterId[]) {
+      const r = resolveChapter(id, CITY_ONLY);
+      expect(availableChapters(CITY_ONLY)).toContain(r);
     }
   });
 });

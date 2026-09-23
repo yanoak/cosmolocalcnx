@@ -21,10 +21,15 @@ import {
   saveSettings,
 } from '@/engine/settings';
 import {
-  availableViews,
   resolveView,
   VIEW_ORDER,
-  VIEW_TENSE,
+  CHAPTER_ORDER,
+  CHAPTER_TENSE,
+  availableChapters,
+  chaptersOf,
+  defaultView,
+  resolveChapter,
+  type ChapterId,
   type ViewId,
 } from '@/engine/views';
 import { Rail } from '@/engine/Rail';
@@ -117,7 +122,7 @@ const HERO_IDS: ReadonlySet<string> = new Set(
 
 /** Which of the three worlds this scene actually has. The city is always one of them. */
 const HAS_VIEWS = { circle: REGION !== null, valley: VALLEY !== null };
-const VIEWS = availableViews(HAS_VIEWS);
+const CHAPTERS = availableChapters(HAS_VIEWS);
 
 /**
  * There is no 2026 here, and there is no `era`.
@@ -157,7 +162,11 @@ export default function Page() {
   const hasRegion = REGION !== null;
   // Opens on the earliest view it has. `resolveView` falls through to the city when the
   // valley field is absent, so a scene with no DEM still opens on something.
-  const [view, setView] = useState<ViewId>(resolveView(VIEW_ORDER[0], HAS_VIEWS));
+  // The chapter is the visitor's position in the argument; the view is what is on screen.
+  // They are separate state because Futures uses two views, so `view` alone cannot say
+  // which chapter is open. Opens on the earliest chapter the scene has.
+  const [chapter, setChapter] = useState<ChapterId>(resolveChapter(null, HAS_VIEWS));
+  const [view, setView] = useState<ViewId>(() => resolveView(defaultView(resolveChapter(null, HAS_VIEWS)), HAS_VIEWS));
 
   /**
    * `?view=`, `?relief=` and `?lod=` — deep links into a view, a topography style and
@@ -185,7 +194,12 @@ export default function Page() {
     setLocale(settings.locale);
 
     if (settings.view) {
-      setView(resolveView(settings.view, HAS_VIEWS));
+      // A stored or deep-linked VIEW picks the first chapter that uses it — valley means
+      // Past here, not Futures. A `?chapter=` parameter is the honest fix and is a later
+      // addition; this keeps existing links working.
+      const v = resolveView(settings.view, HAS_VIEWS);
+      setView(v);
+      setChapter(resolveChapter(chaptersOf(v)[0] ?? null, HAS_VIEWS));
     }
   }, []);
 
@@ -239,6 +253,18 @@ export default function Page() {
     return near ? [near.city] : [];
   }, [pickedCell, pickedKm]);
 
+  /** Chapter first, view from it. The only way the number keys and the rail move. */
+  const goToChapter = useCallback((next: ChapterId) => {
+    const c = resolveChapter(next, HAS_VIEWS);
+    setChapter(c);
+    setView(resolveView(defaultView(c), HAS_VIEWS));
+    if (defaultView(c) !== 'circle') {
+      setPickedCell(null);
+      setPickedKm(null);
+    }
+  }, []);
+
+  /** A view change inside the current chapter — what a Futures beat will do to reach the valley. */
   const goToView = useCallback((next: ViewId) => {
     setView(resolveView(next, HAS_VIEWS));
     if (next !== 'circle') {
@@ -312,26 +338,28 @@ export default function Page() {
           return next;
         });
       }
-      if (e.key === '1' && hasRegion) goToView('circle');
-      if (e.key === '2' && VALLEY) goToView('valley');
-      if (e.key === '3') goToView('city');
+      // Number keys are chapters, in CHAPTER_ORDER. Until 24 Sep 2026 these were hardcoded
+      // to the old scale order while the rail labelled them temporally — pressing 1 went to
+      // the circle and the rail said 1 was the valley.
+      const n = Number(e.key);
+      if (n >= 1 && n <= CHAPTER_ORDER.length) goToChapter(CHAPTER_ORDER[n - 1]);
     },
-    [buildings, close, hasRegion, goToView],
+    [buildings, close, goToChapter],
   );
 
   return (
     <main className="viewer">
       <div className="topbar">
-        <ViewHeader view={view} />
+        <ViewHeader chapter={chapter} view={view} />
         <div className="controls">
           {pending && <span className="lod-status">loading full geometry…</span>}
-          {VIEWS.length > 1 && (
+          {CHAPTERS.length > 1 && (
             <Rail
-              views={VIEWS}
-              current={view}
-              labels={VIEW_TENSE}
-              onSelect={goToView}
-              shortcutFor={(id) => VIEW_ORDER.indexOf(id) + 1}
+              stops={CHAPTERS}
+              current={chapter}
+              labels={CHAPTER_TENSE}
+              onSelect={goToChapter}
+              shortcutFor={(id) => CHAPTER_ORDER.indexOf(id) + 1}
             />
           )}
           <button

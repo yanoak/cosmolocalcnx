@@ -1,4 +1,4 @@
-import { VIEW_PLACE, VIEW_TENSE, type ViewId } from './views';
+import { CHAPTER_TENSE, VIEW_PLACE, type ChapterId, type ViewId } from './views';
 import './ViewHeader.css';
 
 /**
@@ -16,10 +16,10 @@ import './ViewHeader.css';
  * one heading, which is the whole name — splitting them would leave the document with a
  * heading that says only "Past".
  */
-export function ViewHeader({ view }: { view: ViewId }) {
+export function ViewHeader({ chapter, view }: { chapter: ChapterId; view: ViewId }) {
   return (
     <h1 className="view-header">
-      <span className="view-header-tense">{VIEW_TENSE[view]}</span>
+      <span className="view-header-tense">{CHAPTER_TENSE[chapter]}</span>
       <span className="view-header-place">{VIEW_PLACE[view]}</span>
     </h1>
   );
