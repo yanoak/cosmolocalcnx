@@ -129,8 +129,8 @@ build error rather than a silent gap.
 
 1. `npm run fetch:copy` — four `.md` files and one `copy.json` appear under `src/content/`.
 2. Run it again — `git status` shows no change.
-3. Put a link in the doc, refetch — it appears as `[text](url)` in the `.md` and survives into
-   `copy.json`.
+3. ~~Put a link in the doc, refetch~~ **Passed 24 Sep 2026.** Four real Docs hyperlinks across
+   three tabs came back as `[text](url)` in the `.md` and inside the parsed values in `copy.json`.
 4. `renderCopy` on that value gives a run with `href`; the DOM shows an anchor.
 
 ## Out of scope
@@ -144,15 +144,19 @@ build error rather than a silent gap.
 
 - [ ] Do beats and hotspots share one `[hotspots]` array per tab, or does each chapter tab carry its
       own sections? The shape above assumes per tab.
-- [ ] Seed the doc's tabs with the skeleton so the writer starts from it? Needs a write to the doc.
+- [x] ~~Seed the doc's tabs with the skeleton?~~ Done 24 Sep 2026 at Yan's request — sample copy
+      in all four tabs, written from the research findings, ids matching the context files, one
+      real hyperlink per chapter so the round trip is demonstrable. Marked as sample in the doc.
 
 ## Outcome
 
 _Active, 24 Sep 2026._ Pipeline proven end to end on the real (still empty) doc: `gws` → four
 tabs → markdown → ArchieML → `copy.json`, **byte-identical on re-run**. Link preservation proven
 on a real doc that has a hyperlink — the run's `link.url` comes through as `[text](url)` with no
-scraping. 15 tests, typecheck clean. Verification steps 3 and 4 wait on copy existing in the doc
-and on a chapter rendering it; the plan stays active until then.
+scraping. 15 tests, typecheck clean. The doc is seeded with sample copy — 12 beats and 16 hotspots across
+the four tabs, ids matching the chapter context files — and the fetch is byte-identical on re-run
+with real content, not just an empty doc. Verification step 4 waits on a chapter rendering a run
+with an `href`; the plan stays active until then.
 
 Two things learned. The public export URL is a dead end for a private doc, and `gws` is upstream of
 it anyway — the API hands over links and tabs that HTML export would have to reconstruct. And a
