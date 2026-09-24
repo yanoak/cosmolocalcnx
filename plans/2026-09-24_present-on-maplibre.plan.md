@@ -61,6 +61,12 @@ leave* — MapLibre's map is cheap to recreate against a cached PMTiles file, an
 context through the other chapters is exactly the "pay for a world nobody is looking at" this
 project forbids.
 
+> **Mounted at load and kept — Yan, 24 Sep 2026, on waiting for it.** The "torn down on
+> leave" below is reversed: the first load is the worker tessellating a hundred thousand
+> extruded cells, seconds even on a laptop, so the map now mounts hidden at page load and
+> is warm by the time anyone reaches Present. The second context is the price; the
+> exhibition screen pays it. A "loading the map…" status shows if Present is reached first.
+>
 > **Flat, not globe — Yan, 24 Sep 2026, on seeing it.** The paragraph below is the argument
 > for the globe and is kept for the record; the map is Mercator. The ring is still a circle
 > of true distance, so on screen it bulges northward — that is what 3,400 km looks like on

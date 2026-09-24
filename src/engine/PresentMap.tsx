@@ -35,10 +35,11 @@ import './PresentMap.css';
  * the population cells extruded on it, and the ring that grows out of Wat Ket.
  *
  * **A second renderer, behind the cut.** Since 24 Sep 2026 the circle view is this
- * and not the three.js scene. It mounts when the Present chapter opens and is torn
- * down when it closes — MapLibre's map is cheap to rebuild against a cached PMTiles
- * file, and holding a second WebGL context through the other chapters is exactly the
- * "pay for a world nobody is looking at" the project forbids.
+ * and not the three.js scene. It mounts at page load, hidden, and stays mounted for
+ * the visit: its first load is the worker tessellating a hundred thousand extruded
+ * cells, which is seconds, and a map that is warm before anyone reaches Present is
+ * worth the second WebGL context on the exhibition screen. `onReady` tells the page
+ * when that first full frame has drawn.
  *
  * The page owns every decision — which pose, what ring radius, whether the visitor
  * may drag — and this component only applies them, the way `CameraRig` does for the
@@ -105,6 +106,7 @@ export function PresentMap({
   interactive,
   labels,
   onPick,
+  onReady,
 }: {
   /** `pmtiles://…` URLs. */
   basemapUrl: string;
@@ -123,6 +125,8 @@ export function PresentMap({
   /** Cities that carry a permanent label. */
   labels: readonly City[];
   onPick?: (pick: MapPick) => void;
+  /** Once, after the first frame in which every source has loaded and drawn. */
+  onReady?: () => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
@@ -131,6 +135,8 @@ export function PresentMap({
   latest.current = { ringKm, pose, continuous, interactive, claimKm };
   const pickHandler = useRef(onPick);
   pickHandler.current = onPick;
+  const readyHandler = useRef(onReady);
+  readyHandler.current = onReady;
 
   /** The map, once. */
   useEffect(() => {
@@ -168,6 +174,10 @@ export function PresentMap({
     }
 
     const markers: Marker[] = [];
+
+    // 'idle' fires when the map has drawn everything it has and nothing is in flight —
+    // the first one after load is the warm map. `once`, so the page hears it one time.
+    m.once('idle', () => readyHandler.current?.());
 
     m.on('style.load', () => {
       (m.getSource(ANCHOR_SOURCE) as GeoJSONSource | undefined)?.setData({

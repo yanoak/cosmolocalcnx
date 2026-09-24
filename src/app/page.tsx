@@ -355,6 +355,8 @@ export default function Page() {
    * prompts is "what is that?" and the honest answer is sometimes two cities.
    */
   const [mapPick, setMapPick] = useState<MapPick | null>(null);
+  /** True once the map has drawn its first full frame — the pre-warm has landed. */
+  const [mapReady, setMapReady] = useState(false);
   const pickedCities: City[] = useMemo(() => {
     if (!REGION || !mapPick) return [];
     const km = aeqdForward([mapPick.lat, mapPick.lon], ORIGIN);
@@ -509,6 +511,7 @@ export default function Page() {
         <ViewHeader chapter={chapter} view={view} />
         <div className="controls">
           {pending && <span className="lod-status">loading full geometry…</span>}
+          {chapter === 'present' && !mapReady && <span className="lod-status">loading the map…</span>}
           {CHAPTERS.length > 1 && (
             <Rail
               stops={CHAPTERS}
@@ -542,9 +545,13 @@ export default function Page() {
           onKeyDown={onKeyDown}
         >
           <div className="canvas-fill">
-            {/* Two renderers, one stage. The diorama stays mounted through the Present
-                chapter — its valley and city are expensive to rebuild — and is hidden
-                rather than unmounted; the map is the reverse, torn down on leave. */}
+            {/* Two renderers, one stage, BOTH mounted for the whole visit and shown one at a
+                time. The diorama's valley and city are expensive to rebuild; the map's first
+                load is the worker tessellating a hundred thousand extruded cells, which took
+                long enough to see. So the map mounts at page load, hidden, and is warm by the
+                time anyone reaches Present — Yan's call, 24 Sep 2026, over the plan's
+                tear-it-down-on-leave. A second WebGL context all the time is the cost, and
+                the exhibition screen can afford it. */}
             <div className={chapter === 'present' ? 'renderer is-hidden' : 'renderer'}>
             <Diorama
               bounds={bounds}
@@ -566,20 +573,23 @@ export default function Page() {
               interactive={mode === 'explore'}
             />
             </div>
-            {chapter === 'present' && REGION && CLAIM && (
-              <PresentMap
-                basemapUrl={MAP_URLS.basemap}
-                cellsUrl={MAP_URLS.cells}
-                levels={CELLS_META.levels}
-                origin={ORIGIN}
-                claimKm={CLAIM.km}
-                ringKm={mapRingKm}
-                pose={mapPose}
-                continuous={mapContinuous}
-                interactive={mode === 'explore'}
-                labels={REGION.labels}
-                onPick={setMapPick}
-              />
+            {REGION && CLAIM && (
+              <div className={chapter === 'present' ? 'renderer' : 'renderer is-hidden'}>
+                <PresentMap
+                  basemapUrl={MAP_URLS.basemap}
+                  cellsUrl={MAP_URLS.cells}
+                  levels={CELLS_META.levels}
+                  origin={ORIGIN}
+                  claimKm={CLAIM.km}
+                  ringKm={mapRingKm}
+                  pose={mapPose}
+                  continuous={mapContinuous}
+                  interactive={chapter === 'present' && mode === 'explore'}
+                  labels={REGION.labels}
+                  onPick={setMapPick}
+                  onReady={() => setMapReady(true)}
+                />
+              </div>
             )}
           </div>
         </div>

@@ -186,8 +186,10 @@ on the December roadmap with its numbers. Added 23 Sep 2026, see
 - **React Three Fiber + drei** for the 3D. This is three.js with React ergonomics, not an alternative to it.
 - **MapLibre GL JS + PMTiles for the Present chapter, since 24 Sep 2026.** A second renderer,
   behind the cut between views — which the 21 Sep decision that the circle is "a different kind
-  of rendering" already licensed. `PresentMap.tsx` mounts a MapLibre globe when the chapter
-  opens and tears it down when it closes; the diorama stays mounted and hidden. The basemap is
+  of rendering" already licensed. `PresentMap.tsx` mounts a flat MapLibre map at page load, hidden,
+  and keeps it for the visit — its first load is seconds of tessellation, so it is warm
+  before anyone reaches Present; the diorama likewise stays mounted and hidden. Two WebGL
+  contexts all the time, which the exhibition screen affords. The basemap is
   a Protomaps world extract to zoom 6 in `public/basemap/` (45 MB, committed, because both the
   offline laptop and the Vercel URL need it in place with no server), styled entirely from
   `theme.ts` tokens by `mapstyle.ts` with **no symbol layers** — labels are DOM markers from the
