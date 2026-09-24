@@ -3,7 +3,7 @@
 import { useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import type * as THREE from 'three';
-import { poseBetween, samePose, type CameraPose } from './camera';
+import { moveDuration, poseBetween, samePose, standFor, type CameraPose } from './camera';
 import { easeInOutCubic } from './tween';
 
 /**
@@ -40,6 +40,12 @@ export function CameraRig({
   const invalidate = useThree((s) => s.invalidate);
   const previous = useRef<CameraPose | null>(null);
   const raf = useRef<number | null>(null);
+  /**
+   * How far the camera stands from its target — read once, from where the fit put it,
+   * and then held. It only matters to near/far, which have room to spare; what matters
+   * is that the DIRECTION is the attitude's for every target, see `standFor`.
+   */
+  const distance = useRef<number | null>(null);
   const arrived = useRef(onArrive);
   arrived.current = onArrive;
 
@@ -52,9 +58,20 @@ export function CameraRig({
     const apply = (p: CameraPose) => {
       camera.zoom = p.zoom;
       camera.updateProjectionMatrix();
+      // The camera moves WITH its target, along the attitude. Left to OrbitControls,
+      // a target change keeps the camera still and re-derives the orbit — which is a
+      // rotation, and the one thing this camera must never do.
+      if (distance.current === null) {
+        const t = controls ? controls.target : { x: 0, y: 0, z: 0 };
+        distance.current = Math.hypot(camera.position.x - t.x, camera.position.y - t.y, camera.position.z - t.z) || 1;
+      }
+      const [x, y, z] = standFor(p.target, distance.current);
+      camera.position.set(x, y, z);
       if (controls) {
         controls.target.set(p.target[0], p.target[1], p.target[2]);
         controls.update();
+      } else {
+        camera.lookAt(p.target[0], p.target[1], p.target[2]);
       }
       invalidate();
     };
@@ -63,7 +80,9 @@ export function CameraRig({
     const reduced =
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if (first || !from || reduced || durationMs <= 0) {
+    // Across views there is no journey to draw: the cut happens even mid-stem.
+    const ms = moveDuration(from, pose, durationMs);
+    if (first || !from || reduced || ms <= 0) {
       apply(pose);
       if (!first) arrived.current?.();
       return;
@@ -71,7 +90,7 @@ export function CameraRig({
 
     const started = performance.now();
     const step = (now: number) => {
-      const u = Math.min(1, (now - started) / durationMs);
+      const u = Math.min(1, (now - started) / ms);
       apply(poseBetween(from, pose, easeInOutCubic(u)));
       if (u < 1) {
         raf.current = requestAnimationFrame(step);

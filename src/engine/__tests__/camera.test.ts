@@ -219,7 +219,7 @@ describe('isometricFit', () => {
   });
 });
 
-import { poseBetween, samePose, type CameraPose } from '../camera';
+import { moveDuration, poseBetween, samePose, standFor, type CameraPose } from '../camera';
 
 describe('poseBetween', () => {
   const a: CameraPose = { view: 'circle', zoom: 10, target: [0, 0, 0] };
@@ -255,5 +255,44 @@ describe('samePose', () => {
     expect(samePose(p, { ...p, target: [1, 2, 3] })).toBe(true);
     expect(samePose(p, { ...p, zoom: 4 })).toBe(false);
     expect(samePose(p, { ...p, view: 'valley' })).toBe(false);
+  });
+});
+
+describe('moveDuration', () => {
+  const city: CameraPose = { view: 'city', zoom: 10, target: [0, 0, 0] };
+  const cityNear: CameraPose = { view: 'city', zoom: 40, target: [100, 0, -100] };
+  const valley: CameraPose = { view: 'valley', zoom: 1, target: [0, 0, 0] };
+
+  it('keeps the duration for a move within a view', () => {
+    expect(moveDuration(city, cityNear, 600)).toBe(600);
+  });
+
+  it('cuts across views, whatever duration a beat asked for', () => {
+    expect(moveDuration(city, valley, 600)).toBe(0);
+    expect(moveDuration(valley, city, 600)).toBe(0);
+  });
+
+  it('cuts on the first pose, when there is nothing to move from', () => {
+    expect(moveDuration(null, city, 600)).toBe(0);
+  });
+});
+
+describe('standFor', () => {
+  it('offsets every target by the same vector — the attitude times the distance', () => {
+    const a = standFor([0, 0, 0], 28000);
+    const b = standFor([2200, 0, -11400], 28000);
+    const c = standFor([-45000, 0, 30000], 28000);
+    const offset = (p: [number, number, number], t: [number, number, number]) => p.map((v, i) => v - t[i]);
+    expect(offset(b, [2200, 0, -11400]).map((v) => Math.round(v))).toEqual(offset(a, [0, 0, 0]).map((v) => Math.round(v)));
+    expect(offset(c, [-45000, 0, 30000]).map((v) => Math.round(v))).toEqual(offset(a, [0, 0, 0]).map((v) => Math.round(v)));
+  });
+
+  it('stands along the attitude, at the distance asked for', () => {
+    const { towards } = screenBasis();
+    const p = standFor([100, 0, -200], 1000);
+    expect(p[0] - 100).toBeCloseTo(towards[0] * 1000, 6);
+    expect(p[1]).toBeCloseTo(towards[1] * 1000, 6);
+    expect(p[2] + 200).toBeCloseTo(towards[2] * 1000, 6);
+    expect(Math.hypot(p[0] - 100, p[1], p[2] + 200)).toBeCloseTo(1000, 6);
   });
 });

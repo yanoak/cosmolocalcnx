@@ -181,6 +181,37 @@ export function poseBetween(from: CameraPose, to: CameraPose, u: number): Camera
   };
 }
 
+/**
+ * How long a move to `to` takes. A move WITHIN a view takes the duration asked for; a
+ * move ACROSS views takes none, whatever was asked — there is no such thing as half a
+ * view, so a tween from the city's zoom to the valley's would show the valley arriving
+ * at the wrong scale and sliding into place. A stem beat that changes view therefore
+ * cuts, exactly as the switcher does. Added 24 Sep 2026 for the Futures stem.
+ */
+export function moveDuration(from: CameraPose | null, to: CameraPose, durationMs: number): number {
+  if (!from || from.view !== to.view) return 0;
+  return durationMs;
+}
+
+/**
+ * Where the camera stands to look at `target` from `distance` away, along the fixed
+ * attitude. The ONLY correct camera position for a target: the offset is the same
+ * vector for every target, which is what "the camera never rotates" means in numbers.
+ *
+ * Exists because OrbitControls does the opposite when a target moves: it keeps the
+ * camera where it is and re-derives the orbit, so a target that jumps 11 km with a
+ * camera 28 km away swings the azimuth by thirty degrees. That is how the Futures stem's
+ * valley beats turned the diorama north-up on 24 Sep 2026, and why `CameraRig` places
+ * the camera itself rather than trusting the controls to.
+ */
+export function standFor(target: Vec3, distance: number): Vec3 {
+  return [
+    target[0] + BASIS.towards[0] * distance,
+    target[1] + BASIS.towards[1] * distance,
+    target[2] + BASIS.towards[2] * distance,
+  ];
+}
+
 export function samePose(a: CameraPose, b: CameraPose): boolean {
   return (
     a.view === b.view &&
