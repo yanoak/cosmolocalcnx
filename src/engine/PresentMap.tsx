@@ -4,6 +4,7 @@ import {
   Map as MapLibreMap,
   Marker,
   addProtocol,
+  setWorkerUrl,
   type CameraOptions,
   type GeoJSONSource,
   type MapGeoJSONFeature,
@@ -50,6 +51,9 @@ import './PresentMap.css';
 let protocolRegistered = false;
 function registerProtocol() {
   if (protocolRegistered) return;
+  // MapLibre resolves its worker relative to its own module, which a bundler has moved;
+  // the worker is served from public/ instead — see scripts/copy-maplibre-worker.sh.
+  setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
   addProtocol('pmtiles', new Protocol().tile);
   protocolRegistered = true;
 }
@@ -141,6 +145,13 @@ export function PresentMap({
       fadeDuration: 0,
     });
     map.current = m;
+
+    // MapLibre swallows style and source errors into an event; surface them, and in
+    // development leave a handle on the window so the map can be asked questions.
+    m.on('error', (e) => console.error('[PresentMap]', e.error ?? e));
+    if (process.env.NODE_ENV !== 'production') {
+      (window as unknown as { __presentMap?: MapLibreMap }).__presentMap = m;
+    }
 
     const markers: Marker[] = [];
 
