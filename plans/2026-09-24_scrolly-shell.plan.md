@@ -145,7 +145,13 @@ lines, and the hard part here is the camera and layer state, which no library kn
       scroll listener on the container feeds `beatAt`, not `IntersectionObserver` — it gives the
       continuous 0–1 for free and is fewer lines
 - [x] `Explore.tsx` — the release: pan and zoom unlocked, "← Story" and "Next →" as controls.
-      Layer toggles arrive with the Past's threads, the first thing that has layers
+      Layer toggles arrive with the Past's threads, the first thing that has layers.
+      **Revised the same day:** the stem no longer releases on scroll position — the terminal
+      card carries an "Explore the Past / Present / Futures" button under it and only pressing
+      it opens the bowl, so the last card can be read without falling through it. "← Story" in
+      the bottom bar became a "Read Introduction Again" button, top centre of the stage, that
+      re-enters the stem at its FIRST beat. `releasedAt` stays in `chapters.ts` as the pure
+      statement of where a stem ends but the page no longer calls it
 - [ ] `Hotspot.tsx` — hover blurb, click modal for short items, click overlay for stories
 - [ ] `Story.tsx` — the full-viewport overlay state with its own scroll container
 - [ ] Line hit-testing with a screen-pixel threshold
@@ -203,14 +209,16 @@ lines, and the hard part here is the camera and layer state, which no library kn
 └────────────────────────────────────────┘
 ```
 
-States that differ: **first beat** — no back-scroll above it; **last beat** — the release, where
-cards stop and toggles appear; **modal open during scroll** — scroll locks to the modal, not the
+States that differ: **first beat** — no back-scroll above it; **last beat** — the invitation, an
+"Explore the …" pill centred under the card, and nothing happens until it is pressed; **modal open during scroll** — scroll locks to the modal, not the
 page behind it.
 
 ## Keyboard interaction
 
 1. **Tab order** — rail, layer toggles (explore only), stage. Icons are reached inside the stage.
 2. **Scrolly** — `Space` / `→` next beat, `⇧Space` / `←` previous, `Escape` skips to explore.
+   The "Explore the …" button under the last card is in the tab order and `Enter` opens the bowl;
+   in the bowl "Read Introduction Again" is the first control and returns to the first card.
 3. **Explore** — arrows move between hotspots by proximity; `Enter` opens the modal; `Escape`
    closes it and returns focus to the hotspot that opened it.
 4. **Toggles** — roving tabindex, `Space` toggles. Arrows move focus without firing a redraw.

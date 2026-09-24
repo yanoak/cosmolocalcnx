@@ -152,7 +152,12 @@ export function resolvePose(beat: Beat, fits: ViewFits): CameraPose {
   };
 }
 
-/** True once the terminal beat has fully played: the stem is over and the bowl is open. */
+/**
+ * True once the terminal beat has fully played: the stem is over. Since 24 Sep 2026 this
+ * does NOT open the bowl — the terminal card carries a button and the visitor presses
+ * it — so the page no longer calls this; it stays as the pure statement of where a stem
+ * ends, for anything that wants to know without touching the DOM.
+ */
 export function releasedAt(score: Score, at: BeatPosition): boolean {
   const last = score.beats.length - 1;
   return at.index === last && at.t >= 1 && !!score.beats[last]?.terminal;

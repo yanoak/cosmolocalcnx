@@ -14,11 +14,23 @@
 .scrolly-section {
   height: 100dvh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 18px;
   scroll-snap-align: start;
   padding: 0 16px;
 }
+
+/* The way out of the stem, under the last card: the invert-register pill the piece uses
+   for the one thing that moves a visitor on. It fades in with its card and is the only
+   thing that opens the bowl — the end of the scroll is a place to stop, not a trapdoor. */
+.scrolly-explore {
+  pointer-events: auto;
+  opacity: 0.55;
+  transition: opacity 240ms ease;
+}
+.scrolly-section.is-current .scrolly-explore { opacity: 1; }
 
 /* The card. The reading register: a quiet surface with charcoal ink and an orange kicker,
    floating over the scene. Links inside it need pointer events back. */

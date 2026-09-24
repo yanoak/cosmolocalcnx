@@ -38,7 +38,6 @@ import { Explore } from '@/engine/Explore';
 import {
   beatAt,
   mapPoseBetween,
-  releasedAt,
   resolveMapPose,
   ringAt,
   type BeatPosition,
@@ -246,10 +245,17 @@ export default function Page() {
     if (mode === 'stem') setView(resolveView(beat.view, HAS_VIEWS));
   }, [mode, beat]);
 
-  // The terminal beat, fully played, opens the bowl. Nothing closes it but a control.
-  useEffect(() => {
-    if (mode === 'stem' && releasedAt(score, position)) setMode('explore');
-  }, [mode, score, position]);
+  // The bowl opens on a button under the terminal card, never on scroll position — a
+  // visitor who reaches the end of the stem stays on the last words until they press it.
+  // See Scrolly.tsx. Nothing closes the bowl but a control either.
+  const openExplore = useCallback(() => setMode('explore'), []);
+
+  /** Back to the first card: re-enter the stem and put the scroll at its top. */
+  const reread = useCallback(() => {
+    setMode('stem');
+    setPosition({ index: 0, t: 0 });
+    requestAnimationFrame(() => viewer.current?.scrollTo({ top: 0 }));
+  }, []);
 
   /** Scroll progress over the track → beat and 0–1 within it. See Scrolly.css for the geometry. */
   const onScroll = useCallback(() => {
@@ -458,8 +464,9 @@ export default function Page() {
           return;
         }
         if (e.key === 'Escape') {
+          // The keyboard's shortcut past the stem: land on the last card and open the bowl.
           scrollToBeat(score.beats.length - 1, false);
-          setMode('explore');
+          openExplore();
           return;
         }
       }
@@ -498,7 +505,7 @@ export default function Page() {
       const n = Number(e.key);
       if (n >= 1 && n <= CHAPTER_ORDER.length) goToChapter(CHAPTER_ORDER[n - 1]);
     },
-    [buildings, close, goToChapter, mode, position.index, score, scrollToBeat],
+    [buildings, close, goToChapter, mode, openExplore, position.index, score, scrollToBeat],
   );
 
   return (
@@ -650,10 +657,7 @@ export default function Page() {
           <Explore
             next={CHAPTERS[CHAPTERS.indexOf(chapter) + 1] ?? null}
             nextLabel={CHAPTER_TENSE[CHAPTERS[CHAPTERS.indexOf(chapter) + 1] ?? chapter]}
-            onStory={() => {
-              setMode('stem');
-              requestAnimationFrame(() => scrollToBeat(score.beats.length - 1, false));
-            }}
+            onReread={reread}
             onNext={goToChapter}
           />
         )}
@@ -698,7 +702,15 @@ export default function Page() {
         </Credits>
       </div>
 
-      {mode === 'stem' && <Scrolly beats={score.beats} copy={beatCopy} current={position.index} />}
+      {mode === 'stem' && (
+        <Scrolly
+          beats={score.beats}
+          copy={beatCopy}
+          current={position.index}
+          exploreLabel={`Explore the ${CHAPTER_TENSE[chapter]}`}
+          onExplore={openExplore}
+        />
+      )}
 
       {debug && <TokenSwatches />}
 

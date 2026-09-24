@@ -14,6 +14,23 @@
 }
 .explore > * { pointer-events: auto; }
 
+/* The way back to the words: top centre of the stage, in the reading register — the
+   card's own surface and shadow, so it reads as a piece of the story rather than as
+   the purple invitation, which is reserved for moving on. */
+.explore-reread {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 0 18px;
+  border-radius: 22px;
+  color: var(--register-page-ink);
+  background: var(--register-page-ground);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--register-page-ink) 16%, transparent);
+  white-space: nowrap;
+}
+
 .explore-hint {
   flex: 1;
   font-size: 0.8125rem;

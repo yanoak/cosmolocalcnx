@@ -14,6 +14,12 @@ import './Scrolly.css';
  * scroll progress into a beat position (`beatAt`), because the page is what has to
  * hand that position to the camera, the layers and the hotspots at once.
  *
+ * The stem ends on a button, not a threshold. Since 24 Sep 2026 the terminal beat's
+ * card carries an invitation under it — "Explore the Past" — and nothing opens the
+ * bowl but pressing it. Scrolling to the end used to release automatically, which made
+ * the last card impossible to read without falling through it; a visitor who reaches
+ * the bottom now stays on the last words until they choose to move.
+ *
  * Copy comes from the doc by beat id — kicker, headline, body — already fetched into
  * copy.json. A beat with no copy renders an empty card rather than crashing; the
  * scores test makes that state impossible in a committed build.
@@ -35,11 +41,17 @@ export function Scrolly({
   beats,
   copy,
   current,
+  exploreLabel,
+  onExplore,
 }: {
   beats: readonly Beat[];
   copy: readonly BeatCopy[];
   /** The beat the scroll is currently in — its card is lit, the rest recede. */
   current: number;
+  /** The invitation under the terminal card, e.g. "Explore the Past". */
+  exploreLabel: string;
+  /** Pressed: the stem is over and the bowl opens. */
+  onExplore: () => void;
 }) {
   const byId = new Map(copy.map((c) => [c.id, c]));
   return (
@@ -71,6 +83,11 @@ export function Scrolly({
                 ))}
               {c?.footnote && <p className="body body--muted footnote">{c.footnote}</p>}
             </article>
+            {b.terminal && (
+              <button type="button" className="button--invite scrolly-explore" onClick={onExplore}>
+                {exploreLabel} →
+              </button>
+            )}
           </section>
         );
       })}
