@@ -83,9 +83,8 @@
 }
 .scrolly-more.is-done { opacity: 0; }
 .scrolly-more-chevron {
-  display: inline-block;
-  line-height: 0.6;
-  font-size: 1.125rem;
+  display: block;
+  flex: none;
   animation: scrolly-nudge 1.6s ease-in-out infinite;
 }
 @keyframes scrolly-nudge {

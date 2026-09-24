@@ -60,7 +60,10 @@ export function Scrolly({
       {/* The prompt to keep going, until the last card — which has its own button. */}
       <div className={current < last ? 'scrolly-more' : 'scrolly-more is-done'} aria-hidden="true">
         <span>Scroll</span>
-        <span className="scrolly-more-chevron">⌄</span>
+        {/* A drawn chevron rather than a glyph: the glyph sat on the baseline, below the word. */}
+        <svg className="scrolly-more-chevron" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+          <path d="M2 4.5 L6 8.5 L10 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </div>
       {beats.map((b, i) => {
         const c = byId.get(b.id);
