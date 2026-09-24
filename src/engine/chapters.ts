@@ -51,12 +51,13 @@ export interface Beat {
   hotspots?: readonly string[];
   /**
    * The growing circle, for a beat in the circle view: its radius at the beat's start
-   * and end, as MULTIPLES of the claim radius — the distance from the centre that holds
-   * half of humanity, which is computed from the committed field rather than typed
-   * here. 0 is no ring; 1 is the claim; past 1 shows the curve flattening. Progress
-   * within the beat interpolates between the two.
+   * and end, in KILOMETRES — or the word `'claim'` for the distance from the centre
+   * that holds half of humanity, which is computed from the committed field rather than
+   * typed here. 0 is no ring. Progress within the beat interpolates between the two.
+   * Kilometres since 24 Sep 2026 evening, when Yan set the stops at 0, 2,000 and the
+   * claim: a stop the copy names in km should be typed in km.
    */
-  ring?: { from: number; to: number };
+  ring?: { from: RingStop; to: RingStop };
   /**
    * Where the MAP camera is, for a beat in the circle view — since 24 Sep 2026 that view
    * is a MapLibre map rather than the three.js scene, and its camera is a globe camera:
@@ -67,6 +68,14 @@ export interface Beat {
   mapPose?: Partial<MapPose>;
   /** The last beat: ends the stem and releases the bowl. Exactly one per score, and last. */
   terminal?: boolean;
+}
+
+/** A ring radius: kilometres, or the claim itself. */
+export type RingStop = number | 'claim';
+
+/** A ring stop in kilometres, given the claim. */
+export function ringStopKm(stop: RingStop, claimKm: number): number {
+  return stop === 'claim' ? claimKm : stop;
 }
 
 /** A MapLibre camera. */
@@ -140,7 +149,9 @@ export type ViewFits = Record<ViewId, { zoom: number; target: [number, number, n
 export function ringAt(beat: Beat, t: number, claimKm: number): number | null {
   if (!beat.ring) return null;
   const u = t < 0 ? 0 : t > 1 ? 1 : t;
-  return (beat.ring.from + (beat.ring.to - beat.ring.from) * u) * claimKm;
+  const from = ringStopKm(beat.ring.from, claimKm);
+  const to = ringStopKm(beat.ring.to, claimKm);
+  return from + (to - from) * u;
 }
 
 export function resolvePose(beat: Beat, fits: ViewFits): CameraPose {
@@ -203,8 +214,10 @@ export function validateScore(score: Score): string[] {
       if (b.view !== 'circle') {
         errors.push(`${where}: beat "${b.id}" has a ring but is in view "${b.view}" — the ring is the circle's`);
       }
-      if (!(b.ring.from >= 0) || !(b.ring.to >= 0)) {
-        errors.push(`${where}: beat "${b.id}" has a negative ring — it is a multiple of the claim radius`);
+      for (const stop of [b.ring.from, b.ring.to]) {
+        if (stop !== 'claim' && !(typeof stop === 'number' && stop >= 0)) {
+          errors.push(`${where}: beat "${b.id}" has ring stop ${String(stop)} — kilometres from 0, or 'claim'`);
+        }
       }
     }
   }

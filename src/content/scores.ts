@@ -46,14 +46,15 @@ export const SCORES: Record<ChapterId, Score> = {
     beats: [
       // The camera holds still through the whole stem — Yan's call, 24 Sep 2026: "just see
       // the circle expand as you scroll". No beat carries a mapPose; all three sit at the
-      // chapter's home view, the circle fitted, and only the ring moves.
+      // chapter's home view, the circle fitted, and only the ring moves. Stops at 0, 2,000
+      // and the claim since the evening of 24 Sep; the beat past the claim went with them.
       // The base: one point on Wat Ket, before anything grows.
       { id: 'here', view: 'circle', ring: { from: 0, to: 0 } },
-      // The ring grows to the claim — half of humanity — with the beat's progress; the
-      // counter reads the committed curve.
-      { id: 'grow', view: 'circle', ring: { from: 0, to: 1 } },
-      // Past the claim, muted: the next three thousand kilometres add a sixth as much.
-      { id: 'flatten', view: 'circle', ring: { from: 1, to: 1.75 }, terminal: true },
+      // To 2,000 km — a fifth of the world — with the beat's progress; the counter reads
+      // the committed curve.
+      { id: 'two-thousand', view: 'circle', ring: { from: 0, to: 2000 } },
+      // On to the claim: half of everyone alive. The bowl holds the ring here.
+      { id: 'half', view: 'circle', ring: { from: 2000, to: 'claim' }, terminal: true },
     ],
   },
   futures: {

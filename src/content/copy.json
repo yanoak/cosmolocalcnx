@@ -83,17 +83,17 @@
           "body": "The raised cells show where people live. Wat Ket is the point from which this chapter measures distance."
         },
         {
-          "id": "grow",
-          "kicker": "About 3,400 km",
-          "headline": "Half of humanity lives within this distance of Wat Ket",
-          "body": "At 1,000 km the circle holds 3.6% of the world's population. At 2,000 km it holds 20.1%. By about 3,400 km from Wat Ket, it reaches half.",
-          "footnote": "With a world total of 8.0 billion, the half-population radius is 3,416 km. It is 3,303 km at 7.8 billion and 3,524 km at 8.2 billion; the headline rounds to about 3,400 km."
+          "id": "two-thousand",
+          "kicker": "2,000 km",
+          "headline": "A fifth of humanity lives within 2,000 km of Wat Ket",
+          "body": "Two thousand kilometres from Wat Ket reaches Dhaka, Kolkata, Chengdu and Hong Kong. The circle already holds 1.6 billion people, about 20% of the world."
         },
         {
-          "id": "flatten",
-          "kicker": "6,000 km",
-          "headline": "After halfway, the curve flattens",
-          "body": "At 6,000 km the circle holds 59.5% of the world's population. Beyond halfway, each extra kilometre brings relatively few more people inside."
+          "id": "half",
+          "kicker": "About 3,400 km",
+          "headline": "Half of humanity lives within this distance of Wat Ket",
+          "body": "By about 3,400 km the circle takes in Delhi, Mumbai, Beijing, Shanghai and Jakarta, and holds 4 billion people: half of everyone alive. The other half lives in all the rest of the world.",
+          "footnote": "With a world total of 8.0 billion, the half-population radius is 3,416 km. It is 3,303 km at 7.8 billion and 3,524 km at 8.2 billion; the headline rounds to about 3,400 km."
         }
       ],
       "hotspots": [

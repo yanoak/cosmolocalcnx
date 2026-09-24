@@ -48,13 +48,50 @@ export function distanceFromCentreKm(city: City): number {
  * Input is assumed sorted by population descending, which is how the build script
  * writes it — so this is one pass and no sort on a phone at load.
  */
+/**
+ * A region whose large cities are ALL labelled, before the global pick runs. Yan,
+ * 24 Sep 2026: the piece is shown in Chiang Mai, and a visitor there reads the circle
+ * through the cities they know — so Southeast Asia is named densely and the rest of the
+ * disc sparsely. `prefer` names the city that wins a cluster regardless of population:
+ * GeoNames gives Quezon City twice Manila's number, and a map that says "Quezon City"
+ * where everyone reads "Manila" is wrong in the way that matters here.
+ */
+export interface LabelFocus {
+  countries: ReadonlySet<string>;
+  minPopulation: number;
+  minSeparationKm: number;
+  prefer?: readonly string[];
+  /**
+   * Names never labelled. GeoNames carries a few Philippine barangays — Budta,
+   * Malingao — with populations over a million that belong to their whole
+   * municipality; a map that names Budta beside Manila is a map nobody trusts.
+   */
+  exclude?: readonly string[];
+}
+
+export const SOUTHEAST_ASIA: LabelFocus = {
+  countries: new Set(['TH', 'MM', 'LA', 'KH', 'VN', 'MY', 'SG', 'ID', 'PH', 'BN', 'TL']),
+  minPopulation: 1_000_000,
+  minSeparationKm: 120,
+  prefer: ['Manila'],
+  exclude: ['Budta', 'Malingao'],
+};
+
+/**
+ * The centre, named. Chiang Mai is 127,000 people in GeoNames and would never be
+ * picked on population; it is the point every distance on this map is measured from,
+ * and the piece is shown a kilometre from it. Yan, 24 Sep 2026.
+ */
+export const CENTRE_LABEL: City = { name: 'Wat Ket, Chiang Mai', country: 'TH', population: 0, km: [0, 0] };
+
 export function pickLabels(
   cities: readonly City[],
   radiusKm: number,
-  options: { count?: number; minSeparationKm?: number; rimCount?: number } = {},
+  options: { count?: number; minSeparationKm?: number; rimCount?: number; focus?: LabelFocus } = {},
 ): City[] {
   const {
     count = 16,
+    focus,
     /**
      * Tuned, not guessed. At 18% of the radius the rule excluded DELHI — one of the
      * largest cities on earth — because Lahore is 410 km away and GeoNames gives
@@ -69,15 +106,30 @@ export function pickLabels(
 
   const chosen: City[] = [];
 
-  const farEnough = (city: City) =>
-    chosen.every(
-      (other) =>
-        Math.hypot(city.km[0] - other.km[0], city.km[1] - other.km[1]) >= minSeparationKm,
+  const apart = (city: City, others: readonly City[], km: number) =>
+    others.every((o) => Math.hypot(city.km[0] - o.km[0], city.km[1] - o.km[1]) >= km);
+
+  // The focus first: its preferred names, then the rest by population, each kept its
+  // own distance from the others. These do not count against the global `count`.
+  if (focus) {
+    const excluded = new Set(focus.exclude ?? []);
+    const inFocus = cities.filter(
+      (c) => focus.countries.has(c.country) && c.population >= focus.minPopulation && !excluded.has(c.name),
     );
+    const preferred = (focus.prefer ?? [])
+      .map((name) => inFocus.find((c) => c.name === name))
+      .filter((c): c is City => c !== undefined);
+    for (const city of [...preferred, ...inFocus]) {
+      if (!chosen.includes(city) && apart(city, chosen, focus.minSeparationKm)) chosen.push(city);
+    }
+  }
+  const focusCount = chosen.length;
+
+  const farEnough = (city: City) => apart(city, chosen, minSeparationKm);
 
   for (const city of cities) {
-    if (chosen.length >= count) break;
-    if (farEnough(city)) chosen.push(city);
+    if (chosen.length - focusCount >= count) break;
+    if (!chosen.includes(city) && farEnough(city)) chosen.push(city);
   }
 
   // The rim, last, so it can never be crowded out by the interior.

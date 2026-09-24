@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Diorama } from '@/engine/Diorama';
 import { nearestCity, type City } from '@/engine/cities';
-import { pickLabels } from '@/engine/cities';
+import { CENTRE_LABEL, pickLabels, SOUTHEAST_ASIA } from '@/engine/cities';
 import { TokenSwatches } from '@/engine/DebugOverlay';
 import { SelectPanel, type Selection } from '@/engine/SelectPanel';
 import { step } from '@/engine/ordering';
@@ -90,7 +90,7 @@ const REGION = (() => {
     cities: asset.cities.cities,
     // Selected once at module scope: the choice depends only on committed data, so
     // recomputing it per render would be work a phone does for no reason.
-    labels: pickLabels(asset.cities.cities, asset.meta.projection.radiusKm),
+    labels: [CENTRE_LABEL, ...pickLabels(asset.cities.cities, asset.meta.projection.radiusKm, { focus: SOUTHEAST_ASIA })],
     world: asset.world,
   };
 })();

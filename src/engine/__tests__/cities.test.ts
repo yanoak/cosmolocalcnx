@@ -7,6 +7,7 @@ import {
   distanceFromCentreKm,
   nearestCity,
   pickLabels,
+  SOUTHEAST_ASIA,
   type City,
   type CityFile,
 } from '../cities';
@@ -177,5 +178,38 @@ describe('nearestCity', () => {
 
   it('gives up rather than pointing across an ocean', () => {
     expect(nearestCity(CITIES, [-3200, -1800], 50)).toBeNull();
+  });
+});
+
+describe('pickLabels with a focus region', () => {
+  const picked = pickLabels(CITIES, RADIUS, { focus: SOUTHEAST_ASIA });
+  const names = new Set(picked.map((c) => c.name));
+
+  it('names every Southeast Asian city over a million that stands its own distance from the others', () => {
+    for (const name of ['Bangkok', 'Hanoi', 'Ho Chi Minh City', 'Jakarta', 'Singapore', 'Yangon', 'Phnom Penh', 'Kuala Lumpur', 'Mandalay', 'Surabaya', 'Medan']) {
+      expect(names.has(name), name).toBe(true);
+    }
+  });
+
+  it('says Manila, not Quezon City, for the cluster GeoNames ranks the other way', () => {
+    expect(names.has('Manila')).toBe(true);
+    expect(names.has('Quezon City')).toBe(false);
+  });
+
+  it('never names the GeoNames barangays that carry a whole municipality\'s population', () => {
+    expect(names.has('Budta')).toBe(false);
+    expect(names.has('Malingao')).toBe(false);
+  });
+
+  it('keeps the focus cities apart, and still labels the rest of the disc', () => {
+    const sea = picked.filter((c) => SOUTHEAST_ASIA.countries.has(c.country));
+    for (let i = 0; i < sea.length; i++) {
+      for (let j = i + 1; j < sea.length; j++) {
+        const d = Math.hypot(sea[i].km[0] - sea[j].km[0], sea[i].km[1] - sea[j].km[1]);
+        expect(d, `${sea[i].name} / ${sea[j].name}`).toBeGreaterThanOrEqual(SOUTHEAST_ASIA.minSeparationKm);
+      }
+    }
+    expect(picked.length - sea.length).toBeGreaterThanOrEqual(12);
+    expect(names.has('Delhi')).toBe(true);
   });
 });

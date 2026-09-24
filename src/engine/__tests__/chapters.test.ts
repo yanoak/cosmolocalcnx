@@ -167,12 +167,15 @@ describe('joinBeatCopy', () => {
 import { ringAt } from '../chapters';
 
 describe('ringAt and the ring rule', () => {
-  const grow: Beat = { id: 'grow', view: 'circle', ring: { from: 0, to: 1 } };
+  const grow: Beat = { id: 'grow', view: 'circle', ring: { from: 0, to: 'claim' } };
 
-  it('interpolates the ring between the beat\'s ends, in multiples of the claim', () => {
+  it('interpolates the ring between the beat\'s ends, in kilometres, with "claim" resolved', () => {
     expect(ringAt(grow, 0, 3400)).toBe(0);
     expect(ringAt(grow, 0.5, 3400)).toBeCloseTo(1700, 9);
     expect(ringAt(grow, 1, 3400)).toBe(3400);
+    const on: Beat = { id: 'on', view: 'circle', ring: { from: 2000, to: 'claim' } };
+    expect(ringAt(on, 0, 3400)).toBe(2000);
+    expect(ringAt(on, 0.5, 3400)).toBeCloseTo(2700, 9);
   });
 
   it('clamps progress and answers null for a beat without a ring', () => {
@@ -183,7 +186,7 @@ describe('ringAt and the ring rule', () => {
   it('rejects a ring on a beat outside the circle view', () => {
     const score: Score = {
       chapter: 'past',
-      beats: [{ id: 'a', view: 'valley', ring: { from: 0, to: 1 }, terminal: true }],
+      beats: [{ id: 'a', view: 'valley', ring: { from: 0, to: 'claim' }, terminal: true }],
     };
     expect(validateScore(score).join('\n')).toMatch(/ring/);
   });
@@ -191,9 +194,9 @@ describe('ringAt and the ring rule', () => {
   it('rejects a negative ring', () => {
     const score: Score = {
       chapter: 'present',
-      beats: [{ id: 'a', view: 'circle', ring: { from: -1, to: 1 }, terminal: true }],
+      beats: [{ id: 'a', view: 'circle', ring: { from: -1, to: 'claim' }, terminal: true }],
     };
-    expect(validateScore(score).join('\n')).toMatch(/negative ring/);
+    expect(validateScore(score).join('\n')).toMatch(/ring stop -1/);
   });
 });
 
