@@ -113,6 +113,12 @@ const CLAIM = (() => {
   };
 })();
 
+/** `#past` → `past`; anything else → null. Chapters are the only things the hash names. */
+function chapterInHash(hash: string): ChapterId | null {
+  const id = hash.replace(/^#/, '');
+  return (CHAPTER_ORDER as readonly string[]).includes(id) ? (id as ChapterId) : null;
+}
+
 /** "about 3,400 km" — rounded to the nearest hundred, which is all the bracket supports. */
 const roundKm = (km: number) => Math.round(km / 100) * 100;
 
@@ -294,7 +300,32 @@ export default function Page() {
       setView(v);
       setChapter(resolveChapter(chaptersOf(v)[0] ?? null, HAS_VIEWS));
     }
+
+    // The chapter is in the hash — `#past`, `#present`, `#futures` — so a refresh lands
+    // where the visitor was, and a link can point at a chapter. It wins over `?view=`,
+    // because it is the more recent thing the URL says. Added 24 Sep 2026.
+    const fromHash = chapterInHash(window.location.hash);
+    if (fromHash) {
+      setChapter(resolveChapter(fromHash, HAS_VIEWS));
+      setView(resolveView(defaultView(fromHash), HAS_VIEWS));
+    }
   }, []);
+
+  /**
+   * Keep the hash on the chapter, without a scroll or a history entry per switch.
+   *
+   * It never overwrites a hash that names a chapter until the visitor has switched one
+   * themselves: on load the hash is the input, and in development React runs effects
+   * twice, so a writer that fired on mount would clobber `#present` with the initial
+   * `#past` before the second read. `navigated` is set by `goToChapter` alone.
+   */
+  const navigated = useRef(false);
+  useEffect(() => {
+    const inUrl = chapterInHash(window.location.hash);
+    if (inUrl === chapter) return;
+    if (inUrl && !navigated.current) return;
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${chapter}`);
+  }, [chapter]);
 
   /**
    * The full document, fetched only when somebody asks for it.
@@ -334,6 +365,7 @@ export default function Page() {
   /** Chapter first, view from it. The only way the number keys and the rail move. */
   const goToChapter = useCallback((next: ChapterId) => {
     const c = resolveChapter(next, HAS_VIEWS);
+    navigated.current = true;
     setChapter(c);
     setMode('stem');
     setPosition({ index: 0, t: 0 });
@@ -341,6 +373,16 @@ export default function Page() {
     setView(resolveView(defaultView(c), HAS_VIEWS));
     if (defaultView(c) !== 'circle') setMapPick(null);
   }, []);
+
+  /** Back and forward, or a hash typed into the bar, move the chapter too. */
+  useEffect(() => {
+    const onHash = () => {
+      const c = chapterInHash(window.location.hash);
+      if (c) goToChapter(c);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, [goToChapter]);
 
   /**
    * The map's camera during the Present stem. A ring beat interpolates toward the next
