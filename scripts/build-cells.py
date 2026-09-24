@@ -2,11 +2,19 @@
 """
 GHS-POP → population cells for the Present chapter's map, as a PMTiles layer.
 
-The same source tiles `build-region.py` reads, binned into a 0.25° lat/lon grid — about
-27 km at the equator, the resolution the plan settled on — for every cell whose centre is
-within 12,000 km of the scene origin. Each cell carries the people in it, its colour and
-height fractions, and its great-circle distance from the origin, so the map can dim
-everything outside the growing ring by comparing a property rather than computing one.
+The same source tiles `build-region.py` reads, binned into a lat/lon grid at THREE
+resolutions — 0.5°, 0.25° and 0.125°, about 55, 27 and 14 km at the equator — each cut
+for its own zoom range, so the map is coarse from far out and dense close in and no tile
+ever holds half a million polygons. The finest grid is accumulated once and the coarser
+two are block-sums of it, which is exact because population is additive. Every cell is
+within 12,000 km of the scene origin and carries the people in it, its colour and height
+fractions, and its great-circle distance from the origin, so the map can dim everything
+outside the growing ring by comparing a property rather than computing one.
+
+Colour and height come from DENSITY — people per square kilometre — against one scale
+shared by all three levels, so a place keeps its colour and roughly its height as the
+zoom crosses from one resolution to the next. A count would make every coarse cell
+darker and taller than the fine cells it contains.
 
 Output, committed:
     public/cells/wat-ket.cells.pmtiles   the layer MapLibre reads, by HTTP range request
@@ -22,9 +30,9 @@ grid needs no dependency. The plan's open question records the trade.
 
 Usage:
     python3 scripts/build-cells.py
-    python3 scripts/build-cells.py --radius-km 12000 --cell-deg 0.25
+    python3 scripts/build-cells.py --radius-km 12000
 
-Needs tippecanoe and the pmtiles CLI on PATH. GHS-POP tiles are read from data/ghsl/tiles
+Needs tippecanoe (with tile-join) and the pmtiles CLI on PATH. GHS-POP tiles are read from data/ghsl/tiles
 and fetched if missing, as build-region.py does.
 """
 
@@ -54,12 +62,19 @@ assert _spec.loader is not None
 _spec.loader.exec_module(build_region)
 
 DEG = math.pi / 180.0
-DEFAULT_CELL_DEG = 0.25
 DEFAULT_RADIUS_KM = 12_000.0
-# The zooms the layer is cut at. Below 2 a single tile would hold every cell; above 6 a
-# 0.25° square is already many pixels wide and the basemap extract stops there too.
-MIN_ZOOM = 2
-MAX_ZOOM = 6
+# The finest grid, accumulated once; the others are block-sums of it.
+FINE_DEG = 0.125
+# Each level, its layer name, and the zooms it is cut for. The circle fits the screen at
+# about zoom 4, and the density Yan asked for there is the 512-cell field's — 13 km, which
+# is the 0.125° level — so that level starts at 4 and only the two zooms below it are
+# coarser. Below 2 one tile would hold every cell; the basemap extract stops at 6 and
+# overzooms cleanly to 8.
+LEVELS = [
+    {"deg": 0.5, "layer": "cells_050", "minzoom": 2, "maxzoom": 2},
+    {"deg": 0.25, "layer": "cells_025", "minzoom": 3, "maxzoom": 3},
+    {"deg": 0.125, "layer": "cells_0125", "minzoom": 4, "maxzoom": 8},
+]
 
 
 def great_circle_km(a: tuple[float, float], b: tuple[float, float]) -> float:
@@ -101,37 +116,22 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--scene", default="src/scenes/wat-ket.json")
-    parser.add_argument("--radius-km", type=float, default=DEFAULT_RADIUS_KM)
-    parser.add_argument("--cell-deg", type=float, default=DEFAULT_CELL_DEG)
-    args = parser.parse_args()
+def cell_area_km2(lat_deg: np.ndarray, cell_deg: float) -> np.ndarray:
+    """Area of a cell_deg square at each latitude — the same for every column."""
+    km_per_deg = build_region.EARTH_RADIUS_KM * DEG
+    return (cell_deg * km_per_deg) * (cell_deg * km_per_deg * np.cos(lat_deg * DEG))
 
-    scene = json.loads((REPO / args.scene).read_text())
-    origin = (float(scene["origin"][0]), float(scene["origin"][1]))
-    radius_km = float(args.radius_km)
-    cell_deg = float(args.cell_deg)
 
-    rows = int(round(180.0 / cell_deg))
-    cols = int(round(360.0 / cell_deg))
-    grid = np.zeros((rows, cols), dtype=np.float64)
-
-    wanted = build_region.needed_tiles(origin, radius_km)
-    print(f"Origin      {origin[0]:.4f}N {origin[1]:.4f}E, radius {radius_km:,.0f} km")
-    print(f"Grid        {cell_deg}° — {rows} x {cols}")
-    print(f"Tiles       {len(wanted)} candidates")
-    used = 0
-    scattered = 0.0
-    for tile in wanted:
-        tif = build_region.fetch_tile(tile)
-        if tif is None:
-            continue
-        used += 1
-        scattered += accumulate_grid(tif, grid, cell_deg)
-    print(f"            {used} read, {scattered:,.0f} people scattered")
-
-    # Keep populated cells whose centre is inside the disc.
+def write_level(
+    grid: np.ndarray,
+    cell_deg: float,
+    origin: tuple[float, float],
+    radius_km: float,
+    max_density: float,
+    ndjson: Path,
+) -> dict:
+    """One level's features to ndjson. Returns its stats."""
+    rows, cols = grid.shape
     lat_c = 90.0 - (np.arange(rows) + 0.5) * cell_deg
     lon_c = -180.0 + (np.arange(cols) + 0.5) * cell_deg
     p0 = origin[0] * DEG
@@ -143,10 +143,87 @@ def main() -> int:
     people = grid[keep]
     dist_kept = dist[keep]
     r_idx, c_idx = np.nonzero(keep)
-    pmax = float(people.max())
-    total = float(people.sum())
-    denom = math.log10(pmax + 1.0)
-    print(f"Cells       {len(people):,} populated inside the disc, {total:,.0f} people, peak {pmax:,.0f}")
+    area = cell_area_km2(lat_c, cell_deg)[r_idx]
+    density = people / area
+    denom = math.log10(max_density + 1.0)
+
+    with ndjson.open("w") as f:
+        # Row-major, so the file — and therefore the tiles — are the same every run.
+        for r, c, p, d, dens in zip(r_idx, c_idx, people, dist_kept, density):
+            north = 90.0 - r * cell_deg
+            south = north - cell_deg
+            west = -180.0 + c * cell_deg
+            east = west + cell_deg
+            t = min(1.0, math.log10(dens + 1.0) / denom) if denom > 0 else 0.0
+            h = min(1.0, (dens / max_density) ** (1.0 / 3.0)) if max_density > 0 else 0.0
+            feature = {
+                "type": "Feature",
+                "properties": {
+                    "p": int(round(p)),
+                    "t": round(t, 3),
+                    "h": round(h, 3),
+                    "d": int(round(d)),
+                },
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[
+                        [round(west, 4), round(south, 4)],
+                        [round(east, 4), round(south, 4)],
+                        [round(east, 4), round(north, 4)],
+                        [round(west, 4), round(north, 4)],
+                        [round(west, 4), round(south, 4)],
+                    ]],
+                },
+            }
+            f.write(json.dumps(feature, separators=(",", ":")) + "\n")
+
+    return {
+        "cellDeg": cell_deg,
+        "cells": int(len(people)),
+        "totalPeople": float(people.sum()),
+        "maxPeople": float(people.max()) if len(people) else 0.0,
+        "maxDensity": float(density.max()) if len(density) else 0.0,
+    }
+
+
+def block_sum(grid: np.ndarray, factor: int) -> np.ndarray:
+    rows, cols = grid.shape
+    return grid.reshape(rows // factor, factor, cols // factor, factor).sum(axis=(1, 3))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--scene", default="src/scenes/wat-ket.json")
+    parser.add_argument("--radius-km", type=float, default=DEFAULT_RADIUS_KM)
+    args = parser.parse_args()
+
+    scene = json.loads((REPO / args.scene).read_text())
+    origin = (float(scene["origin"][0]), float(scene["origin"][1]))
+    radius_km = float(args.radius_km)
+
+    rows = int(round(180.0 / FINE_DEG))
+    cols = int(round(360.0 / FINE_DEG))
+    fine = np.zeros((rows, cols), dtype=np.float64)
+
+    wanted = build_region.needed_tiles(origin, radius_km)
+    print(f"Origin      {origin[0]:.4f}N {origin[1]:.4f}E, radius {radius_km:,.0f} km")
+    print(f"Grid        {FINE_DEG}° — {rows} x {cols}, block-summed to {[l['deg'] for l in LEVELS]}")
+    print(f"Tiles       {len(wanted)} candidates")
+    used = 0
+    scattered = 0.0
+    for tile in wanted:
+        tif = build_region.fetch_tile(tile)
+        if tif is None:
+            continue
+        used += 1
+        scattered += accumulate_grid(tif, fine, FINE_DEG)
+    print(f"            {used} read, {scattered:,.0f} people scattered")
+
+    # One density scale for every level: the finest grid's peak. Coarser cells can
+    # only be less dense than the densest thing inside them.
+    lat_c = 90.0 - (np.arange(rows) + 0.5) * FINE_DEG
+    fine_density = fine / cell_area_km2(lat_c, FINE_DEG)[:, None]
+    max_density = float(fine_density.max())
 
     PUBLIC.mkdir(parents=True, exist_ok=True)
     out_pmtiles = PUBLIC / "wat-ket.cells.pmtiles"
@@ -157,48 +234,27 @@ def main() -> int:
     # name made every run differ by a few bytes. Under data/, which is gitignored.
     scratch = REPO / "data" / "cells-build"
     scratch.mkdir(parents=True, exist_ok=True)
-    if True:
-        ndjson = scratch / "cells.ndjson"
-        mbtiles = scratch / "cells.mbtiles"
-        with ndjson.open("w") as f:
-            # Row-major, so the file — and therefore the tiles — are the same every run.
-            for r, c, p, d in zip(r_idx, c_idx, people, dist_kept):
-                north = 90.0 - r * cell_deg
-                south = north - cell_deg
-                west = -180.0 + c * cell_deg
-                east = west + cell_deg
-                t = math.log10(p + 1.0) / denom if denom > 0 else 0.0
-                h = (p / pmax) ** (1.0 / 3.0) if pmax > 0 else 0.0
-                feature = {
-                    "type": "Feature",
-                    "properties": {
-                        "p": int(round(p)),
-                        "t": round(t, 3),
-                        "h": round(h, 3),
-                        "d": int(round(d)),
-                    },
-                    "geometry": {
-                        "type": "Polygon",
-                        "coordinates": [[
-                            [round(west, 4), round(south, 4)],
-                            [round(east, 4), round(south, 4)],
-                            [round(east, 4), round(north, 4)],
-                            [round(west, 4), round(north, 4)],
-                            [round(west, 4), round(south, 4)],
-                        ]],
-                    },
-                }
-                f.write(json.dumps(feature, separators=(",", ":")) + "\n")
 
+    level_stats = []
+    level_mbtiles = []
+    for level in LEVELS:
+        factor = int(round(level["deg"] / FINE_DEG))
+        grid = fine if factor == 1 else block_sum(fine, factor)
+        ndjson = scratch / f"{level['layer']}.ndjson"
+        mbtiles = scratch / f"{level['layer']}.mbtiles"
+        stats = write_level(grid, level["deg"], origin, radius_km, max_density, ndjson)
+        stats.update({"layer": level["layer"], "minzoom": level["minzoom"], "maxzoom": level["maxzoom"]})
+        level_stats.append(stats)
+        print(f"Level       {level['deg']}° z{level['minzoom']}-{level['maxzoom']}: "
+              f"{stats['cells']:,} cells, {stats['totalPeople']:,.0f} people")
         subprocess.run(
             [
                 "tippecanoe",
                 "-o", str(mbtiles),
-                "-l", "cells",
+                "-l", level["layer"],
                 "-n", "Population cells",
-                "-N", "GHS-POP people per 0.25 degree cell within 12,000 km of Wat Ket",
-                "-A", "GHS-POP R2023A, European Commission JRC, CC BY 4.0",
-                f"-Z{MIN_ZOOM}", f"-z{MAX_ZOOM}",
+                "-N", "GHS-POP people per cell within 12,000 km of Wat Ket",
+                f"-Z{level['minzoom']}", f"-z{level['maxzoom']}",
                 # Every cell, in every tile: dropping any would drop people.
                 "--no-feature-limit", "--no-tile-size-limit",
                 "--no-tiny-polygon-reduction",
@@ -208,34 +264,49 @@ def main() -> int:
             ],
             check=True,
         )
-        previous = out_pmtiles.read_bytes() if out_pmtiles.exists() else None
-        subprocess.run(["pmtiles", "convert", str(mbtiles), str(out_pmtiles)], check=True,
-                       capture_output=True)
+        level_mbtiles.append(mbtiles)
+
+    joined = scratch / "cells.mbtiles"
+    subprocess.run(
+        ["tile-join", "-o", str(joined), "-n", "Population cells",
+         "-N", "GHS-POP people per cell within 12,000 km of Wat Ket",
+         "--no-tile-size-limit", "--force", "--quiet", *map(str, level_mbtiles)],
+        check=True,
+    )
+    previous = out_pmtiles.read_bytes() if out_pmtiles.exists() else None
+    subprocess.run(["pmtiles", "convert", str(joined), str(out_pmtiles)], check=True,
+                   capture_output=True)
 
     digest = sha256(out_pmtiles)
     identical = previous is not None and hashlib.sha256(previous).hexdigest() == digest
+    coarsest = level_stats[0]
 
     meta = {
         "_comment": (
             "Population cells for the Present chapter's MapLibre layer. NOT terrain — "
-            "terrain stays null in the scene document. People per 0.25° cell, from the "
-            "same GHS-POP tiles as the region fields, within the world disc. The layer "
-            "itself is public/cells/wat-ket.cells.pmtiles; this records what is in it."
+            "terrain stays null in the scene document. People per cell at three "
+            "resolutions, each cut for its own zooms, from the same GHS-POP tiles as the "
+            "region fields, within the world disc. The layer itself is "
+            "public/cells/wat-ket.cells.pmtiles; this records what is in it."
         ),
-        "layer": "cells",
         "file": "cells/wat-ket.cells.pmtiles",
         "sha256": digest,
         "origin": [origin[0], origin[1]],
         "radiusKm": radius_km,
-        "cellDeg": cell_deg,
-        "zoom": {"min": MIN_ZOOM, "max": MAX_ZOOM},
+        "levels": level_stats,
+        "maxDensity": max_density,
         "properties": {
             "p": "people in the cell",
-            "t": "log10 ramp position, 0-1, the cell's colour",
-            "h": "cube-root height fraction, 0-1",
+            "t": "log10 ramp position of density, 0-1, on one scale for every level — the colour",
+            "h": "cube-root density fraction, 0-1, same scale — the height",
             "d": "great-circle km from the origin to the cell centre",
         },
-        "stats": {"cells": int(len(people)), "totalPeople": total, "max": pmax, "tilesUsed": used},
+        "stats": {
+            "cells": sum(l["cells"] for l in level_stats),
+            "totalPeople": coarsest["totalPeople"],
+            "max": coarsest["maxPeople"],
+            "tilesUsed": used,
+        },
         "source": {
             "dataset": "GHS-POP R2023A, epoch 2025, 30 arcsec, EPSG:4326",
             "url": build_region.GHSL_BASE,

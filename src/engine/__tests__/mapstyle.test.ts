@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CELLS_LAYER,
   MAX_CELL_HEIGHT_M,
   RING_LAYER,
   basemapLayers,
   cellColour,
+  cellsLayerId,
+  cellsLayers,
   coloursIn,
   presentFlavor,
   presentStyle,
@@ -47,7 +48,12 @@ function tokenColours(): Set<string> {
 }
 
 describe('the map style', () => {
-  const style = presentStyle('pmtiles://basemap', 'pmtiles://cells', 3400);
+  const LEVELS = [
+    { layer: 'cells_050', minzoom: 2, maxzoom: 2 },
+    { layer: 'cells_025', minzoom: 3, maxzoom: 3 },
+    { layer: 'cells_0125', minzoom: 4, maxzoom: 8 },
+  ];
+  const style = presentStyle('pmtiles://basemap', 'pmtiles://cells', 3400, LEVELS);
 
   it('names no colour that is not a token or a derivation of one', () => {
     const allowed = tokenColours();
@@ -64,8 +70,18 @@ describe('the map style', () => {
 
   it('draws the cells over the basemap and the ring over the cells', () => {
     const ids = style.layers.map((l) => l.id);
-    expect(ids.indexOf(CELLS_LAYER)).toBeGreaterThan(ids.indexOf('earth'));
-    expect(ids.indexOf(RING_LAYER)).toBeGreaterThan(ids.indexOf(CELLS_LAYER));
+    for (const level of LEVELS) {
+      expect(ids.indexOf(cellsLayerId(level))).toBeGreaterThan(ids.indexOf('earth'));
+      expect(ids.indexOf(RING_LAYER)).toBeGreaterThan(ids.indexOf(cellsLayerId(level)));
+    }
+  });
+
+  it('cuts one layer per level, each for its own zooms, with the last overzooming', () => {
+    const layers = cellsLayers(0, LEVELS) as Array<{ 'source-layer'?: string; minzoom?: number; maxzoom?: number }>;
+    expect(layers.map((l) => l['source-layer'])).toEqual(['cells_050', 'cells_025', 'cells_0125']);
+    expect(layers.map((l) => l.minzoom)).toEqual([2, 3, 4]);
+    expect(layers[0].maxzoom).toBe(3);
+    expect(layers[2].maxzoom).toBe(24);
   });
 
   it('extrudes to 400 km at the densest cell', () => {

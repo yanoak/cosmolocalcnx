@@ -32,15 +32,16 @@ export const SCORES: Record<ChapterId, Score> = {
   present: {
     chapter: 'present',
     beats: [
-      // The base: close on Wat Ket, pitched, before anything grows. No ring. Map poses are
-      // MapLibre's camera: zoom on its own scale, pitch and bearing in degrees.
-      { id: 'here', view: 'circle', mapPose: { zoom: 8, pitch: 55 }, ring: { from: 0, to: 0 } },
-      // The ring grows to the claim — half of humanity — while the camera pulls back to the
-      // globe, so the ring holds roughly its share of the screen. Both are continuous in
-      // the beat's progress; the counter reads the committed curve.
-      { id: 'grow', view: 'circle', mapPose: { zoom: 8, pitch: 55 }, ring: { from: 0, to: 1 } },
+      // The camera holds still through the whole stem — Yan's call, 24 Sep 2026: "just see
+      // the circle expand as you scroll". No beat carries a mapPose; all three sit at the
+      // chapter's home view, the circle fitted, and only the ring moves.
+      // The base: one point on Wat Ket, before anything grows.
+      { id: 'here', view: 'circle', ring: { from: 0, to: 0 } },
+      // The ring grows to the claim — half of humanity — with the beat's progress; the
+      // counter reads the committed curve.
+      { id: 'grow', view: 'circle', ring: { from: 0, to: 1 } },
       // Past the claim, muted: the next three thousand kilometres add a sixth as much.
-      { id: 'flatten', view: 'circle', mapPose: { zoom: 2.4, pitch: 35 }, ring: { from: 1, to: 1.75 }, terminal: true },
+      { id: 'flatten', view: 'circle', ring: { from: 1, to: 1.75 }, terminal: true },
     ],
   },
   futures: {

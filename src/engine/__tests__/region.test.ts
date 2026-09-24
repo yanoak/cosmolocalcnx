@@ -401,6 +401,7 @@ describe('the committed cells layer', () => {
     sha256: string;
     origin: [number, number];
     radiusKm: number;
+    levels: { layer: string; minzoom: number; maxzoom: number; totalPeople: number }[];
     stats: { cells: number; totalPeople: number };
   };
   const scene = JSON.parse(readFileSync(new URL('wat-ket.json', SCENES), 'utf8')) as {
@@ -430,5 +431,15 @@ describe('the committed cells layer', () => {
     };
     expect(Math.abs(meta.stats.totalPeople - world.stats.totalInside) / world.stats.totalInside).toBeLessThan(0.01);
     expect(meta.stats.cells).toBeGreaterThan(50_000);
+  });
+
+  it('holds the same people at every level — block-sums lose nobody', () => {
+    for (const level of meta.levels) {
+      expect(Math.abs(level.totalPeople - meta.stats.totalPeople) / meta.stats.totalPeople).toBeLessThan(0.002);
+    }
+    // Contiguous zoom ranges, coarse to fine.
+    for (let i = 1; i < meta.levels.length; i++) {
+      expect(meta.levels[i].minzoom).toBe(meta.levels[i - 1].maxzoom + 1);
+    }
   });
 });

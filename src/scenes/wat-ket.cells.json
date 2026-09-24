@@ -1,20 +1,51 @@
 {
-  "_comment": "Population cells for the Present chapter's MapLibre layer. NOT terrain \u2014 terrain stays null in the scene document. People per 0.25\u00b0 cell, from the same GHS-POP tiles as the region fields, within the world disc. The layer itself is public/cells/wat-ket.cells.pmtiles; this records what is in it.",
-  "cellDeg": 0.25,
+  "_comment": "Population cells for the Present chapter's MapLibre layer. NOT terrain \u2014 terrain stays null in the scene document. People per cell at three resolutions, each cut for its own zooms, from the same GHS-POP tiles as the region fields, within the world disc. The layer itself is public/cells/wat-ket.cells.pmtiles; this records what is in it.",
   "file": "cells/wat-ket.cells.pmtiles",
-  "layer": "cells",
+  "levels": [
+    {
+      "cellDeg": 0.5,
+      "cells": 39911,
+      "layer": "cells_050",
+      "maxDensity": 10135.297451942617,
+      "maxPeople": 27467043.363014325,
+      "maxzoom": 2,
+      "minzoom": 2,
+      "totalPeople": 7142692872.380092
+    },
+    {
+      "cellDeg": 0.25,
+      "cells": 130804,
+      "layer": "cells_025",
+      "maxDensity": 23545.75883132023,
+      "maxPeople": 16507455.179413186,
+      "maxzoom": 3,
+      "minzoom": 3,
+      "totalPeople": 7144528813.365188
+    },
+    {
+      "cellDeg": 0.125,
+      "cells": 426114,
+      "layer": "cells_0125",
+      "maxDensity": 47499.22984087157,
+      "maxPeople": 8320971.710876397,
+      "maxzoom": 8,
+      "minzoom": 4,
+      "totalPeople": 7144474076.127554
+    }
+  ],
+  "maxDensity": 47499.22984087157,
   "origin": [
     18.7912,
     99.0043
   ],
   "properties": {
     "d": "great-circle km from the origin to the cell centre",
-    "h": "cube-root height fraction, 0-1",
+    "h": "cube-root density fraction, 0-1, same scale \u2014 the height",
     "p": "people in the cell",
-    "t": "log10 ramp position, 0-1, the cell's colour"
+    "t": "log10 ramp position of density, 0-1, on one scale for every level \u2014 the colour"
   },
   "radiusKm": 12000.0,
-  "sha256": "3f30df6b2896a4ffe1bf0468e832ebb58753e2c40f214704c835474e8141d16f",
+  "sha256": "0e69577bb17d77f150a344efe1a4f327c799503b3cc1e928b1d5c00d784ba2ff",
   "source": {
     "attribution": "European Commission JRC, Global Human Settlement Layer",
     "dataset": "GHS-POP R2023A, epoch 2025, 30 arcsec, EPSG:4326",
@@ -22,13 +53,9 @@
     "url": "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E2025_GLOBE_R2023A_4326_30ss/V1-0/tiles"
   },
   "stats": {
-    "cells": 130804,
-    "max": 16507455.179413177,
+    "cells": 596829,
+    "max": 27467043.363014325,
     "tilesUsed": 346,
-    "totalPeople": 7144528813.365187
-  },
-  "zoom": {
-    "max": 6,
-    "min": 2
+    "totalPeople": 7142692872.380092
   }
 }

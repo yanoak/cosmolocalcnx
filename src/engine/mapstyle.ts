@@ -38,14 +38,43 @@ import {
 
 export const BASEMAP_SOURCE = 'basemap';
 export const CELLS_SOURCE = 'cells';
-export const CELLS_LAYER = 'cells';
+
+/**
+ * One resolution of the cells pyramid, as `scripts/build-cells.py` records it in the
+ * sidecar: the source-layer's name and the zooms it was cut for. The style draws one
+ * fill-extrusion layer per level, so the map is coarse from far out and dense close in.
+ */
+export interface CellsLevel {
+  layer: string;
+  minzoom: number;
+  maxzoom: number;
+}
+
+/** The style layer id for a level. */
+export const cellsLayerId = (level: CellsLevel) => `cells-${level.layer}`;
 export const RING_SOURCE = 'ring';
 export const RING_LAYER = 'ring';
 export const ANCHOR_SOURCE = 'anchor';
 export const ANCHOR_LAYER = 'anchor';
 
-/** How tall the densest cell is, in metres — MapLibre extrudes in metres. 400 km, as the columns were. */
+/**
+ * How tall the densest cell is, in metres — MapLibre extrudes in metres — BY ZOOM. From
+ * the fit the field should read as the smooth density map it was as a flat plane, with
+ * the cities just standing off it; close in the columns can rise. 400 km at the top,
+ * as the three.js columns were.
+ */
 export const MAX_CELL_HEIGHT_M = 400_000;
+export const CELL_HEIGHT_BY_ZOOM: ExpressionSpecification = [
+  'interpolate',
+  ['linear'],
+  ['zoom'],
+  3,
+  60_000,
+  5,
+  200_000,
+  7,
+  MAX_CELL_HEIGHT_M,
+];
 
 /**
  * The basemap's Flavor, from tokens.
@@ -179,20 +208,23 @@ export function cellColour(ringKm: number): ExpressionSpecification {
   ] as ExpressionSpecification;
 }
 
-/** The cells as extrusions. Height in metres from `h`; colour from `t` and the ring. */
-export function cellsLayer(ringKm: number): LayerSpecification {
-  return {
-    id: CELLS_LAYER,
+/** The cells as extrusions, one layer per level. Height in metres from `h`; colour from `t` and the ring. */
+export function cellsLayers(ringKm: number, levels: readonly CellsLevel[]): LayerSpecification[] {
+  return levels.map((level) => ({
+    id: cellsLayerId(level),
     type: 'fill-extrusion',
     source: CELLS_SOURCE,
-    'source-layer': 'cells',
+    'source-layer': level.layer,
+    minzoom: level.minzoom,
+    // A layer's maxzoom is exclusive; the tiles overzoom past the last level's cut.
+    maxzoom: level === levels[levels.length - 1] ? 24 : level.maxzoom + 1,
     paint: {
       'fill-extrusion-color': cellColour(ringKm),
-      'fill-extrusion-height': ['*', ['get', 'h'], MAX_CELL_HEIGHT_M],
+      'fill-extrusion-height': ['*', ['get', 'h'], CELL_HEIGHT_BY_ZOOM],
       'fill-extrusion-base': 0,
       'fill-extrusion-opacity': 1,
     },
-  };
+  }));
 }
 
 /** The ring's tone: the accent up to the claim, the muted ink beyond it. */
@@ -229,10 +261,17 @@ const EMPTY: FeatureCollection = { type: 'FeatureCollection', features: [] };
 
 /**
  * The whole style. `basemapUrl` and `cellsUrl` are `pmtiles://…` URLs; the page
- * registers the protocol once. The ring and the anchor start empty and are filled by
+ * registers the protocol once. Flat — Mercator, MapLibre's default — since Yan asked
+ * for it on 24 Sep 2026: the ring is still a circle of true distance, which on this
+ * projection bulges northward, and that is the honest shape of 3,400 km here. The ring and the anchor start empty and are filled by
  * the map component, which owns the only mutable state — the ring's radius.
  */
-export function presentStyle(basemapUrl: string, cellsUrl: string, claimKm: number): StyleSpecification {
+export function presentStyle(
+  basemapUrl: string,
+  cellsUrl: string,
+  claimKm: number,
+  levels: readonly CellsLevel[],
+): StyleSpecification {
   return {
     version: 8,
     sources: {
@@ -245,7 +284,7 @@ export function presentStyle(basemapUrl: string, cellsUrl: string, claimKm: numb
       [RING_SOURCE]: { type: 'geojson', data: EMPTY },
       [ANCHOR_SOURCE]: { type: 'geojson', data: EMPTY },
     },
-    layers: [...basemapLayers(), cellsLayer(0), ringLayer(0, claimKm), anchorLayer()],
+    layers: [...basemapLayers(), ...cellsLayers(0, levels), ringLayer(0, claimKm), anchorLayer()],
   };
 }
 

@@ -47,7 +47,7 @@ import {
 import { halfPopulationRadius, peopleWithin } from '@/engine/region';
 import { PresentMap, type MapPick } from '@/engine/PresentMap';
 import { aeqdForward, type LatLon } from '@/engine/aeqd';
-import { MAP_URLS } from '@/scenes/map';
+import { CELLS_META, MAP_URLS } from '@/scenes/map';
 import { SCORES } from '@/content/scores';
 import copyDoc from '@/content/copy.json';
 import { ViewHeader } from '@/engine/ViewHeader';
@@ -117,11 +117,14 @@ const CLAIM = (() => {
 const roundKm = (km: number) => Math.round(km / 100) * 100;
 
 /**
- * Where the Present map opens: close on Wat Ket, pitched. What a beat's `mapPose` is
- * filled from. Zoom is MapLibre's own scale; pitch and bearing in degrees.
+ * Where the Present map sits: Wat Ket in the middle, the claim's circle fitting the
+ * stage, tilted a little so the cells stand up. The camera holds here through the whole
+ * stem — only the ring moves — and a beat's `mapPose`, if it ever has one, is filled from
+ * this. Zoom is MapLibre's own scale: 4 is where a 0.125° cell is a pixel and a half and
+ * a 3,400 km ring is about 700 px across. Pitch and bearing in degrees.
  */
 const ORIGIN = DOC.origin as LatLon;
-const MAP_HOME: MapPose = { zoom: 8, pitch: 55, bearing: 0, centre: ORIGIN };
+const MAP_HOME: MapPose = { zoom: 4, pitch: 40, bearing: 0, centre: ORIGIN };
 
 /**
  * The relief backdrop, resolved the same way. Absent is a valid state: a scene with
@@ -525,6 +528,7 @@ export default function Page() {
               <PresentMap
                 basemapUrl={MAP_URLS.basemap}
                 cellsUrl={MAP_URLS.cells}
+                levels={CELLS_META.levels}
                 origin={ORIGIN}
                 claimKm={CLAIM.km}
                 ringKm={mapRingKm}

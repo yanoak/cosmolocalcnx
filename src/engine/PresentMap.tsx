@@ -19,18 +19,19 @@ import type { MapPose } from './chapters';
 import type { City } from './cities';
 import {
   ANCHOR_SOURCE,
-  CELLS_LAYER,
   RING_LAYER,
   RING_SOURCE,
   cellColour,
+  cellsLayerId,
   presentStyle,
   ringColour,
+  type CellsLevel,
 } from './mapstyle';
 import { distanceFromCentreKm } from './cities';
 import './PresentMap.css';
 
 /**
- * The Present chapter's map: a MapLibre globe with the basemap in the design tokens,
+ * The Present chapter's map: a flat MapLibre map with the basemap in the design tokens,
  * the population cells extruded on it, and the ring that grows out of Wat Ket.
  *
  * **A second renderer, behind the cut.** Since 24 Sep 2026 the circle view is this
@@ -94,6 +95,7 @@ function ringFeature(origin: LatLon, km: number): FeatureCollection {
 export function PresentMap({
   basemapUrl,
   cellsUrl,
+  levels,
   origin,
   claimKm,
   ringKm,
@@ -107,6 +109,8 @@ export function PresentMap({
   /** `pmtiles://…` URLs. */
   basemapUrl: string;
   cellsUrl: string;
+  /** The cells pyramid's levels, from the sidecar. */
+  levels: readonly CellsLevel[];
   /** The scene origin — Wat Ket — as [lat, lon]. */
   origin: LatLon;
   claimKm: number;
@@ -136,7 +140,7 @@ export function PresentMap({
 
     const m = new MapLibreMap({
       container: el,
-      style: presentStyle(basemapUrl, cellsUrl, latest.current.claimKm),
+      style: presentStyle(basemapUrl, cellsUrl, latest.current.claimKm, levels),
       ...cameraOf(latest.current.pose),
       maxPitch: 85,
       attributionControl: false,
@@ -156,7 +160,6 @@ export function PresentMap({
     const markers: Marker[] = [];
 
     m.on('style.load', () => {
-      m.setProjection({ type: 'globe' });
       (m.getSource(ANCHOR_SOURCE) as GeoJSONSource | undefined)?.setData({
         type: 'FeatureCollection',
         features: [
@@ -164,7 +167,7 @@ export function PresentMap({
         ],
       });
       loaded.current = true;
-      applyRing(m, origin, latest.current.ringKm, latest.current.claimKm);
+      applyRing(m, origin, latest.current.ringKm, latest.current.claimKm, levels);
       applyInteraction(m, latest.current.interactive);
 
       for (const city of labels) {
@@ -194,8 +197,10 @@ export function PresentMap({
         distKm: Number(p.d ?? 0),
       });
     };
-    m.on('mousemove', CELLS_LAYER, pick);
-    m.on('click', CELLS_LAYER, pick);
+    for (const level of levels) {
+      m.on('mousemove', cellsLayerId(level), pick);
+      m.on('click', cellsLayerId(level), pick);
+    }
 
     const observer = new ResizeObserver(() => m.resize());
     observer.observe(el);
@@ -209,7 +214,7 @@ export function PresentMap({
     };
     // The URLs, the origin and the labels are fixed for the life of the chapter.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [basemapUrl, cellsUrl, origin, labels]);
+  }, [basemapUrl, cellsUrl, origin, labels, levels]);
 
   /** The camera: a cut per scroll tick during a ring beat, an ease otherwise. */
   useEffect(() => {
@@ -223,8 +228,8 @@ export function PresentMap({
   useEffect(() => {
     const m = map.current;
     if (!m || !loaded.current) return;
-    applyRing(m, origin, ringKm, claimKm);
-  }, [ringKm, claimKm, origin]);
+    applyRing(m, origin, ringKm, claimKm, levels);
+  }, [ringKm, claimKm, origin, levels]);
 
   /** Hands on or off. */
   useEffect(() => {
@@ -236,12 +241,22 @@ export function PresentMap({
   return <div ref={container} className="present-map" />;
 }
 
-function applyRing(m: MapLibreMap, origin: LatLon, ringKm: number, claimKm: number) {
+function applyRing(
+  m: MapLibreMap,
+  origin: LatLon,
+  ringKm: number,
+  claimKm: number,
+  levels: readonly CellsLevel[],
+) {
   (m.getSource(RING_SOURCE) as GeoJSONSource | undefined)?.setData(
     ringFeature(origin, ringKm),
   );
   if (m.getLayer(RING_LAYER)) m.setPaintProperty(RING_LAYER, 'line-color', ringColour(ringKm, claimKm));
-  if (m.getLayer(CELLS_LAYER)) m.setPaintProperty(CELLS_LAYER, 'fill-extrusion-color', cellColour(ringKm));
+  const colour = cellColour(ringKm);
+  for (const level of levels) {
+    const id = cellsLayerId(level);
+    if (m.getLayer(id)) m.setPaintProperty(id, 'fill-extrusion-color', colour);
+  }
 }
 
 /**

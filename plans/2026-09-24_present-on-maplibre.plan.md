@@ -61,6 +61,15 @@ leave* — MapLibre's map is cheap to recreate against a cached PMTiles file, an
 context through the other chapters is exactly the "pay for a world nobody is looking at" this
 project forbids.
 
+> **Flat, not globe — Yan, 24 Sep 2026, on seeing it.** The paragraph below is the argument
+> for the globe and is kept for the record; the map is Mercator. The ring is still a circle
+> of true distance, so on screen it bulges northward — that is what 3,400 km looks like on
+> this projection, and it is drawn honestly rather than round. Two more from the same look:
+> **the camera holds still through the stem** ("just see the circle expand as you scroll"),
+> and **the density from the fit is the 512-cell field's**, 13 km — the 0.125° level starts
+> at zoom 4 rather than 6, with 0.25° and 0.5° only for the two zooms below. Column height
+> scales with zoom so the fit reads as the smooth density map the flat plane was.
+
 **Globe, not Mercator.** The claim is a distance. A 3,400 km circle around Chiang Mai on a
 Mercator map is an egg; on the globe it is a circle, and the distance rings are true. MapLibre
 draws `fill-extrusion` on the globe, with one known quirk for very large polygons at low zoom
@@ -262,6 +271,7 @@ to fetch, the cells and the ring still draw over the ground colour and the capti
 ## Open questions
 
 - [x] Zoom 0–6 — 45 MB, committed. Decided by doing; 7 waits for a reason.
+- [x] Flat, not globe; camera fixed through the stem; 13 km cells from the fit. Yan, on seeing it.
 - [x] Squares: `h3` would not build on this machine, and a lat/lon grid needs no dependency.
 - [x] Labels are DOM markers from the city file, not symbol layers — no glyphs to self-host.
 - [ ] ~~Zoom 0–6 or 0–7 for the extract?~~ 6 is 35 MB and enough to read a delta; 7 is 70 MB and

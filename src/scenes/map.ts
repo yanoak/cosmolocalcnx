@@ -21,7 +21,7 @@ export const CELLS_META = cells as unknown as {
   sha256: string;
   origin: [number, number];
   radiusKm: number;
-  cellDeg: number;
+  levels: { layer: string; minzoom: number; maxzoom: number; cellDeg: number; cells: number }[];
   stats: { cells: number; totalPeople: number; max: number };
 };
 
