@@ -2,7 +2,12 @@
 /**
  * The Faiways map's vector half, without a browser.
  *
- *     npx tsx scripts/export-map.ts [--out data/export] [--dpi 300] [--icon-mm 14] [--label-pt 8] [--no-transport]
+ *     npx tsx scripts/export-map.ts [--out data/export] [--dpi 300] [--icon-mm 14] [--label-pt 8] [--no-transport] [--link-icons]
+ *
+ * Icons are EMBEDDED as PNG data URIs by default, so each SVG is one self-contained file
+ * that opens anywhere — the sprites are WebP, which older layout programs cannot place,
+ * and a root-relative link only resolves on the site. `--link-icons` writes the site's
+ * paths instead, for an SVG that will be served rather than opened.
  *
  * Writes valley-overlay.svg and city-overlay.svg: the same SVG `/export` builds in the
  * page — the same fit, projection, hotspots, copy and sprites — so the two routes cannot
@@ -32,6 +37,19 @@ const DPI = Number(arg('--dpi', '300'));
 const ICON_MM = Number(arg('--icon-mm', '14'));
 const LABEL_PT = Number(arg('--label-pt', '8'));
 const TRANSPORT = !process.argv.includes('--no-transport');
+const LINK_ICONS = process.argv.includes('--link-icons');
+
+/** The sprites as PNG data URIs, converted once each. */
+const iconData = new Map<string, string>();
+async function embedIcons(ids: Iterable<string | undefined>) {
+  for (const id of ids) {
+    if (!id || iconData.has(id)) continue;
+    const sprite = iconFor(id);
+    if (!sprite) continue;
+    const png = await sharp(join(REPO, 'public', sprite.file)).png().toBuffer();
+    iconData.set(id, `data:image/png;base64,${png.toString('base64')}`);
+  }
+}
 
 const page = { widthPx: Math.round((297 / 25.4) * DPI), heightPx: Math.round((210 / 25.4) * DPI), dpi: DPI };
 
@@ -104,12 +122,14 @@ function build(map: 'valley' | 'city', heights: Float32Array | null): string {
     labelFont: 'IBM Plex Sans Thai, IBM Plex Sans, sans-serif',
     basemapHref: `${map}-basemap.png`,
     title: `Faiways — ${map === 'valley' ? 'Ping Valley' : 'Wat Ket'}, 2045`,
+    iconHref: LINK_ICONS ? undefined : (sprite) => iconData.get(sprite.id) ?? sprite.file,
   });
 }
 
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const heights = await valleySurface();
+  if (!LINK_ICONS) await embedIcons(futures.map((h) => h.icon));
   for (const map of ['valley', 'city'] as const) {
     const svg = build(map, heights);
     const path = join(OUT, `${map}-overlay.svg`);

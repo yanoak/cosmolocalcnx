@@ -89,6 +89,11 @@ export interface OverlayOptions {
   /** A basemap image to reference from the SVG's first group, or null for none. */
   basemapHref: string | null;
   title?: string;
+  /**
+   * What an icon's `href` should be. Default: the sprite's own path, which works where the
+   * site serves it. The script passes data URIs so a file on disk is self-contained.
+   */
+  iconHref?: (sprite: IconSprite) => string;
 }
 
 const esc = (s: string) =>
@@ -149,8 +154,9 @@ export function overlaySvg(o: OverlayOptions): string {
     const [px, py] = toPage(p, pin.at[0], pin.at[1], pin.h);
     const x = px - w * pin.sprite.anchor[0];
     const y = py - h * pin.sprite.anchor[1];
+    const href = o.iconHref ? o.iconHref(pin.sprite) : pin.sprite.file;
     parts.push(
-      `    <image id="icon-${esc(pin.id)}" href="${esc(pin.sprite.file)}" x="${num(x)}" y="${num(y)}" ` +
+      `    <image id="icon-${esc(pin.id)}" href="${esc(href)}" x="${num(x)}" y="${num(y)}" ` +
         `width="${num(w)}" height="${num(h)}"/>`,
     );
   }
