@@ -2,12 +2,13 @@
 /**
  * The Faiways map's vector half, without a browser.
  *
- *     npx tsx scripts/export-map.ts [--out data/export] [--dpi 300] [--icon-mm 14] [--label-pt 8] [--no-transport] [--link-icons]
+ *     npx tsx scripts/export-map.ts [--out data/export] [--dpi 300] [--icon-mm 14] [--label-pt 8] [--no-transport] [--embed-icons]
  *
- * Icons are EMBEDDED as PNG data URIs by default, so each SVG is one self-contained file
- * that opens anywhere — the sprites are WebP, which older layout programs cannot place,
- * and a root-relative link only resolves on the site. `--link-icons` writes the site's
- * paths instead, for an SVG that will be served rather than opened.
+ * The icons each map uses are COPIED into `<out>/icons/<id>.png` and referenced by that
+ * relative path, so the folder is the deliverable: SVGs, basemaps and icons side by side,
+ * every link resolving wherever the folder goes. PNG rather than the site's WebP, which
+ * older layout programs cannot place. `--embed-icons` inlines them as data URIs instead,
+ * for a single self-contained file at the cost of size. Yan, 24 Sep 2026: linked.
  *
  * Writes valley-overlay.svg and city-overlay.svg: the same SVG `/export` builds in the
  * page — the same fit, projection, hotspots, copy and sprites — so the two routes cannot
@@ -37,17 +38,23 @@ const DPI = Number(arg('--dpi', '300'));
 const ICON_MM = Number(arg('--icon-mm', '14'));
 const LABEL_PT = Number(arg('--label-pt', '8'));
 const TRANSPORT = !process.argv.includes('--no-transport');
-const LINK_ICONS = process.argv.includes('--link-icons');
+const EMBED_ICONS = process.argv.includes('--embed-icons');
 
-/** The sprites as PNG data URIs, converted once each. */
-const iconData = new Map<string, string>();
-async function embedIcons(ids: Iterable<string | undefined>) {
+/** Per sprite id: the href the SVG writes — `icons/<id>.png` beside it, or a data URI. */
+const iconHrefs = new Map<string, string>();
+async function prepareIcons(ids: Iterable<string | undefined>) {
+  if (!EMBED_ICONS) mkdirSync(join(OUT, 'icons'), { recursive: true });
   for (const id of ids) {
-    if (!id || iconData.has(id)) continue;
+    if (!id || iconHrefs.has(id)) continue;
     const sprite = iconFor(id);
     if (!sprite) continue;
     const png = await sharp(join(REPO, 'public', sprite.file)).png().toBuffer();
-    iconData.set(id, `data:image/png;base64,${png.toString('base64')}`);
+    if (EMBED_ICONS) {
+      iconHrefs.set(id, `data:image/png;base64,${png.toString('base64')}`);
+    } else {
+      writeFileSync(join(OUT, 'icons', `${id}.png`), png);
+      iconHrefs.set(id, `icons/${id}.png`);
+    }
   }
 }
 
@@ -122,21 +129,22 @@ function build(map: 'valley' | 'city', heights: Float32Array | null): string {
     labelFont: 'IBM Plex Sans Thai, IBM Plex Sans, sans-serif',
     basemapHref: `${map}-basemap.png`,
     title: `Faiways — ${map === 'valley' ? 'Ping Valley' : 'Wat Ket'}, 2045`,
-    iconHref: LINK_ICONS ? undefined : (sprite) => iconData.get(sprite.id) ?? sprite.file,
+    iconHref: (sprite) => iconHrefs.get(sprite.id) ?? sprite.file,
   });
 }
 
 async function main() {
   mkdirSync(OUT, { recursive: true });
   const heights = await valleySurface();
-  if (!LINK_ICONS) await embedIcons(futures.map((h) => h.icon));
+  await prepareIcons(futures.map((h) => h.icon));
   for (const map of ['valley', 'city'] as const) {
     const svg = build(map, heights);
     const path = join(OUT, `${map}-overlay.svg`);
     writeFileSync(path, svg);
     console.log(`  wrote ${path.replace(REPO + '/', '')} (${(svg.length / 1024).toFixed(0)} KB, ${page.widthPx}×${page.heightPx} @ ${DPI} dpi)`);
   }
-  console.log(`  the basemaps — ${'valley'}-basemap.png and city-basemap.png — come from /export in a browser.`);
+  if (!EMBED_ICONS) console.log(`  icons: ${iconHrefs.size} copied to ${join(OUT, 'icons').replace(REPO + '/', '')}/ as PNG`);
+  console.log(`  the basemaps — valley-basemap.png and city-basemap.png — come from /export in a browser.`);
 }
 
 main().catch((e) => {
