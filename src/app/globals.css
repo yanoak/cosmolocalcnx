@@ -99,21 +99,36 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
 
 /* The growing circle's counter, during the Present stem. Three figures on one line,
    over the scene, in the reading register; the card above it carries the words. */
+/* Top right, as a pill on the card's ground — the same object as the City · Valley
+   toggle, in the same corner, since it is the one number the chapter is about. Yan,
+   24 Sep 2026: it sat as bare text over the cells and could not be read. */
 .ring-readout {
   position: absolute;
-  left: 16px; right: 16px; bottom: 64px;
+  top: 10px; right: 16px;
   z-index: 2;
   margin: 0;
   display: flex;
-  justify-content: center;
-  gap: 18px;
-  font-size: 0.9375rem;
+  align-items: baseline;
+  gap: 14px;
+  padding: 9px 18px 10px;
+  border-radius: 999px;
+  background: var(--register-page-ground);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--register-page-ink) 16%, transparent);
+  font-size: 1.0625rem;
+  line-height: 1.2;
   color: var(--register-page-ink);
   pointer-events: none;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.ring-readout-km { font-weight: 600; }
+.ring-readout-km { font-weight: 700; font-size: 1.25rem; }
+.ring-readout-people { font-weight: 600; }
 .ring-readout-share { color: var(--register-page-muted); }
+
+@media (max-width: 560px) {
+  .ring-readout { gap: 10px; padding: 7px 14px 8px; font-size: 0.9375rem; }
+  .ring-readout-km { font-size: 1.0625rem; }
+}
 
 /* City labels sit in the DOM over the canvas, never baked into WebGL — the same
    rule the hotspot copy follows, and what keeps them selectable, translatable and
