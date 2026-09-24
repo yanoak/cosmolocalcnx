@@ -70,6 +70,14 @@ export interface ValleySource {
   features?: ValleyFeatures | null;
 }
 
+/**
+ * Which towns get a label at all. Yan, 24 Sep 2026: only Chiang Mai — the pins name the
+ * places the chapters are about, and six more town names on the plaster were clutter
+ * around them. The rest of the town data stays in the features file for the day a
+ * setting wants them back.
+ */
+const LABELLED_TOWNS: ReadonlySet<string> = new Set(['Chiang Mai']);
+
 /** How many towns get a label. Beyond this a landscape becomes a table of contents. */
 const MAX_LABELS = 7;
 
@@ -562,7 +570,7 @@ function Towns({
 }) {
   return (
     <>
-      {towns.slice(0, MAX_LABELS).filter((t) => !hide.has(t.name)).map((town) => (
+      {towns.slice(0, MAX_LABELS).filter((t) => LABELLED_TOWNS.has(t.name) && !hide.has(t.name)).map((town) => (
         <Html
           key={town.name}
           position={[town.at[0], sampleHeight(heights, meta, town.at) + lift, -town.at[1]]}
