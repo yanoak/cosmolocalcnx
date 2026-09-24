@@ -1,0 +1,21 @@
+{
+  "_about": "Which candidate under data/icons/candidates/<id>/ became public/icons/<id>.webp. Edit and re-run scripts/keep-icons.py.",
+  "keep": {
+    "station": "r1-1",
+    "khun-tan": "r1-1",
+    "airport": "r1-1",
+    "wat-ket": "r1-1",
+    "ban-tawan": "r1-1",
+    "wua-lai": "r1-1",
+    "lanna-world-school": "r1-1",
+    "anusarn": "r1-1",
+    "kae": "r1-1",
+    "wat-umong": "r1-1",
+    "doi-suthep": "r1-1",
+    "doi-saket": "r1-1",
+    "lamphun-hills": "r1-1",
+    "lamphun-town": "r1-1",
+    "mae-taeng": "r1-1",
+    "chiang-dao": "r1-1"
+  }
+}
