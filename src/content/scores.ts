@@ -32,11 +32,14 @@ export const SCORES: Record<ChapterId, Score> = {
   present: {
     chapter: 'present',
     beats: [
-      // Close on Wat Ket, before anything grows.
-      { id: 'here', view: 'circle', pose: { zoom: 6 } },
-      // Pulling back as the circle grows, so the ring holds its share of the screen.
-      { id: 'grow', view: 'circle', pose: { zoom: 1.6 } },
-      { id: 'flatten', view: 'circle', pose: { zoom: 1 }, terminal: true },
+      // The base: close on Wat Ket, before anything grows. No ring.
+      { id: 'here', view: 'circle', pose: { zoom: 6 }, ring: { from: 0, to: 0 } },
+      // The ring grows to the claim — half of humanity — while the camera pulls back, so
+      // the ring holds roughly its share of the screen. Both are continuous in the beat's
+      // progress; the counter reads the committed curve.
+      { id: 'grow', view: 'circle', pose: { zoom: 6 }, ring: { from: 0, to: 1 } },
+      // Past the claim, greyed: the next three thousand kilometres add a sixth as much.
+      { id: 'flatten', view: 'circle', pose: { zoom: 1.6 }, ring: { from: 1, to: 1.75 }, terminal: true },
     ],
   },
   futures: {

@@ -160,3 +160,39 @@ describe('joinBeatCopy', () => {
     expect(out.join(' ')).toMatch(/"flight".*no beat/);
   });
 });
+
+// ---------------------------------------------------------------------------------
+// The ring. Added 24 Sep 2026 with the Present chapter.
+
+import { ringAt } from '../chapters';
+
+describe('ringAt and the ring rule', () => {
+  const grow: Beat = { id: 'grow', view: 'circle', ring: { from: 0, to: 1 } };
+
+  it('interpolates the ring between the beat\'s ends, in multiples of the claim', () => {
+    expect(ringAt(grow, 0, 3400)).toBe(0);
+    expect(ringAt(grow, 0.5, 3400)).toBeCloseTo(1700, 9);
+    expect(ringAt(grow, 1, 3400)).toBe(3400);
+  });
+
+  it('clamps progress and answers null for a beat without a ring', () => {
+    expect(ringAt(grow, 2, 3400)).toBe(3400);
+    expect(ringAt({ id: 'x', view: 'circle' }, 0.5, 3400)).toBeNull();
+  });
+
+  it('rejects a ring on a beat outside the circle view', () => {
+    const score: Score = {
+      chapter: 'past',
+      beats: [{ id: 'a', view: 'valley', ring: { from: 0, to: 1 }, terminal: true }],
+    };
+    expect(validateScore(score).join('\n')).toMatch(/ring/);
+  });
+
+  it('rejects a negative ring', () => {
+    const score: Score = {
+      chapter: 'present',
+      beats: [{ id: 'a', view: 'circle', ring: { from: -1, to: 1 }, terminal: true }],
+    };
+    expect(validateScore(score).join('\n')).toMatch(/negative ring/);
+  });
+});

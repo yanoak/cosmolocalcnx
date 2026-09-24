@@ -108,10 +108,13 @@ The curve is the thing to show, because it flattens hard:
 | 3,000 km | 50.4% |
 | 6,000 km | 66.6% |
 
-`aeqd.ts` is unchanged — the projection is the same, the centre is a parameter. The committed
-region field is still centred on 21.00/100.29 and **must be regenerated on 18.7912/99.0043**, or a
-constant-distance-from-Wat-Ket circle is not a circle in that frame. `build-region.py` already
-takes `--centre` and `--radius-km`.
+`aeqd.ts` is unchanged — the projection is the same, the centre is a parameter. **The committed
+fields are centred on Wat Ket since 24 Sep 2026** — `regions/aeqd_18.791_99.004_*` — and
+`region.test.ts` fails if a field's centre ever differs from the scene origin, because a
+constant-distance-from-Wat-Ket circle is not a circle in any other frame. Each sidecar carries a
+cumulative-population-by-radius `curve`; the claim radius is `halfPopulationRadius()` over it and
+is never typed into the code. The field is drawn as instanced columns (`RegionColumns.tsx`,
+`columns.ts`) with the growing ring as a shader uniform.
 
 **This replaced one rail**, which from 16 to 21 Sep ran the circle, the district and the block
 through a single gesture. It went because a 3,437 km population raster and an 8 km building diorama

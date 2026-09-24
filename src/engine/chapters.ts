@@ -49,6 +49,14 @@ export interface Beat {
   layers?: readonly string[];
   /** Hotspots revealed by this beat. */
   hotspots?: readonly string[];
+  /**
+   * The growing circle, for a beat in the circle view: its radius at the beat's start
+   * and end, as MULTIPLES of the claim radius — the distance from the centre that holds
+   * half of humanity, which is computed from the committed field rather than typed
+   * here. 0 is no ring; 1 is the claim; past 1 shows the curve flattening. Progress
+   * within the beat interpolates between the two.
+   */
+  ring?: { from: number; to: number };
   /** The last beat: ends the stem and releases the bowl. Exactly one per score, and last. */
   terminal?: boolean;
 }
@@ -86,6 +94,17 @@ export type ViewFits = Record<ViewId, { zoom: number; target: [number, number, n
  * A beat → the pose `CameraRig` applies. The view is the beat's, always; the zoom is the
  * view's fit times the beat's multiple; the target is the beat's or the view's centre.
  */
+/**
+ * The ring's radius during a beat, in km, or null for a beat without one. A beat with
+ * no `ring` in the circle view holds whatever the previous beat left — the caller keeps
+ * that state; this only answers for beats that say.
+ */
+export function ringAt(beat: Beat, t: number, claimKm: number): number | null {
+  if (!beat.ring) return null;
+  const u = t < 0 ? 0 : t > 1 ? 1 : t;
+  return (beat.ring.from + (beat.ring.to - beat.ring.from) * u) * claimKm;
+}
+
 export function resolvePose(beat: Beat, fits: ViewFits): CameraPose {
   const fit = fits[beat.view];
   return {
@@ -130,6 +149,14 @@ export function validateScore(score: Score): string[] {
     }
     if (b.terminal && i !== score.beats.length - 1) {
       errors.push(`${where}: beat "${b.id}" is terminal but not last — the release ends the stem`);
+    }
+    if (b.ring) {
+      if (b.view !== 'circle') {
+        errors.push(`${where}: beat "${b.id}" has a ring but is in view "${b.view}" — the ring is the circle's`);
+      }
+      if (!(b.ring.from >= 0) || !(b.ring.to >= 0)) {
+        errors.push(`${where}: beat "${b.id}" has a negative ring — it is a multiple of the claim radius`);
+      }
     }
   }
 

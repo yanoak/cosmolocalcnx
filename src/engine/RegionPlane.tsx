@@ -12,8 +12,9 @@ import {
   regionTextureLayout,
   type RegionMeta,
 } from './region';
-import { cellAt, cellCentreKm, distanceFromCentreKm, type City } from './cities';
-import { POPULATION_RAMP, POPULATION_RAMP_OUTSIDE, UI_TOKENS } from './theme';
+import { cellCentreKm, distanceFromCentreKm, type City } from './cities';
+import { RegionColumns } from './RegionColumns';
+import { POPULATION_RAMP, POPULATION_RAMP_OUTSIDE, REGISTERS, UI_TOKENS } from './theme';
 
 /**
  * The REGION register: a flat plane carrying half of humanity.
@@ -196,6 +197,10 @@ export const RegionPlane = forwardRef<
     /** The world outside the circle. Absent is valid — the circle alone still works. */
     world?: { url: string; meta: RegionMeta } | null;
     worldMaterialRef?: React.RefObject<THREE.MeshBasicMaterial | null>;
+    /** The growing circle's radius, km. Columns beyond it recede; the ring is drawn here. */
+    ringKm?: number;
+    /** The claim radius, km. Past it the ring changes tone: the argument is made. */
+    claimKm?: number;
   }
 >(function RegionPlane(
   {
@@ -209,6 +214,8 @@ export const RegionPlane = forwardRef<
     highlight,
     world,
     worldMaterialRef,
+    ringKm = 0,
+    claimKm = 0,
   },
   ref,
 ) {
@@ -231,13 +238,22 @@ export const RegionPlane = forwardRef<
   );
   const cellKm = (2 * radiusKm) / gridSize;
 
+  /**
+   * The ring: a flat annulus whose radius follows `ringKm`. Rebuilt per radius, which
+   * is a 256-segment ring — cheap enough to do on every scroll tick. Its width is a
+   * fixed fraction of the field so it reads the same at every stage of the growth.
+   */
+  const ringWidth = Math.max(radiusKm / 250, 1);
+  const ringTone = ringKm > claimKm * 1.001 ? REGISTERS.page.muted : UI_TOKENS['ui.accent'];
+
   if (!texture) return null;
 
   const pick = (e: ThreeEvent<MouseEvent>) => {
     if (!interactive || !onPickCell) return;
     e.stopPropagation();
     // The plane is centred on the circle and laid flat, so the hit point IS the
-    // position in kilometres — no inverse projection needed.
+    // position in kilometres — no inverse projection needed. Only reached where no
+    // column stands, since the columns are raycast first and stop propagation.
     onPickCell([e.point.x, -e.point.z]);
   };
 
@@ -271,6 +287,23 @@ export const RegionPlane = forwardRef<
         opacity={1}
       />
     </mesh>
+
+    {field && (
+      <RegionColumns
+        field={field}
+        meta={meta}
+        ringKm={ringKm}
+        interactive={interactive}
+        onPickCell={onPickCell}
+      />
+    )}
+
+    {ringKm > 0 && (
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.3, 0]} raycast={() => null}>
+        <ringGeometry args={[Math.max(0, ringKm - ringWidth), ringKm, 256]} />
+        <meshBasicMaterial color={ringTone} toneMapped={false} />
+      </mesh>
+    )}
 
     {highlightCentre && (
       <mesh

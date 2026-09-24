@@ -6,9 +6,9 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { aeqdForward } from './aeqd';
 import { Buildings } from './Buildings';
-import { circleBounds, isometricFit, regionScale, stageFit, type Bounds, type CameraPose } from './camera';
+import { circleBounds, isometricFit, poseBetween, regionScale, stageFit, type Bounds, type CameraPose } from './camera';
 import { CameraRig } from './CameraRig';
-import { resolvePose, type Beat, type ViewFits } from './chapters';
+import { resolvePose, ringAt, type Beat, type ViewFits } from './chapters';
 import { DebugOverlay } from './DebugOverlay';
 import { Ground, GroundAreas } from './Ground';
 import { BackdropPlane, type BackdropSource } from './BackdropPlane';
@@ -151,7 +151,7 @@ function AnchorMarker({
 /**
  * A fixed isometric diorama you inspect, not a world you traverse.
  *
- * Orthographic camera, north up, in the attitude `camera.ts` fixes. MapControls constrained to pan and
+ * Orthographic camera on the isometric diagonal `camera.ts` fixes. MapControls constrained to pan and
  * zoom, never rotate: touch is the primary input and a visitor who rotates the
  * camera into a wall leaves a broken screen for the next person.
  *
@@ -179,6 +179,9 @@ export function Diorama({
   view = 'city',
   heroIds,
   beat = null,
+  nextBeat = null,
+  progress = 0,
+  claimKm = 0,
   beatDurationMs = 600,
   interactive = true,
   onArrive,
@@ -221,6 +224,20 @@ export function Diorama({
    * from the beat, which is the only way a view is ever chosen during a stem.
    */
   beat?: Beat | null;
+  /**
+   * The beat after this one, for a beat that moves CONTINUOUSLY with scroll — one with a
+   * ring. Its pose is then the way-point the camera is interpolated toward as `progress`
+   * runs 0–1, so the world pulls back as the ring grows rather than jumping at the
+   * beat boundary. Null on the last beat, or for beats that cut and tween.
+   */
+  nextBeat?: Beat | null;
+  /** 0–1 within the current beat. Drives the ring and, for a ring beat, the camera. */
+  progress?: number;
+  /**
+   * The claim radius, km: the distance from the circle's centre that holds half of
+   * humanity, derived from the committed field. What a beat's `ring` is a multiple of.
+   */
+  claimKm?: number;
   /** How long a move between beats takes. A view switch with no beat is a cut. */
   beatDurationMs?: number;
   /** Pan and zoom by hand. Off during the stem, where the wheel scrolls the story. */
@@ -312,10 +329,26 @@ export function Diorama({
    * otherwise the open view's own fit, centred on its world. A view switch is a cut and a
    * beat is a move — the duration is the whole difference.
    */
-  const pose = useMemo<CameraPose>(
-    () => (beat ? resolvePose(beat, fits) : { view, zoom: fits[view].zoom, target: fits[view].target }),
-    [beat, fits, view],
-  );
+  const pose = useMemo<CameraPose>(() => {
+    if (!beat) return { view, zoom: fits[view].zoom, target: fits[view].target };
+    const here = resolvePose(beat, fits);
+    // A ring beat is scroll-linked: the camera sits `progress` of the way to the next
+    // beat's pose, so the world recedes continuously as the circle grows.
+    if (beat.ring && nextBeat && nextBeat.view === beat.view) {
+      return poseBetween(here, resolvePose(nextBeat, fits), progress);
+    }
+    return here;
+  }, [beat, nextBeat, progress, fits, view]);
+  const continuous = !!(beat?.ring && nextBeat);
+
+  /**
+   * The growing circle's radius in km. A ring beat says; anything else holds the claim,
+   * which is what the bowl shows — the circle at half of humanity, the argument made.
+   */
+  const ringKm = useMemo(() => {
+    const fromBeat = beat ? ringAt(beat, progress, claimKm) : null;
+    return fromBeat ?? claimKm;
+  }, [beat, progress, claimKm]);
 
   /**
    * Which views have ever been opened.
@@ -361,7 +394,11 @@ export function Diorama({
 
           {/* Cuts the camera to the open view. Switching is a selection, not a
               journey — a tween here would be the rail coming back through the door. */}
-          <CameraRig pose={pose} durationMs={beat ? beatDurationMs : 0} onArrive={onArrive} />
+          <CameraRig
+            pose={pose}
+            durationMs={beat && !continuous ? beatDurationMs : 0}
+            onArrive={onArrive}
+          />
 
           {region && (
             <>
@@ -375,6 +412,8 @@ export function Diorama({
                   onPickCell={onPickCell}
                   highlight={highlight}
                   world={region.world ?? null}
+                  ringKm={ringKm}
+                  claimKm={claimKm}
                 />
                 <AnchorMarker at={[anchorStage[0] / k, -anchorStage[1] / k]} radiusKm={radiusKm} />
               </group>

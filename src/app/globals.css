@@ -97,6 +97,24 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
 .city-readout strong { font-weight: 600; }
 .city-readout span { color: var(--ui-text-muted); }
 
+/* The growing circle's counter, during the Present stem. Three figures on one line,
+   over the scene, in the reading register; the card above it carries the words. */
+.ring-readout {
+  position: absolute;
+  left: 16px; right: 16px; bottom: 64px;
+  z-index: 2;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  font-size: 0.9375rem;
+  color: var(--register-page-ink);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.ring-readout-km { font-weight: 600; }
+.ring-readout-share { color: var(--register-page-muted); }
+
 /* City labels sit in the DOM over the canvas, never baked into WebGL — the same
    rule the hotspot copy follows, and what keeps them selectable, translatable and
    readable by a screen reader. */

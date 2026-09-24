@@ -1,6 +1,6 @@
 ---
 slug: 2026-09-23_present-chapter
-status: draft
+status: active
 started: 2026-09-23
 finished:
 issue:
@@ -111,17 +111,17 @@ number and footnote the method** rather than implying a precision the field does
 - [ ] Regenerate **three** artefacts on 18.7912/99.0043 — the 3,437 km field, the 12,000 km world
       field, and `cities.json`, whose `km` coordinates are AEQD from the old centre — each with the
       byte-identical re-run test
-- [ ] `halfPopulationRadius()` and the cumulative curve, derived at build time and committed
-- [ ] The base — a still frame on Wat Ket, before anything grows
-- [ ] Extrude the field — instanced columns at 512², height by population
-- [ ] The radius as a shader uniform on the unlit material; inside/outside by distance from origin
-- [ ] Picking by instance id, replacing the texel lookup
-- [ ] The stem — circle growth driven by the chapter score, counter reading the curve
-- [ ] Camera zooms out as the circle grows, so the ring holds a roughly constant share of screen
-- [ ] Hand the bowl its release: pan, zoom and hover stay locked until the stem ends
-- [ ] Hover readout on a column — name, country, population
-- [ ] Copy, EN and TH
-- [ ] Update `aeqd.test.ts` — the 279.98 km anchor is no longer the claim
+- [x] `halfPopulationRadius()` and the cumulative curve, derived at build time and committed
+- [x] The base — a still frame on Wat Ket, before anything grows
+- [x] Extrude the field — instanced columns at 512², height by population
+- [x] The radius as a shader uniform on the unlit material; inside/outside by distance from origin
+- [x] Picking by instance id, replacing the texel lookup
+- [x] The stem — circle growth driven by the chapter score, counter reading the curve
+- [x] Camera zooms out as the circle grows, so the ring holds a roughly constant share of screen
+- [x] Hand the bowl its release: pan, zoom and hover stay locked until the stem ends
+- [x] Hover readout on a column — name, country, population
+- [ ] Copy, EN and TH — EN is the seeded sample in the doc; TH waits on the copy pipeline growing a Thai tab
+- [x] Update `aeqd.test.ts` — the 279.98 km anchor is no longer the claim
 
 ## UI mockups (ASCII)
 

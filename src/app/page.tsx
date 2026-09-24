@@ -35,7 +35,8 @@ import {
 import { Rail } from '@/engine/Rail';
 import { Scrolly, type BeatCopy } from '@/engine/Scrolly';
 import { Explore } from '@/engine/Explore';
-import { beatAt, releasedAt, type BeatPosition } from '@/engine/chapters';
+import { beatAt, releasedAt, ringAt, type BeatPosition } from '@/engine/chapters';
+import { halfPopulationRadius, peopleWithin } from '@/engine/region';
 import { SCORES } from '@/content/scores';
 import copyDoc from '@/content/copy.json';
 import { ViewHeader } from '@/engine/ViewHeader';
@@ -79,6 +80,31 @@ const REGION = (() => {
     world: asset.world,
   };
 })();
+
+/**
+ * The claim: how far from Wat Ket you go to hold half of humanity.
+ *
+ * Derived from the committed 12,000 km field's cumulative curve, never typed in, so the
+ * number on screen cannot drift from the raster it came from. Bracketed rather than
+ * quoted to the kilometre: the field excludes everything beyond 12,000 km of its
+ * centre — the Americas — so its own total is not the world's, and the honest answer
+ * is a range over plausible world populations. The middle figure drives the ring; the
+ * ends are the footnote.
+ */
+const WORLD_POPULATION = { low: 7.8e9, mid: 8.0e9, high: 8.2e9 } as const;
+const CLAIM = (() => {
+  const curve = REGION?.world?.meta.curve ?? REGION?.meta.curve ?? null;
+  if (!curve) return null;
+  return {
+    curve,
+    km: halfPopulationRadius(curve, WORLD_POPULATION.mid),
+    lowKm: halfPopulationRadius(curve, WORLD_POPULATION.low),
+    highKm: halfPopulationRadius(curve, WORLD_POPULATION.high),
+  };
+})();
+
+/** "about 3,400 km" — rounded to the nearest hundred, which is all the bracket supports. */
+const roundKm = (km: number) => Math.round(km / 100) * 100;
 
 /**
  * The relief backdrop, resolved the same way. Absent is a valid state: a scene with
@@ -478,10 +504,25 @@ export default function Page() {
               onPickCell={onPickCell}
               highlight={pickedCell}
               beat={mode === 'stem' ? beat : null}
+              nextBeat={mode === 'stem' ? score.beats[position.index + 1] ?? null : null}
+              progress={position.t}
+              claimKm={CLAIM?.km ?? 0}
               interactive={mode === 'explore'}
             />
           </div>
         </div>
+        {mode === 'stem' && chapter === 'present' && CLAIM && beat.ring && (() => {
+          const km = ringAt(beat, position.t, CLAIM.km) ?? 0;
+          const people = peopleWithin(CLAIM.curve, km);
+          const share = people / WORLD_POPULATION.mid;
+          return (
+            <p className="ring-readout" aria-live="off">
+              <span className="ring-readout-km">{Math.round(km).toLocaleString()} km</span>
+              <span className="ring-readout-people">{(people / 1e9).toFixed(2)} bn</span>
+              <span className="ring-readout-share">{(share * 100).toFixed(0)}% of everyone</span>
+            </p>
+          );
+        })()}
         {mode === 'explore' && (
         <div className="view-caption" aria-live="polite">
           {view === 'circle' ? (
@@ -499,10 +540,14 @@ export default function Page() {
               </p>
             ) : (
               <p>
-                <strong>4.09 billion people live inside this circle. 4.10 billion live
-                everywhere else.</strong>{' '}
+                <strong>
+                  Half of everyone alive lives within about{' '}
+                  {CLAIM ? roundKm(CLAIM.km).toLocaleString() : '3,400'} km of here.
+                </strong>{' '}
                 <span>
-                  Wat Ket is 280 km from its centre — 8% of the way to the rim.
+                  {CLAIM
+                    ? `${Math.round(CLAIM.lowKm).toLocaleString()}–${Math.round(CLAIM.highKm).toLocaleString()} km for a world of 7.8–8.2 billion; the field stops 12,000 km out.`
+                    : ''}
                 </span>
               </p>
             )
