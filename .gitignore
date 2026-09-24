@@ -104,3 +104,6 @@ docs/programme-context.md
 
 # Riverbanks studio material (talk notes; names people, local only)
 riverbanks/
+
+# scripts/build-cells.py scratch: the ndjson and mbtiles tippecanoe works from.
+data/cells-build/
