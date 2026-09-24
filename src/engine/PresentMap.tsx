@@ -143,6 +143,11 @@ export function PresentMap({
       style: presentStyle(basemapUrl, cellsUrl, latest.current.claimKm, levels),
       ...cameraOf(latest.current.pose),
       maxPitch: 85,
+      // The cells archive starts at zoom 2, where the whole 12,000 km disc still fits the
+      // stage; below it there would be no population at all. The basemap stops at 6 and
+      // both overzoom cleanly to 9.
+      minZoom: 2,
+      maxZoom: 9,
       attributionControl: false,
       interactive: true,
       // Development only: keeps the drawn frame readable, so a script can sample the

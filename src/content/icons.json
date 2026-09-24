@@ -1,0 +1,198 @@
+{
+  "_about": "Written by scripts/keep-icons.py. anchor is the ground point as a fraction of width and height.",
+  "size": 1024,
+  "icons": [
+    {
+      "id": "station",
+      "chapter": "past",
+      "file": "/icons/station.webp",
+      "width": 1024,
+      "height": 758,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "khun-tan",
+      "chapter": "past",
+      "file": "/icons/khun-tan.webp",
+      "width": 1024,
+      "height": 1015,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "airport",
+      "chapter": "past",
+      "file": "/icons/airport.webp",
+      "width": 1024,
+      "height": 911,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "wat-ket",
+      "chapter": "present",
+      "file": "/icons/wat-ket.webp",
+      "width": 1024,
+      "height": 985,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "ban-tawan",
+      "chapter": "futures",
+      "file": "/icons/ban-tawan.webp",
+      "width": 922,
+      "height": 1024,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "wua-lai",
+      "chapter": "futures",
+      "file": "/icons/wua-lai.webp",
+      "width": 733,
+      "height": 1024,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "lanna-world-school",
+      "chapter": "futures",
+      "file": "/icons/lanna-world-school.webp",
+      "width": 1024,
+      "height": 875,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "anusarn",
+      "chapter": "futures",
+      "file": "/icons/anusarn.webp",
+      "width": 1024,
+      "height": 865,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "kae",
+      "chapter": "futures",
+      "file": "/icons/kae.webp",
+      "width": 1024,
+      "height": 1002,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "wat-umong",
+      "chapter": "futures",
+      "file": "/icons/wat-umong.webp",
+      "width": 1024,
+      "height": 872,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "doi-suthep",
+      "chapter": "futures",
+      "file": "/icons/doi-suthep.webp",
+      "width": 1024,
+      "height": 946,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "doi-saket",
+      "chapter": "futures",
+      "file": "/icons/doi-saket.webp",
+      "width": 1024,
+      "height": 818,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "lamphun-hills",
+      "chapter": "futures",
+      "file": "/icons/lamphun-hills.webp",
+      "width": 960,
+      "height": 1024,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "lamphun-town",
+      "chapter": "futures",
+      "file": "/icons/lamphun-town.webp",
+      "width": 1024,
+      "height": 816,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "mae-taeng",
+      "chapter": "futures",
+      "file": "/icons/mae-taeng.webp",
+      "width": 1024,
+      "height": 912,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    },
+    {
+      "id": "chiang-dao",
+      "chapter": "futures",
+      "file": "/icons/chiang-dao.webp",
+      "width": 923,
+      "height": 1024,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r1-1"
+    }
+  ]
+}

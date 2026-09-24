@@ -6,7 +6,7 @@
   },
   "en": {
     "overall": {
-      "title": "Wat Ket, 2045",
+      "title": "Wat Ket and the world",
       "past": {
         "tense": "Past",
         "place": "The valley"
@@ -25,52 +25,52 @@
         {
           "id": "river",
           "kicker": "1867",
-          "headline": "The river was the road",
-          "body": "Bangkok to Chiang Mai took about three months upstream - a month of it working through [thirty-two rapids](https://www.gutenberg.org/ebooks/63818). One documented journey, not an average. The Ping was vital, seasonal and difficult."
+          "headline": "The Ping carried people and goods through the valley",
+          "body": "One documented journey from Bangkok to Chiang Mai took about three months upstream, including a month working through thirty-two rapids. The river was vital, seasonal and difficult."
         },
         {
           "id": "caravans",
-          "kicker": "Yunnan to Lan Na",
-          "headline": "Trade is documented. A route is not.",
-          "body": "Mule caravans linked Chiang Mai into the trading world of southwest China. What cannot be drawn is a single road: routes shifted with politics, water, security and season, so this layer is a corridor, not a line."
+          "kicker": "Caravan routes",
+          "headline": "Caravans crossed the mountains by many routes",
+          "body": "Mule caravans linked Chiang Mai with the trading worlds of southwest China. Their paths shifted with season, water, security and politics, so the map shows a corridor rather than a single road."
         },
         {
           "id": "roads",
           "kicker": "1969",
-          "headline": "Tarmac, on a different alignment",
-          "body": "Highway 11 reached the city from the south-east as the last section of the Superhighway. It did not pave a caravan trail; it is a separate layer of the network, drawn from [OpenStreetMap](https://www.openstreetmap.org/copyright)."
+          "headline": "The highway arrived on a new alignment",
+          "body": "Highway 11 entered Chiang Mai from the south-east as the last section of the Superhighway. It was not a caravan trail paved over, but a new layer of connection across the valley."
         },
         {
           "id": "rail",
-          "kicker": "1 January B.E. 2464",
-          "headline": "The line reached Chiang Mai",
-          "body": "The Northern Line arrived through the Khun Tan tunnel, 1,352 m long and eleven years in the digging. A three-month river journey became a timetable. Modern sources render the year as 1921 or 1922; the archive gives the Thai date, so we do too."
+          "kicker": "1922",
+          "headline": "The railway turned a journey into a timetable",
+          "body": "The Northern Line reached Chiang Mai through the 1,352-metre Khun Tan tunnel. A journey once governed by rapids, water levels and season could now run on fixed tracks and a timetable."
         },
         {
           "id": "air",
-          "kicker": "1934, then 2013",
-          "headline": "The connection with no route",
-          "body": "The airport opened in 1934. The city's first coworking space followed in 2013. Work now arrives from everywhere at once, and there is no line to draw for it - which is why this is where the past hands over."
+          "kicker": "2013",
+          "headline": "Remote work brought a connection with no route",
+          "body": "By the mid-2010s, people could live in Chiang Mai while working for somewhere else. Unlike river, road or rail, that connection had no surveyable line — the seam where the mapped past runs out."
         }
       ],
       "hotspots": [
         {
           "id": "station",
           "label": "Chiang Mai railway station",
-          "blurb": "The national terminus, 1.57 km from here.",
-          "body": "The railway landed almost beside the older river-commercial landscape - the new connection on top of the old one."
+          "blurb": "The national terminus landed 1.57 km from Wat Ket.",
+          "body": "Rail arrived almost on top of the older river-commercial landscape. A new long-distance network connected to the old one here."
         },
         {
           "id": "khun-tan",
           "label": "Khun Tan tunnel",
-          "blurb": "1,352 m, built 1907-1918.",
-          "body": "Dangerous and disease-prone. A frequently repeated toll of more than a thousand deaths has not been independently verified, and this piece does not repeat it as fact."
+          "blurb": "A tunnel through 1,352 metres of mountain.",
+          "body": "Building it was dangerous and disease-prone. The often-repeated claim that more than a thousand people died there has never been firmly verified."
         },
         {
           "id": "airport",
           "label": "Chiang Mai airport",
-          "blurb": "Operations began in 1934.",
-          "body": "It joined the national airports authority on 1 March 1988 - a different event, often conflated with the opening."
+          "blurb": "Air travel added another route into the valley.",
+          "body": "Air travel added another way into the valley. Decades later, it became one of the conditions that allowed people to stay in Chiang Mai while their work remained somewhere else."
         }
       ]
     },
@@ -78,29 +78,30 @@
       "beats": [
         {
           "id": "here",
-          "kicker": "Present",
-          "headline": "Start here",
-          "body": "One point, on Wat Ket. Half of everyone alive is closer to it than you think."
+          "kicker": "Wat Ket",
+          "headline": "The circle starts here",
+          "body": "The raised cells show where people live. Wat Ket is the point from which this chapter measures distance."
         },
         {
           "id": "grow",
-          "kicker": "3,400 km",
-          "headline": "How far to reach half the world",
-          "body": "A circle grows out from Wat Ket. At 1,000 km it holds four percent of the world's people; at 2,000 km, a fifth; at about 3,400 km, half. Counted from [GHS-POP](https://ghsl.jrc.ec.europa.eu/), the same field the columns are drawn from."
+          "kicker": "About 3,400 km",
+          "headline": "Half of humanity lives within this distance of Wat Ket",
+          "body": "At 1,000 km the circle holds 3.6% of the world's population. At 2,000 km it holds 20.1%. By about 3,400 km from Wat Ket, it reaches half.",
+          "footnote": "With a world total of 8.0 billion, the half-population radius is 3,416 km. It is 3,303 km at 7.8 billion and 3,524 km at 8.2 billion; the headline rounds to about 3,400 km."
         },
         {
           "id": "flatten",
           "kicker": "6,000 km",
-          "headline": "And then it stops growing",
-          "body": "The next three thousand kilometres add a sixth as much again. The circle that holds half of humanity is not much bigger than the one that holds a fifth."
+          "headline": "After halfway, the curve flattens",
+          "body": "At 6,000 km the circle holds 59.5% of the world's population. Beyond halfway, each extra kilometre brings relatively few more people inside."
         }
       ],
       "hotspots": [
         {
           "id": "wat-ket",
           "label": "Wat Ket",
-          "blurb": "The centre of this circle.",
-          "body": "Moving the centre here from the mathematically best point costs almost nothing. Wat Ket is not near a centre of the world's population; it is one."
+          "blurb": "Move the centre here and the answer barely changes.",
+          "body": "The older Valeriepieris circle has a radius of 3,437 km and is centred about 280 km away. Re-centering the calculation on Wat Ket changes the distance very little: the story here is how far the circle travels, not a claim that Wat Ket is a special mathematical centre."
         }
       ]
     },
@@ -108,101 +109,101 @@
       "beats": [
         {
           "id": "gen-c",
-          "kicker": "2045",
-          "headline": "A generation that grew up here",
-          "body": "Imagine a hundred children conceived around Cosmo Local CNX in 2026, born in 2027, turning eighteen now. Call them Gen C. This is the city they grew up in."
+          "kicker": "Faiways",
+          "headline": "This is one Chiang Mai in 2045",
+          "body": "The newspaper and the places pinned here belong to one Chiang Mai in 2045. Follow the pins to see how its residents learn, farm, travel and work."
         },
         {
           "id": "fai",
-          "kicker": "The fai",
-          "headline": "How to drink from a river without drowning",
-          "body": "A fai is a weir. It does not hoard the river or block it; it slows the water and shares the flow through smaller channels, letting the rest run on. Every place on this map found its own fai."
+          "kicker": "Mueang fai",
+          "headline": "A weir shares the flow without stopping the river",
+          "body": "A fai slows water and sends some of it through smaller channels while the river continues downstream. Across this Chiang Mai, communities connect with the world while keeping control of their land, skills and institutions."
         },
         {
           "id": "ban-tawan",
-          "kicker": "2026",
-          "headline": "Ban Tawan",
-          "body": "A front-porch shop just inside the eastern gate, in the shadow of the sunrise. The first Journeyfolk mark was issued here."
+          "kicker": "Journeyfolk",
+          "headline": "Craft training pays the teacher, not the institution",
+          "body": "Apprentices enter through a named Master and a community trust. Every funded foreign place supports a Thai place too, while the people who hold the craft keep the final say."
         },
         {
           "id": "lanna-world-school",
-          "kicker": "2029",
-          "headline": "Lanna World School",
-          "body": "Forty-one children in a borrowed shed in Wat Ket. By 2034 a joint demonstration school of all eight universities in the city."
+          "kicker": "Lanna World School",
+          "headline": "Local and international children share one school system",
+          "body": "Lanna World School is a joint demonstration school of all eight Chiang Mai universities. Thai sits at the core of the curriculum, with English, Mandarin and an IB year opening outward from it."
         }
       ],
       "hotspots": [
         {
           "id": "ban-tawan",
           "label": "Ban Tawan",
-          "blurb": "Where the apprenticeship system began.",
-          "body": "Sample body. Replace with copy adapted from the Faiways piece on Journeyfolk."
+          "blurb": "The trust that learned not to scale.",
+          "body": "Journeyfolk limits each Master to three apprentices because the scarce resource is attention. Outside money pays people to teach, but the trust keeps control over who enters and how the system grows."
         },
         {
           "id": "wua-lai",
           "label": "Wua Lai",
-          "blurb": "The silver quarter. The 5,000th mark was issued here.",
-          "body": "Sample body."
+          "blurb": "The 5,000th Journeyfolk Mark leaves the silver quarter.",
+          "body": "A lineage mark follows every registered piece: Master, apprentice and village. The system exports people and relationships more readily than it exports ownership of the craft itself."
         },
         {
           "id": "lanna-world-school",
           "label": "Lanna World School",
-          "blurb": "The shed, then the campus.",
-          "body": "Sample body."
+          "blurb": "One school for the city's children and the world's.",
+          "body": "Thai national education, three languages and an international diploma sit inside the same institution. Its graduates do not have to choose between being rooted here and working across borders."
         },
         {
           "id": "anusarn",
           "label": "Anusarn",
-          "blurb": "The school's second site.",
-          "body": "Sample body."
+          "blurb": "The school spreads through the city instead of retreating behind a gate.",
+          "body": "Lanna World School uses more than one site rather than separating itself into an enclosed international campus. The neighbourhood remains part of the education."
         },
         {
           "id": "kae",
           "label": "KAE, Wiang Kum Kam",
-          "blurb": "Headquartered in the ruins of the old city.",
-          "body": "Sample body. Zones over river and mountain, not points."
+          "blurb": "Climate response became an industry of its own.",
+          "body": "KAE sends multilingual field teams wherever floods, fires and other climate emergencies overwhelm local capacity. Its open methods and training networks bring relief money and specialist skills back through northern Thailand."
         },
         {
           "id": "wat-umong",
           "label": "Wat Umong",
-          "blurb": "Waste for Merit, eighteen years on.",
-          "body": "Sample body."
+          "blurb": "Waste for Merit turns rubbish back into neighbourhood resources.",
+          "body": "Food scraps become compost for the temple food forest. Recyclables feed a small fabrication lab, while service and teaching can be exchanged for food without every transaction passing through money."
         },
         {
           "id": "doi-suthep",
           "label": "Doi Suthep",
-          "blurb": "L-Pop. A frequency the mountain was already making.",
-          "body": "Sample body."
+          "blurb": "At L-Pop, the mountain is the headliner.",
+          "body": "The festival is built around long silences and a low-frequency resonance measured along the ridge. Its clinicians call it regulation rather than cure: a place to quiet the nervous system before slower work continues elsewhere."
         },
         {
           "id": "doi-saket",
           "label": "Doi Saket",
-          "blurb": "The farm that invented uncareering, closing this year.",
-          "body": "Sample body."
+          "blurb": "The farm that invented uncareering is closing.",
+          "body": "Its tool libraries, kitchens and mutual-credit practices have spread far beyond the place that began them. The land returns to agriculture because the institution has become less necessary than the habits it helped create."
         },
         {
           "id": "lamphun-hills",
           "label": "Lamphun hills",
-          "blurb": "Where the drones were first put to work.",
-          "body": "Sample body."
+          "blurb": "The drones work because the village owns the system.",
+          "body": "Farmers pool repairs, maintain shared solar stations and earn flight time by working on the network. The drones carry shade-grown crops down steep slopes, making forest farming practical without clearing the mountain."
         },
         {
           "id": "lamphun-town",
           "label": "Lamphun",
-          "blurb": "An early member of the Ping Plexus - now 67 districts, the newest in Tanzania.",
-          "body": "Sample body."
+          "blurb": "Mobility became reciprocal.",
+          "body": "Lamphun is an early member of the Ping Plexus, now a network of 67 districts. Its basic rule is that hospitality should run both ways: communities that receive mobile people should gain routes outward too."
         },
         {
           "id": "mae-taeng",
           "label": "Mae Taeng",
-          "blurb": "Highland tea, sold in three languages.",
-          "body": "Sample body."
+          "blurb": "Highland tea travels farther than the people growing it.",
+          "body": "Growers work across local farms and distant markets without moving production out of the mountains. Thai, Mandarin and English carry the crop through different parts of the same trading network."
         },
         {
           "id": "chiang-dao",
           "label": "Chiang Dao",
-          "blurb": "64 km north. Off the edge of this map.",
-          "body": "Sample body. Drone agriculture and the Ping Pass."
+          "blurb": "64 km north, beyond the edge of this map.",
+          "body": "Shared drones work as flying pack mules for forest-grown crops in the highlands. The Ping Pass carries a different kind of route outward: slow, reciprocal travel through the wider Plexus."
         }
       ]
     }

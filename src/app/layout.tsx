@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import copy from '@/content/copy.json';
 import { IBM_Plex_Sans_Thai } from 'next/font/google';
 import { cssCustomProperties } from '@/engine/theme';
 import './globals.css';
@@ -21,8 +22,11 @@ const plexThai = IBM_Plex_Sans_Thai({
   display: 'swap',
 });
 
+/** The title is the copy doc's — the one place the whole piece is named. */
+const TITLE = (copy as { en?: { overall?: { title?: string } } }).en?.overall?.title ?? 'Wat Ket and the world';
+
 export const metadata: Metadata = {
-  title: 'Wat Ket 2045',
+  title: TITLE,
   description:
     'Arguable futures for Wat Ket, Chiang Mai — an exhibition piece for Nomad Futures Lab.',
 };

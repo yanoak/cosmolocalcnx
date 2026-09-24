@@ -121,8 +121,12 @@ All recorded in `CLAUDE.md`; listed so you know they exist.
 - **Commit trailers:** `Plan: <slug>` with **no blank line** before `Co-Authored-By`, or git drops
   it and the diary files the commit under Unplanned. Check with
   `git log -1 --pretty=format:'%(trailers:key=Plan,valueonly)'`.
-- **Chrome screenshots of `/` time out.** `/design` captures fine. For `/`, use the console
-  (`read_console_messages` after a reload — tracking starts on first call) and `curl` the HTML.
+- **Chrome screenshots of `/` from the extension are useless for WebGL**: the automation tab
+  is hidden, so no animation frame runs, MapLibre never loads its style, and captures omit the
+  canvas anyway. **Use headless Chromium instead**: Playwright is installed in the session
+  scratchpad (`npm i playwright`, `npx playwright install chromium`), launched with
+  `--use-angle=swiftshader --enable-unsafe-swiftshader`; `window.__presentMap` is exposed in
+  development for probing, and the map keeps its drawing buffer there so pixels can be sampled.
 - **Dev server is usually already running** on :3000.
 - `./scripts/work-diary.py` at the start of each day, and after commits to regenerate the table.
 - Writing to the Google Doc: `gws docs documents batchUpdate --params '{"documentId":…}' --json '…'`;

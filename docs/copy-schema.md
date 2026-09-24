@@ -23,7 +23,7 @@ doc. The engineering side is `plans/2026-09-24_copy-from-archieml.plan.md`.
 ## Overall
 
 ```
-title: Wat Ket, 2045
+title: Wat Ket and the world
 
 past.tense: Past
 past.place: The valley
@@ -45,10 +45,16 @@ what they can hover and click once released to explore.
 [beats]
 id: river
 kicker: 1867
-headline: The river was the road
-body: Three months upstream from Bangkok, a month of it through
-[thirty-two rapids](https://www.gutenberg.org/ebooks/63818). Frame this
-as one documented journey, not an average.
+headline: The Ping carried people and goods through the valley
+body: One documented journey from Bangkok to Chiang Mai took about three
+months upstream, including a month working through thirty-two rapids.
+:end
+
+id: grow
+kicker: About 3,400 km
+headline: Half of humanity lives within this distance of Wat Ket
+body: At 1,000 km the circle holds 3.6% of the world's population…
+footnote: With a world total of 8.0 billion, the half-population radius is 3,416 km…
 :end
 
 id: caravans
@@ -74,6 +80,7 @@ the Thai date, so we do too.
 | `kicker` | The small line above the headline — a date, a place, a category |
 | `headline` | The card's title |
 | `body` | The card text. Paragraphs are separated by a blank line; links allowed |
+| `footnote` | Optional. A quieter line under the body — the method behind a number, a caveat. One line, no paragraphs |
 | `label` | The hotspot's name, on hover |
 | `blurb` | One or two lines in the hover popup |
 | `body` (hotspot) | The full write-up in the modal or story overlay |

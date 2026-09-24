@@ -23,6 +23,12 @@ export interface BeatCopy {
   kicker?: string;
   headline?: string;
   body?: string;
+  /**
+   * A quieter line under the body — the method behind a number, a source, a caveat.
+   * Added 24 Sep 2026 with the revised copy, whose Present chapter keeps the
+   * population bracket here rather than in the headline.
+   */
+  footnote?: string;
 }
 
 export function Scrolly({
@@ -63,6 +69,7 @@ export function Scrolly({
                     )}
                   </p>
                 ))}
+              {c?.footnote && <p className="body body--muted footnote">{c.footnote}</p>}
             </article>
           </section>
         );
