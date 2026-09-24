@@ -110,3 +110,6 @@ data/cells-build/
 
 # MapLibre worker, copied from node_modules on postinstall — see scripts/copy-maplibre-worker.sh.
 public/maplibre/
+
+# Icon generation scratch: probe, candidates and the KV refs copied in. Chosen icons go to public/icons/.
+data/icons/

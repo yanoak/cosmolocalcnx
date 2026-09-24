@@ -1,0 +1,101 @@
+{
+  "_about": "One entry per hotspot icon. `id` is the hotspot id (the join to copy and coordinates). `subject` is the only part of the prompt that differs per icon; the style block lives in gen-icons.py so the set cannot drift. Subjects are drawn from docs/references/wat-ket-exhibition-copy-gpt.md and docs/research/2026-09-23_futures-chapter.context.md.",
+  "icons": [
+    {
+      "id": "station",
+      "chapter": "past",
+      "label": "Chiang Mai railway station",
+      "subject": "a 1920s Thai railway terminus: a long cream station building with a tiered Lanna-style gabled roof, a platform canopy on slender columns, and a small steam locomotive with one carriage standing at the platform"
+    },
+    {
+      "id": "khun-tan",
+      "chapter": "past",
+      "label": "Khun Tan tunnel",
+      "subject": "a forested mountain ridge with a cream stone tunnel portal cut into its base, a single railway track running into the dark arch, dense purple forest on the slopes above"
+    },
+    {
+      "id": "airport",
+      "chapter": "past",
+      "label": "Chiang Mai airport",
+      "subject": "a small regional airport: a low cream terminal with a glass front, a control tower beside it, one small passenger jet parked on the apron with a set of stairs"
+    },
+    {
+      "id": "wat-ket",
+      "chapter": "present",
+      "label": "Wat Ket",
+      "subject": "a riverside Lanna temple: a cream wihan hall with a steep three-tiered roof and gold roof finials, a white bell-shaped chedi behind it, a short flight of steps with naga balustrades, a few purple trees at the wall"
+    },
+    {
+      "id": "ban-tawan",
+      "chapter": "futures",
+      "label": "Ban Tawan — Journeyfolk trust",
+      "subject": "a traditional teak craft workshop house raised on posts: open-sided, a master's long workbench with exactly three apprentice stools, hand tools hung on a board, a small shrine shelf, a mango tree beside it"
+    },
+    {
+      "id": "wua-lai",
+      "chapter": "futures",
+      "label": "Wua Lai — the silver quarter",
+      "subject": "a silversmith's shophouse in a craft street: a two-storey cream shophouse with a wide open ground floor, an oversized repoussé silver bowl displayed in front, a small anvil and hammer, gold detailing on the balcony"
+    },
+    {
+      "id": "lanna-world-school",
+      "chapter": "futures",
+      "label": "Lanna World School",
+      "subject": "a school that grew from a shed: a small timber shed with a corrugated roof beside a newer two-storey cream classroom block with open verandas, a bell on a post, a rack of children's bicycles, a courtyard tree"
+    },
+    {
+      "id": "anusarn",
+      "chapter": "futures",
+      "label": "Anusarn — the second site",
+      "subject": "a school spread through a market street: a row of three cream shophouses with awnings and a covered walkway between them, a rooftop open-air classroom with a shade sail, market stalls at street level"
+    },
+    {
+      "id": "kae",
+      "chapter": "futures",
+      "label": "KAE, Wiang Kum Kam",
+      "subject": "the headquarters of a disaster-response corps set among ancient brick chedi ruins: a low modern cream hangar with its door open, a small rescue drone lifting off, a stack of relief crates, a slender radio mast, two ruined purple chedi behind"
+    },
+    {
+      "id": "wat-umong",
+      "chapter": "futures",
+      "label": "Wat Umong — Waste for Merit",
+      "subject": "a forest temple on a brick mound with arched tunnel entrances and a bell-shaped chedi on top, surrounded by a community food forest of fruit trees, raised compost beds, and a small open fabrication workshop shed with a solar roof"
+    },
+    {
+      "id": "doi-suthep",
+      "chapter": "futures",
+      "label": "Doi Suthep — L-Pop",
+      "subject": "a mountain ridge with a golden chedi on its summit and, on a lower shoulder of the ridge, a small open-air festival platform ringed by tall slender resonance posts, with concentric low ripples radiating across the slope"
+    },
+    {
+      "id": "doi-saket",
+      "chapter": "futures",
+      "label": "Doi Saket — Uncareering Farm",
+      "subject": "a small commons farm: a cluster of timber farm buildings around a yard, an open tool library shed with tools racked on the wall, one long shared outdoor table, terraced vegetable rows, a rice barn"
+    },
+    {
+      "id": "lamphun-hills",
+      "chapter": "futures",
+      "label": "Lamphun hills — drone agriculture",
+      "subject": "a steep forested hillside with narrow terraces of shade-grown crops under trees, a bamboo-framed cargo drone carrying a crate down the slope, a small solar charging station with panels on the ridge"
+    },
+    {
+      "id": "lamphun-town",
+      "chapter": "futures",
+      "label": "Lamphun — the Ping Plexus",
+      "subject": "an old walled town: a gilded chedi within a cream temple wall, a stretch of moat and old brick town wall, a small guesthouse with a veranda outside the wall, and a fingerpost with several arms pointing in different directions"
+    },
+    {
+      "id": "mae-taeng",
+      "chapter": "futures",
+      "label": "Mae Taeng — highland tea",
+      "subject": "a highland tea plantation: curved terraces of clipped tea bushes on a hillside, a cream tea-drying house with a wide roof and a chimney, a few stacked tea chests, a winding mountain road"
+    },
+    {
+      "id": "chiang-dao",
+      "chapter": "futures",
+      "label": "Chiang Dao — beyond the edge",
+      "subject": "a tall jagged limestone mountain peak with a dark cave mouth at its foot, forest on the lower slopes, a bamboo cargo drone in the air beside the peak, a mountain pass road curving away behind it"
+    }
+  ]
+}
