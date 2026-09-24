@@ -26,7 +26,16 @@ html, body {
    overflow hidden either way: nothing outside the viewer ever scrolls. */
 .viewer.is-stem { overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y proximity; }
 .viewer.is-stem .topbar { position: sticky; top: 0; z-index: 3; background: var(--cosmo-offWhite); }
-.viewer.is-stem .stage { position: sticky; top: 0; height: 100dvh; flex: none; z-index: 1; }
+/* The stage sticks BELOW the bar, not at 0: both are sticky in the same container, and
+   at 0 the stage slides under the bar and loses its top strip. `--topbar-h` is measured
+   in page.tsx. */
+.viewer.is-stem .stage {
+  position: sticky;
+  top: var(--topbar-h, 0px);
+  height: calc(100dvh - var(--topbar-h, 0px));
+  flex: none;
+  z-index: 1;
+}
 
 /* No rule under the bar. The panels draw no boxes and no hairlines: a section is a
    kicker over a headline on a white page, and the rail is the only ornament. The bar

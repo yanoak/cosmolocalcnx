@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Diorama } from '@/engine/Diorama';
 import { nearestCity, type City } from '@/engine/cities';
 import { pickLabels } from '@/engine/cities';
@@ -238,6 +238,25 @@ export default function Page() {
   const [mode, setMode] = useState<'stem' | 'explore'>('stem');
   const [position, setPosition] = useState<BeatPosition>({ index: 0, t: 0 });
   const viewer = useRef<HTMLElement>(null);
+  const topbar = useRef<HTMLDivElement>(null);
+
+  /**
+   * How tall the bar is, as a CSS variable on the viewer. In the stem the bar and the
+   * stage are both sticky in the same scroll container, so the stage has to stick
+   * BELOW the bar or it slides under it and loses its top strip — the ring readout,
+   * the top of the map, a pin near the north edge. The bar's height depends on its
+   * content and the viewport, so it is measured rather than assumed.
+   */
+  useLayoutEffect(() => {
+    const bar = topbar.current;
+    const host = viewer.current;
+    if (!bar || !host) return;
+    const set = () => host.style.setProperty('--topbar-h', `${Math.round(bar.getBoundingClientRect().height)}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(bar);
+    return () => ro.disconnect();
+  }, []);
   const score = SCORES[chapter];
   const beat = score.beats[position.index] ?? score.beats[0];
   const beatCopy = useMemo<BeatCopy[]>(() => {
@@ -568,7 +587,7 @@ export default function Page() {
       className={mode === 'stem' ? 'viewer is-stem' : 'viewer'}
       onScroll={onScroll}
     >
-      <div className="topbar">
+      <div className="topbar" ref={topbar}>
         <ViewHeader chapter={chapter} view={view} />
         <div className="controls">
           {pending && <span className="lod-status">loading full geometry…</span>}
