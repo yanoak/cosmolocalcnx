@@ -65,6 +65,8 @@ export interface MapPick {
   lon: number;
   people: number;
   distKm: number;
+  /** Where on the map's own box the pointer was, in CSS px — for a tooltip that follows it. */
+  point: [number, number];
 }
 
 function cameraOf(pose: MapPose): CameraOptions {
@@ -124,7 +126,8 @@ export function PresentMap({
   interactive: boolean;
   /** Cities that carry a permanent label. */
   labels: readonly City[];
-  onPick?: (pick: MapPick) => void;
+  /** A cell under the pointer, or null when the pointer has left the cells. */
+  onPick?: (pick: MapPick | null) => void;
   /** Once, after the first frame in which every source has loaded and drawn. */
   onReady?: () => void;
 }) {
@@ -218,11 +221,15 @@ export function PresentMap({
         lon: e.lngLat.lng,
         people: Number(p.p ?? 0),
         distKm: Number(p.d ?? 0),
+        point: [e.point.x, e.point.y],
       });
     };
+    const unpick = () => pickHandler.current?.(null);
     for (const level of levels) {
       m.on('mousemove', `cells-${level.layer}`, pick);
       m.on('click', `cells-${level.layer}`, pick);
+      // Hover is the laptop's; a tap leaves its tooltip standing until the next tap.
+      m.on('mouseleave', `cells-${level.layer}`, unpick);
     }
 
     // Every tile that lands is more cells to index and bring up to the ring.

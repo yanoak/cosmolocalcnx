@@ -675,6 +675,25 @@ export default function Page() {
                   onPick={setMapPick}
                   onReady={() => setMapReady(true)}
                 />
+                {/* The cell under the pointer, beside it: a place, its people, its distance.
+                    Yan, 24 Sep 2026 — it sat in the caption and nobody looked down there.
+                    Flips to the pointer's left past the middle so it never leaves the box. */}
+                {mode === 'explore' && mapPick && (
+                  <div
+                    className={mapPick.point[0] > (stage.current?.clientWidth ?? 0) / 2 ? 'cell-tip is-left' : 'cell-tip'}
+                    style={{ left: mapPick.point[0], top: mapPick.point[1] }}
+                    role="status"
+                  >
+                    <strong>
+                      {pickedCities.length > 0
+                        ? `${pickedCities[0].name}, ${pickedCities[0].country}`
+                        : 'This cell'}
+                    </strong>
+                    <span>
+                      {mapPick.people.toLocaleString()} people · {mapPick.distKm.toLocaleString()} km from Wat Ket
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -694,31 +713,17 @@ export default function Page() {
         {mode === 'explore' && (
         <div className="view-caption" aria-live="polite">
           {view === 'circle' ? (
-            mapPick ? (
-              <p className="city-readout">
-                <strong>
-                  {pickedCities.length > 0
-                    ? `${pickedCities[0].name}, ${pickedCities[0].country}`
-                    : 'This cell'}
-                </strong>{' '}
-                <span>
-                  {mapPick.people.toLocaleString()} people ·{' '}
-                  {mapPick.distKm.toLocaleString()} km from Wat Ket
-                </span>
-              </p>
-            ) : (
-              <p>
-                <strong>
-                  Half of everyone alive lives within about{' '}
-                  {CLAIM ? roundKm(CLAIM.km).toLocaleString() : '3,400'} km of here.
-                </strong>{' '}
-                <span>
-                  {CLAIM
-                    ? `${Math.round(CLAIM.lowKm).toLocaleString()}–${Math.round(CLAIM.highKm).toLocaleString()} km for a world of 7.8–8.2 billion; the field stops 12,000 km out.`
-                    : ''}
-                </span>
-              </p>
-            )
+            <p>
+              <strong>
+                Half of everyone alive lives within about{' '}
+                {CLAIM ? roundKm(CLAIM.km).toLocaleString() : '3,400'} km of here.
+              </strong>{' '}
+              <span>
+                {CLAIM
+                  ? `${Math.round(CLAIM.lowKm).toLocaleString()}–${Math.round(CLAIM.highKm).toLocaleString()} km for a world of 7.8–8.2 billion; the field stops 12,000 km out.`
+                  : ''}
+              </span>
+            </p>
           ) : view === 'valley' ? (
             chapter === 'futures' ? (
               // The valley-as-futures: a place and a date, like the city's caption. The

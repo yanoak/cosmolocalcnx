@@ -103,8 +103,29 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
   pointer-events: none;
 }
 .view-caption p { margin: 0; }
-.city-readout strong { font-weight: 600; }
-.city-readout span { color: var(--ui-text-muted); }
+/* The cell tooltip: the label pill, grown — a place on the first line, its people and its
+   distance under it. Follows the pointer, never takes it. */
+.cell-tip {
+  position: absolute;
+  z-index: 3;
+  transform: translate(14px, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 13px 8px;
+  border-radius: 14px;
+  background: var(--cosmo-white);
+  color: var(--register-page-ink);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--register-page-ink) 18%, transparent);
+  font-size: 0.875rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.cell-tip.is-left { transform: translate(calc(-100% - 14px), -50%); }
+.cell-tip strong { font-weight: 700; font-size: 0.9375rem; }
+.cell-tip span { color: var(--register-page-muted); }
 
 /* The growing circle's counter, during the Present stem. Three figures on one line,
    over the scene, in the reading register; the card above it carries the words. */
