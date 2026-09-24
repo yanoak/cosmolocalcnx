@@ -104,6 +104,22 @@ function TouchScroll({ interactive }: { interactive: boolean }) {
   return null;
 }
 
+/**
+ * A handle to render one frame NOW, synchronously, for the export page. `frameloop="demand"`
+ * schedules frames through requestAnimationFrame, which a hidden tab never runs — so a
+ * `toDataURL` there reads back an empty canvas. `advance` draws without waiting for one.
+ */
+function RenderHandle({ handle }: { handle: React.MutableRefObject<(() => void) | null> }) {
+  const advance = useThree((state) => state.advance);
+  useEffect(() => {
+    handle.current = () => advance(performance.now(), true);
+    return () => {
+      handle.current = null;
+    };
+  }, [advance, handle]);
+  return null;
+}
+
 function RedrawOnVisible() {
   const invalidate = useThree((state) => state.invalidate);
 
@@ -163,6 +179,7 @@ export function Diorama({
   valleyThreads = null,
   dpr,
   exportable = false,
+  renderHandle,
 }: {
   bounds: Bounds;
   buildings: BaselineBuilding[];
@@ -228,6 +245,8 @@ export function Diorama({
   dpr?: number;
   /** Keep the drawing buffer after a frame, so the canvas can be read back for a PNG. Export only. */
   exportable?: boolean;
+  /** Filled with a function that renders one frame synchronously. Export only. */
+  renderHandle?: React.MutableRefObject<(() => void) | null>;
 }) {
   const [stage, size] = useMeasuredStage();
   const ready = !!size && size.width > 0 && size.height > 0;
@@ -365,6 +384,7 @@ export function Diorama({
 
           <RedrawOnVisible />
           <TouchScroll interactive={interactive} />
+          {renderHandle && <RenderHandle handle={renderHandle} />}
 
           {/* Cuts the camera to the open view. Switching is a selection, not a
               journey — a tween here would be the rail coming back through the door. */}

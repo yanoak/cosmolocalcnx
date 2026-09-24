@@ -63,12 +63,17 @@ const NO_THREADS = new Set<never>();
 type MapId = 'valley' | 'city';
 
 export default function ExportPage() {
-  const [map, setMap] = useState<MapId>('valley');
+  // `?map=city` opens on the inset — one map per page load keeps each download the first
+  // of its page, clear of Chrome's multiple-downloads prompt.
+  const [map, setMap] = useState<MapId>(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('map') === 'city' ? 'city' : 'valley',
+  );
   const [dpi, setDpi] = useState(A4_LANDSCAPE_300.dpi);
   const [iconMm, setIconMm] = useState(14);
   const [labelPt, setLabelPt] = useState(8);
   const [transport, setTransport] = useState(true);
   const sheet = useRef<HTMLDivElement>(null);
+  const renderNow = useRef<(() => void) | null>(null);
 
   const page = useMemo(
     () => ({ widthPx: Math.round((297 / 25.4) * dpi), heightPx: Math.round((210 / 25.4) * dpi), dpi }),
@@ -158,6 +163,8 @@ export default function ExportPage() {
   const downloadBasemap = () => {
     const canvas = sheet.current?.querySelector('canvas');
     if (!canvas) return;
+    // A frame right now, whatever the tab's visibility: see RenderHandle in Diorama.
+    renderNow.current?.();
     download(`${map}-basemap.png`, canvas.toDataURL('image/png'));
   };
   const downloadSvg = () => {
@@ -232,6 +239,7 @@ export default function ExportPage() {
             valleyThreads={map === 'valley' ? NO_THREADS : null}
             dpr={1}
             exportable
+            renderHandle={renderNow}
           />
           {/* The overlay, live, so what is on screen is what the files will be. */}
           <div className="export-overlay" dangerouslySetInnerHTML={{ __html: svg.replace(/<g id="basemap">[\s\S]*?<\/g>\n/, '') }} />
