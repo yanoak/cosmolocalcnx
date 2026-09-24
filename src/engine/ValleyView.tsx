@@ -401,10 +401,18 @@ export function ValleyView({
   source,
   sceneBounds,
   style = 'hillshade',
+  labelled = true,
 }: {
   source: ValleySource;
   sceneBounds: [number, number, number, number];
   style?: ValleyStyle;
+  /**
+   * Whether the town names are on. The mesh follows its group's `visible`, but the
+   * labels are DOM (`Html`) and do not — so a valley kept mounted behind the circle
+   * would still print Lamphun over the Bay of Bengal. A view owns its overlay; the
+   * caller says when this one is the view.
+   */
+  labelled?: boolean;
 }) {
   const raw = useValleyField(source.url, source.meta);
 
@@ -447,7 +455,7 @@ export function ValleyView({
         <Rivers rivers={features.rivers} heights={heights} meta={source.meta} lift={60} />
       )}
       <CityPatch bounds={sceneBounds} heights={heights} meta={source.meta} lift={90} />
-      {features && features.towns.length > 0 && (
+      {labelled && features && features.towns.length > 0 && (
         <Towns towns={features.towns} heights={heights} meta={source.meta} lift={200} />
       )}
     </group>

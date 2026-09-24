@@ -3,34 +3,36 @@
 
 .view-header {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-direction: column;
+  gap: 1px;
   margin: 0;
   min-width: 0;
 }
 
+/* The kicker: the panels' section line. Derived orange — raw orange is 2.27:1 on this
+   ground and fails at every size; see theme.ts REGISTERS. */
 .view-header-tense {
-  font-size: 1rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--register-page-ink);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--register-page-kicker);
   white-space: nowrap;
 }
 
-/* The subhead. Quieter and lighter, so the pair reads as one name with a hierarchy
-   rather than as two labels that happen to sit together. */
+/* The headline. Semibold charcoal, as on the wall. */
 .view-header-place {
-  font-size: 0.875rem;
-  font-weight: 400;
-  color: var(--register-page-muted);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--register-page-ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Phones: the rail already shows the tense, so the header leads with the place and
-   drops the duplicate. It stays in the accessibility tree — the heading is still the
-   whole name. */
+/* Phones: the rail already shows the tense, so the header drops the duplicate. It
+   stays in the accessibility tree — the heading is still the whole name. */
 @media (max-width: 560px) {
   .view-header-tense {
     position: absolute;
@@ -39,9 +41,5 @@
     overflow: hidden;
     clip-path: inset(50%);
   }
-  .view-header-place {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--register-page-ink);
-  }
+  .view-header-place { font-size: 1rem; }
 }

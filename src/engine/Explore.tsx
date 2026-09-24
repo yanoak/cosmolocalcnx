@@ -32,7 +32,7 @@ export function Explore({
       </button>
       <span className="explore-hint">Drag to pan, pinch or scroll to zoom.</span>
       {next && (
-        <button type="button" className="explore-next" onClick={() => onNext(next)}>
+        <button type="button" className="button--invite" onClick={() => onNext(next)}>
           {nextLabel ?? 'Next'} →
         </button>
       )}

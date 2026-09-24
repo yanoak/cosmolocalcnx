@@ -39,6 +39,7 @@ import { beatAt, releasedAt, type BeatPosition } from '@/engine/chapters';
 import { SCORES } from '@/content/scores';
 import copyDoc from '@/content/copy.json';
 import { ViewHeader } from '@/engine/ViewHeader';
+import { Credits } from '@/engine/Credits';
 import type { ValleyStyle } from '@/engine/valley';
 import { BACKDROP_ASSETS } from '@/scenes/backdrop';
 import { VALLEY_ASSETS } from '@/scenes/valley';
@@ -433,16 +434,10 @@ export default function Page() {
               shortcutFor={(id) => CHAPTER_ORDER.indexOf(id) + 1}
             />
           )}
-          <button
-            type="button"
-            aria-pressed={locale === 'th'}
-            onClick={() => setLocale((l) => (l === 'en' ? 'th' : 'en'))}
-          >
-            {locale === 'en' ? 'EN' : 'TH'}
-          </button>
-          <button type="button" aria-pressed={debug} onClick={() => setDebug((v) => !v)}>
-            debug
-          </button>
+          {/* `EN`/`TH` and `debug` sat here until 24 Sep 2026. The locale is still
+              state — `/settings` and `?locale=` set it — and the button returns when
+              there is Thai copy to switch to. Debug stays on `d`. Neither belonged in a
+              bar that stands beside the printed panels. */}
         </div>
       </div>
 
@@ -537,43 +532,47 @@ export default function Page() {
         )}
 
         <SelectPanel selection={selection} locale={locale} onClose={close} />
+
+        {/* Seven sources whose licences require attribution to be VISIBLE — OSM and
+            Overture under ODbL, the tambon boundary under CC BY-IGO, the heights, the
+            population field and the city names under CC BY 4.0, the DEM under its fixed
+            notice. Behind an `i` since 24 Sep 2026, which is still visible: it opens
+            on tap. See the table in README.md. */}
+        <Credits>
+          <p>
+            Building footprints and street data ©{' '}
+            <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, ODbL.
+            Further footprints from <a href="https://overturemaps.org/">Overture Maps</a>, ODbL,
+            incorporating{' '}
+            <a href="https://sites.research.google/open-buildings/">Google Open Buildings</a> and{' '}
+            <a href="https://github.com/microsoft/GlobalMLBuildingFootprints">
+              Microsoft Building Footprints
+            </a>
+            . Building heights from{' '}
+            <a href="https://sites.research.google/gr/open-buildings/temporal/">
+              Google Open Buildings 2.5D Temporal
+            </a>
+            , CC BY 4.0. Relief from the{' '}
+            <a href="https://registry.opendata.aws/copernicus-dem/">Copernicus DEM</a>: © DLR e.V.
+            2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the
+            European Union and ESA; all rights reserved. District boundary from{' '}
+            <a href="https://data.humdata.org/dataset/cod-ab-tha">
+              OCHA Thailand administrative boundaries
+            </a>
+            , CC BY-IGO. Population from{' '}
+            <a href="https://human-settlement.emergency.copernicus.eu/">
+              GHS-POP, European Commission JRC
+            </a>
+            , CC BY 4.0. City names from <a href="https://www.geonames.org/">GeoNames</a>, CC BY
+            4.0.
+          </p>
+        </Credits>
       </div>
 
       {mode === 'stem' && <Scrolly beats={score.beats} copy={beatCopy} current={position.index} />}
 
       {debug && <TokenSwatches />}
 
-      {/* Four sources whose licences require attribution to be VISIBLE — OSM under
-          ODbL, the Wat Ket tambon boundary under CC BY-IGO, and the region
-          register's population field and city names under CC BY 4.0. A few lines of
-          JSX, easy to forget until someone asks. See the table in README.md. */}
-      <p className="attribution">
-        Building footprints and street data ©{' '}
-        <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, ODbL.
-        Further footprints from <a href="https://overturemaps.org/">Overture Maps</a>, ODbL,
-        incorporating{' '}
-        <a href="https://sites.research.google/open-buildings/">Google Open Buildings</a> and{' '}
-        <a href="https://github.com/microsoft/GlobalMLBuildingFootprints">
-          Microsoft Building Footprints
-        </a>
-        . Building heights from{' '}
-        <a href="https://sites.research.google/gr/open-buildings/temporal/">
-          Google Open Buildings 2.5D Temporal
-        </a>
-        , CC BY 4.0. Relief from the{' '}
-        <a href="https://registry.opendata.aws/copernicus-dem/">Copernicus DEM</a>: © DLR e.V.
-        2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the
-        European Union and ESA; all rights reserved. District boundary from{' '}
-        <a href="https://data.humdata.org/dataset/cod-ab-tha">
-          OCHA Thailand administrative boundaries
-        </a>
-        , CC BY-IGO. Population from{' '}
-        <a href="https://human-settlement.emergency.copernicus.eu/">
-          GHS-POP, European Commission JRC
-        </a>
-        , CC BY 4.0. City names from <a href="https://www.geonames.org/">GeoNames</a>, CC BY
-        4.0.
-      </p>
     </main>
   );
 }
