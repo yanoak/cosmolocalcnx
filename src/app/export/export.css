@@ -1,0 +1,40 @@
+/* Styles for the internal map export only — co-located, like print.css, because
+   src/app/export/ is in .vercelignore and nothing here reaches the deployed export.
+   Colour tokens come from theme.ts via layout.tsx. Never a hex value here. */
+
+.export {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  padding: 0 0 48px;
+  background: var(--cosmo-offWhite);
+  color: var(--register-page-ink);
+}
+.export-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  padding: 12px 16px;
+  background: var(--cosmo-offWhite);
+  border-bottom: 1px solid color-mix(in srgb, var(--register-page-ink) 12%, transparent);
+}
+.export-head h1 { margin: 0 12px 0 0; font-size: 1rem; }
+.export-head label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; }
+.export-head input[type='number'] { width: 5em; font: inherit; padding: 4px 6px; }
+.export-head .button--invite:disabled { opacity: 0.5; cursor: default; }
+.export-note { margin: 0; font-size: 0.8125rem; color: var(--register-page-muted); }
+
+/* The sheet at true pixel size, scaled down to fit the window for looking at. */
+.export-sheet-wrap { padding: 16px; overflow: hidden; }
+.export-sheet {
+  position: relative;
+  transform-origin: top left;
+  background: var(--cosmo-offWhite);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--register-page-ink) 16%, transparent);
+}
+.export-sheet .diorama { position: absolute; inset: 0; }
+.export-sheet .export-overlay { position: absolute; inset: 0; pointer-events: none; }

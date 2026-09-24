@@ -31,6 +31,9 @@ docs/programme-context.md
 # env flag that ships the page anyway is not a gate. See src/app/print/page.tsx.
 src/app/print/
 
+# The Faiways map export, same gate for the same reason: internal, imports the full scene.
+src/app/export/
+
 # Scratch
 *.log
 __pycache__/

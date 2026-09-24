@@ -161,6 +161,8 @@ export function Diorama({
   warm = NO_WARM,
   valleyTransport = false,
   valleyThreads = null,
+  dpr,
+  exportable = false,
 }: {
   bounds: Bounds;
   buildings: BaselineBuilding[];
@@ -222,6 +224,10 @@ export function Diorama({
   valleyTransport?: boolean;
   /** The Past's threads to draw, or null outside the Past. See threads.ts. */
   valleyThreads?: ReadonlySet<ThreadId> | null;
+  /** Device pixel ratio override — the print export wants exactly one buffer pixel per CSS pixel. */
+  dpr?: number;
+  /** Keep the drawing buffer after a frame, so the canvas can be read back for a PNG. Export only. */
+  exportable?: boolean;
 }) {
   const [stage, size] = useMeasuredStage();
   const ready = !!size && size.width > 0 && size.height > 0;
@@ -340,6 +346,8 @@ export function Diorama({
           frameloop="demand"
           // A definite size, measured above, rather than R3F's own observer.
           style={{ width: size.width, height: size.height }}
+          dpr={dpr}
+          gl={exportable ? { preserveDrawingBuffer: true } : undefined}
           camera={camera}
           // Clicking past every building clears the selection, and closes a pin. The
           // fiber listens on the div around the canvas, which is also where drei mounts

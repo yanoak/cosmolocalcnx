@@ -81,7 +81,7 @@ const LABELLED_TOWNS: ReadonlySet<string> = new Set(['Chiang Mai']);
 /** How many towns get a label. Beyond this a landscape becomes a table of contents. */
 const MAX_LABELS = 7;
 
-function useValleyField(url: string, meta: ReliefMeta) {
+export function useValleyField(url: string, meta: ReliefMeta) {
   const [field, setField] = useState<Float32Array | null>(null);
 
   useEffect(() => {
