@@ -30,6 +30,11 @@ the city readout. It has no base and no stem. This plan is mostly the stem.
 
 See `CLAUDE.md`, "Three views are the spine".
 
+> **Superseded in part, 24 Sep 2026.** The argument, the data pipeline, the curve and the claim
+> stand. The RENDERER moves: Yan saw the columns and asked for a real map under the data, and
+> `plans/2026-09-24_present-on-maplibre.plan.md` takes the chapter to MapLibre GL with a
+> self-hosted PMTiles basemap. The three.js columns built here are the cost of finding that out.
+
 ## Goal
 
 A visitor arrives at the Present chapter, is shown a circle growing outward from Wat Ket with a
