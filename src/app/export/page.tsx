@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Diorama } from '@/engine/Diorama';
 import { isometricFit } from '@/engine/camera';
 import { iconFor } from '@/engine/icons';
@@ -22,6 +22,7 @@ import { BACKDROP_ASSETS } from '@/scenes/backdrop';
 import { RELIEF_ASSETS } from '@/scenes/relief';
 import { VALLEY_ASSETS } from '@/scenes/valley';
 import scene from '@/scenes/wat-ket.json';
+import viewerScene from '@/scenes/wat-ket.viewer.json';
 import './export.css';
 
 /**
@@ -34,6 +35,8 @@ import './export.css';
  */
 
 const DOC = scene as unknown as SceneDocument;
+/** The screen's own document — 7,588 near buildings — for the valley map, where the city is a patch. */
+const LIGHT = viewerScene as unknown as SceneDocument;
 const BOUNDS = sceneBoundsMetres(DOC);
 const VALLEY = (() => {
   const ref = DOC.valley;
@@ -65,7 +68,6 @@ export default function ExportPage() {
   const [iconMm, setIconMm] = useState(14);
   const [labelPt, setLabelPt] = useState(8);
   const [transport, setTransport] = useState(true);
-  const [scale, setScale] = useState(0.25);
   const sheet = useRef<HTMLDivElement>(null);
 
   const page = useMemo(
@@ -143,13 +145,9 @@ export default function ExportPage() {
     [projection, groups, pins, iconMm, labelPt, map],
   );
 
-  // Fit the sheet to the window for looking at; the pixels underneath are the page's.
-  useEffect(() => {
-    const fitScale = () => setScale(Math.min(1, (window.innerWidth - 32) / page.widthPx));
-    fitScale();
-    window.addEventListener('resize', fitScale);
-    return () => window.removeEventListener('resize', fitScale);
-  }, [page.widthPx]);
+  // The sheet is laid out at its true pixel size and the page scrolls: a CSS transform to
+  // shrink it for looking at made the renderer measure a scaled stage and draw a small
+  // canvas. Zoom the browser out to see the whole sheet.
 
   const download = (name: string, href: string) => {
     const a = document.createElement('a');
@@ -211,11 +209,13 @@ export default function ExportPage() {
         <div
           ref={sheet}
           className="export-sheet"
-          style={{ width: page.widthPx, height: page.heightPx, transform: `scale(${scale})`, marginBottom: -(page.heightPx * (1 - scale)) }}
+          style={{ width: page.widthPx, height: page.heightPx }}
         >
           <Diorama
             bounds={BOUNDS}
-            buildings={DOC.baseline.buildings}
+            // All 68,704 for the city map, where they are the picture; the screen's 7,588
+            // for the valley, where merging the lot would freeze the page for nothing.
+            buildings={map === 'city' ? DOC.baseline.buildings : LIGHT.baseline.buildings}
             roads={DOC.baseline.roads}
             water={DOC.baseline.water}
             green={DOC.baseline.green}

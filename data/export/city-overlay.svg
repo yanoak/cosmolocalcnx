@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="3508" height="2480" viewBox="0 0 3508 2480">
+  <title>Faiways — Wat Ket, 2045</title>
+  <desc>Generated from the cosmolocalcnx scene at 300 dpi; 328.36 px per km. Groups are layers: basemap, paths, icons, labels.</desc>
+  <g id="basemap">
+    <image href="city-basemap.png" x="0" y="0" width="3508" height="2480"/>
+  </g>
+  <g id="icons">
+    <image id="icon-lanna-world-school" href="/icons/lanna-world-school.webp" x="1822.24" y="1118.81" width="165.35" height="141.29"/>
+    <image id="icon-ban-tawan" href="/icons/ban-tawan.webp" x="1435.77" y="974.11" width="148.88" height="165.35"/>
+    <image id="icon-anusarn" href="/icons/anusarn.webp" x="1538.98" y="1157.96" width="165.35" height="139.68"/>
+    <image id="icon-wua-lai" href="/icons/wua-lai.webp" x="1056.31" y="1033.09" width="118.36" height="165.35"/>
+  </g>
+  <g id="labels" font-family="IBM Plex Sans Thai, IBM Plex Sans, sans-serif" font-size="33.33" font-weight="600" fill="#1F1F1F" text-anchor="middle">
+    <text id="label-lanna-world-school" x="1904.92" y="1298.44">Lanna World School</text>
+    <text id="label-ban-tawan" x="1510.21" y="1177.79">Ban Tawan</text>
+    <text id="label-anusarn" x="1621.66" y="1335.98">Anusarn</text>
+    <text id="label-wua-lai" x="1115.5" y="1236.78">Wua Lai</text>
+  </g>
+</svg>

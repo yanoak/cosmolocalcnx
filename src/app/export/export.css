@@ -29,10 +29,9 @@
 .export-note { margin: 0; font-size: 0.8125rem; color: var(--register-page-muted); }
 
 /* The sheet at true pixel size, scaled down to fit the window for looking at. */
-.export-sheet-wrap { padding: 16px; overflow: hidden; }
+.export-sheet-wrap { padding: 16px; overflow: auto; }
 .export-sheet {
   position: relative;
-  transform-origin: top left;
   background: var(--cosmo-offWhite);
   box-shadow: 0 8px 32px color-mix(in srgb, var(--register-page-ink) 16%, transparent);
 }
