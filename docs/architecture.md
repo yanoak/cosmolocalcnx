@@ -187,6 +187,13 @@ Fixed once, here, because getting it wrong is invisible until everything is 100�
 - **Imported assets are baked to this convention at ingest**, not rotated at runtime. Blender and
   much of the glTF world is Z-up; the normalization step described under "The normalization trap"
   is where that is resolved, once, per asset.
+- **The camera's attitude is two constants in `camera.ts`** — `CAMERA_YAW` (π/4, the isometric
+  diagonal: camera south-east of its target, north up-left on screen) and `CAMERA_PITCH`
+  (atan(1/√2)). `screenBasis`, `projectView`, `groundDepth` and `wallFacesCamera` derive from
+  them, and the fit, the depth slicing, the backdrop raster, the wall tones and the rasteriser
+  all call those rather than restating the angle. Since 24 Sep 2026; before that the attitude
+  was written out in six files. The backdrop fingerprint hashes it, so turning the camera fails
+  `backdrop-freshness.test.ts` until `npm run render:backdrop`.
 
 The projection and the footprint-to-geometry conversion are pure functions and both get unit tests.
 

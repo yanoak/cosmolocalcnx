@@ -159,7 +159,10 @@ before. Triangles are ~5% over the 150k ceiling and the remainder is not buildin
 
 That raster is **exact rather than approximate**, and the reason is load-bearing: the camera is
 orthographic and never rotates, so zoom is a 2D scale and pan a 2D translation. **Enabling orbit
-would silently turn it into a lie.** See "Level of detail" in `docs/architecture.md` and
+would silently turn it into a lie.** The attitude itself — the isometric diagonal — is two
+constants in `camera.ts` since 24 Sep 2026 and nothing else may restate it; the backdrop's
+fingerprint hashes it, so changing it fails a test until the raster is re-rendered. A north-up
+camera was built and rejected that morning: Yan wants the angle the piece has always had. See "Level of detail" in `docs/architecture.md` and
 `plans/2026-09-21_backdrop-lod.plan.md`. The device test on a cheap Android is still outstanding.
 
 **What the raster costs is sharpness, and `?lod=full` is the way out of it.** One texel is 4.80 m,

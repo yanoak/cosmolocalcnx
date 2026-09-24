@@ -1,6 +1,6 @@
 # Handover — picking this up after a context refresh
 
-**Snapshot as of 24 Sep 2026, late morning. The exhibition opened today.** This file is a
+**Snapshot as of 24 Sep 2026, mid-morning, after Yan's first look. The exhibition opened today.** This file is a
 reading order and a state summary, not a source of truth — `CLAUDE.md`, `docs/`, and `plans/` are.
 When they disagree with this file, this file is stale; fix it or delete it.
 
@@ -40,6 +40,16 @@ When they disagree with this file, this file is stale; fix it or delete it.
   `BLOCK_IN` in `views.ts`.
 - **Design system**: `2026-09-23_kv-design-system` still `active`, 9/10, `InvertPanel` deferred.
   Verification never run.
+- **Yan looked, and three things changed** (`plans/2026-09-24_north-up-and-chrome`, uncommitted
+  as of this snapshot): credits behind an `i` in the stage's corner; topbar with no rule, no
+  `EN`, no `debug`, kicker-over-headline header, text buttons and one purple `Next →` pill;
+  valley town labels only while the valley is the view. **The camera attitude now lives in
+  `camera.ts` alone** — `CAMERA_YAW`/`CAMERA_PITCH` with `screenBasis`, `projectView`,
+  `groundDepth`, `wallFacesCamera` — and the backdrop fingerprint hashes it, so turning the
+  camera fails the freshness test until `npm run render:backdrop`. It is on the diagonal, as
+  before; a north-up version was built and rejected the same morning. **Open:** Yan's 06:56
+  screenshot shows the valley as a tilted slab in the stem, which no camera produces from a
+  square field — see the diary's ad hoc todo. **Browser verification is Yan's**, by request.
 
 ## What the shell still lacks, and why
 
@@ -80,7 +90,7 @@ All recorded in `CLAUDE.md`; listed so you know they exist.
 
 ## Build order from here
 
-1. **Eyes on the viewer.** Not optional before more lands on this layout.
+1. **Eyes on the viewer, again** — the new chrome, and the tilted-valley question above.
 2. **Present** — `plans/2026-09-23_present-chapter`. Regenerate the three region artefacts on
    `18.7912,99.0043` (`build-region.py --centre …`), commit the cumulative curve, extrude the field
    as instanced columns at 512² (exhibition screen), radius as a shader uniform, pick by instance.
