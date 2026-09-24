@@ -19,14 +19,14 @@ import type { MapPose } from './chapters';
 import type { City } from './cities';
 import {
   ANCHOR_SOURCE,
+  CELLS_SOURCE,
   RING_LAYER,
   RING_SOURCE,
-  cellColour,
-  cellsLayerId,
   presentStyle,
   ringColour,
   type CellsLevel,
 } from './mapstyle';
+import { crossing, indexCells, type CellIndex } from './ringstate';
 import { distanceFromCentreKm } from './cities';
 import './PresentMap.css';
 
@@ -137,6 +137,7 @@ export function PresentMap({
   pickHandler.current = onPick;
   const readyHandler = useRef(onReady);
   readyHandler.current = onReady;
+  const statesRef = useRef<RingStates | null>(null);
 
   /** The map, once. */
   useEffect(() => {
@@ -174,6 +175,8 @@ export function PresentMap({
     }
 
     const markers: Marker[] = [];
+    const states = new RingStates(m, levels);
+    statesRef.current = states;
 
     // 'idle' fires when the map has drawn everything it has and nothing is in flight —
     // the first one after load is the warm map. `once`, so the page hears it one time.
@@ -187,7 +190,7 @@ export function PresentMap({
         ],
       });
       loaded.current = true;
-      applyRing(m, origin, latest.current.ringKm, latest.current.claimKm, levels);
+      applyRing(m, origin, latest.current.ringKm, latest.current.claimKm, states);
       applyInteraction(m, latest.current.interactive);
 
       for (const city of labels) {
@@ -218,15 +221,22 @@ export function PresentMap({
       });
     };
     for (const level of levels) {
-      m.on('mousemove', cellsLayerId(level), pick);
-      m.on('click', cellsLayerId(level), pick);
+      m.on('mousemove', `cells-${level.layer}`, pick);
+      m.on('click', `cells-${level.layer}`, pick);
     }
+
+    // Every tile that lands is more cells to index and bring up to the ring.
+    m.on('sourcedata', (e) => {
+      if (e.sourceId === CELLS_SOURCE && e.tile) states.rebuildSoon(latest.current.ringKm);
+    });
 
     const observer = new ResizeObserver(() => m.resize());
     observer.observe(el);
 
     return () => {
       observer.disconnect();
+      states.dispose();
+      statesRef.current = null;
       for (const marker of markers) marker.remove();
       m.remove();
       map.current = null;
@@ -247,9 +257,10 @@ export function PresentMap({
   /** The ring, and the cells' colour against it. */
   useEffect(() => {
     const m = map.current;
-    if (!m || !loaded.current) return;
-    applyRing(m, origin, ringKm, claimKm, levels);
-  }, [ringKm, claimKm, origin, levels]);
+    const states = statesRef.current;
+    if (!m || !loaded.current || !states) return;
+    applyRing(m, origin, ringKm, claimKm, states);
+  }, [ringKm, claimKm, origin]);
 
   /** Hands on or off. */
   useEffect(() => {
@@ -261,22 +272,73 @@ export function PresentMap({
   return <div ref={container} className="present-map" />;
 }
 
-function applyRing(
-  m: MapLibreMap,
-  origin: LatLon,
-  ringKm: number,
-  claimKm: number,
-  levels: readonly CellsLevel[],
-) {
+/**
+ * The ring's radius applied to the map: the line, its tone, and each cell's `in` state.
+ *
+ * The cells are flipped by feature-state rather than by repainting — see ringstate.ts
+ * for why. `RingStates` keeps, per level, an index of every cell in the loaded tiles
+ * sorted by distance, and the radius it last applied; a tick flips only the slice the
+ * ring crossed. Tiles keep arriving as the visitor pans, so the index is rebuilt (throttled)
+ * on source data events and the whole ring re-applied to it.
+ */
+class RingStates {
+  private index = new Map<string, CellIndex>();
+  private applied = new Map<string, number>();
+  private timer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(private readonly m: MapLibreMap, private readonly levels: readonly CellsLevel[]) {}
+
+  /** Re-read the loaded tiles into the index, then bring every cell to the current ring. */
+  rebuild(ringKm: number) {
+    for (const level of this.levels) {
+      const features = this.m.querySourceFeatures(CELLS_SOURCE, { sourceLayer: level.layer });
+      const pairs: [number, number][] = [];
+      for (const f of features) {
+        if (typeof f.id === 'number') pairs.push([f.id, Number((f.properties as { d?: number }).d ?? 0)]);
+      }
+      this.index.set(level.layer, indexCells(pairs));
+      this.applied.set(level.layer, 0);
+    }
+    this.apply(ringKm);
+  }
+
+  /** Schedule a rebuild soon — source data events come in bursts as tiles land. */
+  rebuildSoon(ringKm: number) {
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      this.rebuild(ringKm);
+    }, 250);
+  }
+
+  /** Flip the cells the ring crossed since the last apply, per level. */
+  apply(ringKm: number) {
+    for (const level of this.levels) {
+      const index = this.index.get(level.layer);
+      if (!index) continue;
+      const from = this.applied.get(level.layer) ?? 0;
+      const { lo, hi, inside } = crossing(index.km, from, ringKm);
+      for (let i = lo; i < hi; i++) {
+        this.m.setFeatureState(
+          { source: CELLS_SOURCE, sourceLayer: level.layer, id: index.ids[i] },
+          { in: inside },
+        );
+      }
+      this.applied.set(level.layer, ringKm);
+    }
+  }
+
+  dispose() {
+    if (this.timer) clearTimeout(this.timer);
+  }
+}
+
+function applyRing(m: MapLibreMap, origin: LatLon, ringKm: number, claimKm: number, states: RingStates) {
   (m.getSource(RING_SOURCE) as GeoJSONSource | undefined)?.setData(
     ringFeature(origin, ringKm),
   );
   if (m.getLayer(RING_LAYER)) m.setPaintProperty(RING_LAYER, 'line-color', ringColour(ringKm, claimKm));
-  const colour = cellColour(ringKm);
-  for (const level of levels) {
-    const id = cellsLayerId(level);
-    if (m.getLayer(id)) m.setPaintProperty(id, 'fill-extrusion-color', colour);
-  }
+  states.apply(ringKm);
 }
 
 /**

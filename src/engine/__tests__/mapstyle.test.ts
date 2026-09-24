@@ -77,7 +77,7 @@ describe('the map style', () => {
   });
 
   it('cuts one layer per level, each for its own zooms, with the last overzooming', () => {
-    const layers = cellsLayers(0, LEVELS) as Array<{ 'source-layer'?: string; minzoom?: number; maxzoom?: number }>;
+    const layers = cellsLayers(LEVELS) as Array<{ 'source-layer'?: string; minzoom?: number; maxzoom?: number }>;
     expect(layers.map((l) => l['source-layer'])).toEqual(['cells_050', 'cells_025', 'cells_0125']);
     expect(layers.map((l) => l.minzoom)).toEqual([2, 3, 4]);
     expect(layers[0].maxzoom).toBe(3);
@@ -88,10 +88,11 @@ describe('the map style', () => {
     expect(MAX_CELL_HEIGHT_M).toBe(400_000);
   });
 
-  it('colours a cell by its ramp position inside the ring and recedes it outside', () => {
-    const expr = cellColour(1000) as unknown[];
+  it('colours a cell by feature-state, so the ring never changes the expression', () => {
+    const expr = cellColour() as unknown[];
     expect(expr[0]).toBe('case');
-    expect(JSON.stringify(expr[1])).toContain('"d"');
+    expect(JSON.stringify(expr[1])).toContain('feature-state');
+    expect(JSON.stringify(expr)).not.toContain('"d"');
   });
 
   it('turns the ring muted past the claim', () => {

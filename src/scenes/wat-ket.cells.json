@@ -45,7 +45,7 @@
     "t": "log10 ramp position of density, 0-1, on one scale for every level \u2014 the colour"
   },
   "radiusKm": 12000.0,
-  "sha256": "0e69577bb17d77f150a344efe1a4f327c799503b3cc1e928b1d5c00d784ba2ff",
+  "sha256": "c003848e971e8c77c4109c92c0c02967ce92648226618ca0d2d88795e07b21d2",
   "source": {
     "attribution": "European Commission JRC, Global Human Settlement Layer",
     "dataset": "GHS-POP R2023A, epoch 2025, 30 arcsec, EPSG:4326",

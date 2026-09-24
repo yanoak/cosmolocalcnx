@@ -255,6 +255,10 @@ def main() -> int:
                 "-n", "Population cells",
                 "-N", "GHS-POP people per cell within 12,000 km of Wat Ket",
                 f"-Z{level['minzoom']}", f"-z{level['maxzoom']}",
+                # Every cell gets an id, stable across tiles and zooms within its level, so
+                # the map can flip a cell's state — inside the ring or not — without
+                # touching the tile. Sequential in input order, which is row-major.
+                "--generate-ids",
                 # Every cell, in every tile: dropping any would drop people.
                 "--no-feature-limit", "--no-tile-size-limit",
                 "--no-tiny-polygon-reduction",

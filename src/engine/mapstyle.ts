@@ -205,20 +205,25 @@ export function rampExpression(): ExpressionSpecification {
   return ['interpolate', ['linear'], ['get', 't'], ...stops] as ExpressionSpecification;
 }
 
-/** A cell's colour given the ring: the ramp inside, receded toward the ground outside. */
-export function cellColour(ringKm: number): ExpressionSpecification {
+/**
+ * A cell's colour: the ramp inside the ring, receded toward the ground outside — by
+ * FEATURE-STATE, not by the ring's radius. The expression never changes; the map flips
+ * each cell's `in` state as the ring crosses it (see ringstate.ts). Changing this
+ * expression per tick made MapLibre re-parse every tile, which was seconds a tick.
+ */
+export function cellColour(): ExpressionSpecification {
   const outside = POPULATION_RAMP.map((hex) => mix(hex, GROUND.ground, 0.55));
   const stopsOut = outside.flatMap((hex, i) => [i / (outside.length - 1), hex]);
   return [
     'case',
-    ['<=', ['get', 'd'], ringKm],
+    ['boolean', ['feature-state', 'in'], false],
     rampExpression(),
     ['interpolate', ['linear'], ['get', 't'], ...stopsOut],
   ] as ExpressionSpecification;
 }
 
 /** The cells as extrusions, one layer per level. Height in metres from `h`; colour from `t` and the ring. */
-export function cellsLayers(ringKm: number, levels: readonly CellsLevel[]): LayerSpecification[] {
+export function cellsLayers(levels: readonly CellsLevel[]): LayerSpecification[] {
   return levels.map((level) => ({
     id: cellsLayerId(level),
     type: 'fill-extrusion',
@@ -228,7 +233,7 @@ export function cellsLayers(ringKm: number, levels: readonly CellsLevel[]): Laye
     // A layer's maxzoom is exclusive; the tiles overzoom past the last level's cut.
     maxzoom: level === levels[levels.length - 1] ? 24 : level.maxzoom + 1,
     paint: {
-      'fill-extrusion-color': cellColour(ringKm),
+      'fill-extrusion-color': cellColour(),
       'fill-extrusion-height': cellHeight(),
       'fill-extrusion-base': 0,
       'fill-extrusion-opacity': 1,
@@ -293,7 +298,7 @@ export function presentStyle(
       [RING_SOURCE]: { type: 'geojson', data: EMPTY },
       [ANCHOR_SOURCE]: { type: 'geojson', data: EMPTY },
     },
-    layers: [...basemapLayers(), ...cellsLayers(0, levels), ringLayer(0, claimKm), anchorLayer()],
+    layers: [...basemapLayers(), ...cellsLayers(levels), ringLayer(0, claimKm), anchorLayer()],
   };
 }
 
