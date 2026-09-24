@@ -17,7 +17,9 @@
     "build:region": "python3 scripts/build-region.py",
     "render:backdrop": "tsx scripts/render-backdrop.ts",
     "fetch:valley": "tsx scripts/fetch-valley.ts",
-    "preview:relief": "tsx scripts/preview-relief.ts"
+    "preview:relief": "tsx scripts/preview-relief.ts",
+    "fetch:basemap": "sh scripts/fetch-basemap.sh",
+    "build:cells": "python3 scripts/build-cells.py"
   },
   "devDependencies": {
     "@types/node": "22.20.2",
@@ -30,9 +32,12 @@
     "vitest": "^5.0.0"
   },
   "dependencies": {
+    "@protomaps/basemaps": "^5.7.2",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
+    "maplibre-gl": "^6.11.1",
     "next": "^16.3.5",
+    "pmtiles": "^4.5.0",
     "react": "19.2",
     "react-dom": "19.2",
     "three": "^0.186.0"

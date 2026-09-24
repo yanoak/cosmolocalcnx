@@ -1,0 +1,34 @@
+{
+  "_comment": "Population cells for the Present chapter's MapLibre layer. NOT terrain \u2014 terrain stays null in the scene document. People per 0.25\u00b0 cell, from the same GHS-POP tiles as the region fields, within the world disc. The layer itself is public/cells/wat-ket.cells.pmtiles; this records what is in it.",
+  "cellDeg": 0.25,
+  "file": "cells/wat-ket.cells.pmtiles",
+  "layer": "cells",
+  "origin": [
+    18.7912,
+    99.0043
+  ],
+  "properties": {
+    "d": "great-circle km from the origin to the cell centre",
+    "h": "cube-root height fraction, 0-1",
+    "p": "people in the cell",
+    "t": "log10 ramp position, 0-1, the cell's colour"
+  },
+  "radiusKm": 12000.0,
+  "sha256": "3f30df6b2896a4ffe1bf0468e832ebb58753e2c40f214704c835474e8141d16f",
+  "source": {
+    "attribution": "European Commission JRC, Global Human Settlement Layer",
+    "dataset": "GHS-POP R2023A, epoch 2025, 30 arcsec, EPSG:4326",
+    "license": "CC BY 4.0",
+    "url": "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E2025_GLOBE_R2023A_4326_30ss/V1-0/tiles"
+  },
+  "stats": {
+    "cells": 130804,
+    "max": 16507455.179413177,
+    "tilesUsed": 346,
+    "totalPeople": 7144528813.365187
+  },
+  "zoom": {
+    "max": 6,
+    "min": 2
+  }
+}
