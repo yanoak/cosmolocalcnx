@@ -118,3 +118,23 @@ function pathsFor(id: ThreadId, f: ThreadFeatures): Point2[][] {
       return [];
   }
 }
+
+/**
+ * The pins each thread owns — its vehicle, and the places it made. A layer toggle turns
+ * these off with its lines, so switching the railway off takes the station and the
+ * tunnel with it. Every Past hotspot belongs to exactly one thread; the test holds that
+ * against the committed document.
+ */
+export const THREAD_PINS: Record<ThreadId, readonly string[]> = {
+  river: ['ping-boat'],
+  caravans: ['mule-caravan', 'bullock-cart'],
+  roads: ['highway-truck'],
+  rail: ['station', 'khun-tan'],
+  air: ['airport'],
+};
+
+/** The thread a Past hotspot belongs to, or null for a hotspot no thread claims. */
+export function threadOf(hotspotId: string): ThreadId | null {
+  for (const id of THREAD_ORDER) if (THREAD_PINS[id].includes(hotspotId)) return id;
+  return null;
+}

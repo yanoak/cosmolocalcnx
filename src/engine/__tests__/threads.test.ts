@@ -6,11 +6,14 @@ import {
   THREAD_ORDER,
   styleFor,
   threadStrokes,
+  threadOf,
+  THREAD_PINS,
   type ThreadFeatures,
   type ThreadId,
 } from '@/engine/threads';
 import { PING } from '@/engine/valley';
 import features from '@/scenes/wat-ket.valley.features.json';
+import scene from '@/scenes/wat-ket.json';
 
 const F = features as unknown as ThreadFeatures;
 const ALL = new Set<ThreadId>(THREAD_ORDER);
@@ -68,5 +71,16 @@ describe('threadStrokes on the committed features', () => {
       const last = c.nodes[c.nodes.length - 1];
       expect(Math.max(Math.abs(last[0]), Math.abs(last[1]))).toBe(60000);
     }
+  });
+});
+
+describe('THREAD_PINS', () => {
+  it('claims every Past hotspot in the document exactly once', () => {
+    const past = (scene as { hotspots: Array<{ id: string; chapter: string }> }).hotspots.filter((h) => h.chapter === 'past');
+    expect(past.length).toBeGreaterThan(0);
+    const claimed = Object.values(THREAD_PINS).flat();
+    expect(new Set(claimed).size).toBe(claimed.length);
+    for (const h of past) expect(threadOf(h.id), h.id).not.toBeNull();
+    for (const id of claimed) expect(past.some((h) => h.id === id), id).toBe(true);
   });
 });

@@ -40,7 +40,7 @@ import { Explore } from '@/engine/Explore';
 import type { PinCopy } from '@/engine/PinLayer';
 import { firstPin, nearestPin, pinsFor } from '@/engine/pins';
 import type { Hotspot } from '@/engine/scene';
-import { THREAD_ORDER, THREADS, type ThreadId } from '@/engine/threads';
+import { THREAD_ORDER, THREADS, threadOf, type ThreadId } from '@/engine/threads';
 import {
   beatAt,
   mapPoseBetween,
@@ -303,6 +303,14 @@ export default function Page() {
     if (mode === 'stem') return new Set((beat.layers ?? []) as ThreadId[]);
     return threadsOn;
   }, [chapter, mode, beat, threadsOn]);
+  /** In the Past's bowl a toggle takes its pins with it: no railway, no station. */
+  const visibleHotspots = useMemo<Hotspot[]>(() => {
+    if (chapter !== 'past' || mode !== 'explore') return chapterHotspots;
+    return chapterHotspots.filter((h) => {
+      const t = threadOf(h.id);
+      return t === null || threadsOn.has(t);
+    });
+  }, [chapter, mode, chapterHotspots, threadsOn]);
   /** The pin whose popup is open. One at a time; the stem, a view change and a chapter change all close it. */
   const [openPin, setOpenPin] = useState<string | null>(null);
 
@@ -687,7 +695,7 @@ export default function Page() {
               reliefStyle={relief}
               beat={mode === 'stem' ? beat : null}
               interactive={mode === 'explore'}
-              hotspots={chapterHotspots}
+              hotspots={visibleHotspots}
               pinCopy={pinCopy}
               openPin={openPin}
               onOpenPin={setOpenPin}
