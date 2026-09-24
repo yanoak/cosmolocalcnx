@@ -16,7 +16,9 @@ import type { ValleyStyle } from './valley';
 import { clampZoom, viewSpec, type ViewId } from './views';
 import { ReliefBackdrop, type ReliefSource } from './ReliefBackdrop';
 import { BridgeMesh } from './BridgeMesh';
-import type { BaselineArea, BaselineBuilding, BaselineRoad } from './scene';
+import type { BaselineArea, BaselineBuilding, BaselineRoad, Hotspot } from './scene';
+import { PinLayer, type PinCopy } from './PinLayer';
+import { pinsFor } from './pins';
 import { PALETTE_EXTENDED, UI_TOKENS } from './theme';
 
 export type { Bounds };
@@ -129,6 +131,12 @@ export function Diorama({
   beatDurationMs = 600,
   interactive = true,
   onArrive,
+  hotspots = NO_HOTSPOTS,
+  pinCopy = NO_PIN_COPY,
+  openPin = null,
+  onOpenPin,
+  warm = NO_WARM,
+  valleyTransport = false,
 }: {
   bounds: Bounds;
   buildings: BaselineBuilding[];
@@ -171,6 +179,23 @@ export function Diorama({
   interactive?: boolean;
   /** After the camera settles on a new pose — not on mount. */
   onArrive?: () => void;
+  /**
+   * The open chapter's hotspots — the pins. Each names its view; the ones in the city
+   * mount here, the ones in the valley go to `ValleyView` for the surface height. During
+   * a stem only the beat's own pins show; in the bowl all of them. See pins.ts.
+   */
+  hotspots?: readonly Hotspot[];
+  pinCopy?: ReadonlyMap<string, PinCopy>;
+  openPin?: string | null;
+  onOpenPin?: (id: string | null) => void;
+  /**
+   * Views to have BUILT now, shown or not — the open chapter's, so a stem that cuts from
+   * the city to the valley finds the valley ready instead of building 130k triangles on
+   * the scroll. "A view builds on first visit" still holds; this is the visit.
+   */
+  warm?: readonly ViewId[];
+  /** The valley's roads and railway: an overlay the Futures shows and the Past does not. */
+  valleyTransport?: boolean;
 }) {
   const [stage, size] = useMeasuredStage();
   const ready = !!size && size.width > 0 && size.height > 0;
@@ -232,10 +257,22 @@ export function Diorama({
    * otherwise the open view's own fit, centred on its world. A view switch is a cut and a
    * beat is a move — the duration is the whole difference.
    */
-  const pose = useMemo<CameraPose>(
-    () => (beat ? resolvePose(beat, fits) : { view, zoom: fits[view].zoom, target: fits[view].target }),
-    [beat, fits, view],
-  );
+  /**
+   * The bowl HOLDS the terminal beat's framing. A release that cut back out to the view's
+   * fit would throw away the frame the stem had just composed — the eight valley pins,
+   * spread — for the whole field with them piled up again. A view change resets to that
+   * view's fit, since a held pose belongs to the view it was made in.
+   */
+  const held = useRef<CameraPose | null>(null);
+  const pose = useMemo<CameraPose>(() => {
+    if (beat) {
+      const p = resolvePose(beat, fits);
+      held.current = p;
+      return p;
+    }
+    if (held.current && held.current.view === view) return held.current;
+    return { view, zoom: fits[view].zoom, target: fits[view].target };
+  }, [beat, fits, view]);
 
   /**
    * Which views have ever been opened.
@@ -253,8 +290,14 @@ export function Diorama({
     city: view === 'city',
   });
   useEffect(() => {
-    setVisited((seen) => (seen[view] ? seen : { ...seen, [view]: true }));
-  }, [view]);
+    setVisited((seen) => {
+      const wanted = [view, ...warm].filter((v) => !seen[v]);
+      if (wanted.length === 0) return seen;
+      const next = { ...seen };
+      for (const v of wanted) next[v] = true;
+      return next;
+    });
+  }, [view, warm]);
 
   const heroes = heroIds ?? EMPTY_HEROES;
 
@@ -272,8 +315,17 @@ export function Diorama({
           // A definite size, measured above, rather than R3F's own observer.
           style={{ width: size.width, height: size.height }}
           camera={camera}
-          // Clicking past every building clears the selection.
-          onPointerMissed={() => onSelect(null)}
+          // Clicking past every building clears the selection, and closes a pin. The
+          // fiber listens on the div around the canvas, which is also where drei mounts
+          // the pins' DOM — so a tap on a pin or its card arrives here as a "miss" too,
+          // and has to be told apart by its target. (Stopping propagation on the pin
+          // instead would also stop React's own click, which listens further up.)
+          onPointerMissed={(e) => {
+            const target = e.target as Element | null;
+            if (target?.closest?.('.pin')) return;
+            onSelect(null);
+            onOpenPin?.(null);
+          }}
         >
           <color attach="background" args={[PALETTE_EXTENDED['cosmo.offWhite']]} />
 
@@ -295,8 +347,28 @@ export function Diorama({
                 sceneBounds={bounds}
                 style={reliefStyle}
                 labelled={view === 'valley'}
+                pins={pinsFor(hotspots, 'valley', beat)}
+                pinCopy={pinCopy}
+                openPin={openPin}
+                onOpenPin={onOpenPin}
+                pinsInteractive={interactive}
+                transport={valleyTransport}
               />
             </group>
+          )}
+
+          {/* The city's pins, in world metres — the city group's two offsets cancel, so
+              the frame is the same. DOM, so mounted only while the city is the view. */}
+          {view === 'city' && visited.city && (
+            <PinLayer
+              pins={pinsFor(hotspots, 'city', beat)}
+              copy={pinCopy}
+              heightAt={() => 0}
+              sizePx={CITY_PIN_PX}
+              openId={openPin}
+              onOpen={onOpenPin ?? (() => {})}
+              interactive={interactive}
+            />
           )}
 
           {/* The city. The outer group used to be driven by the handover; with discrete
@@ -352,4 +424,9 @@ export function Diorama({
   );
 }
 
+const NO_HOTSPOTS: readonly Hotspot[] = [];
+const NO_WARM: readonly ViewId[] = [];
+/** City pins at full size; the valley's eight are drawn at 72 in ValleyView, since they share one field. */
+const CITY_PIN_PX = 88;
+const NO_PIN_COPY: ReadonlyMap<string, PinCopy> = new Map();
 const EMPTY_HEROES: ReadonlySet<string> = new Set();

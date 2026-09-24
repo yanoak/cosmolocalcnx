@@ -126,7 +126,11 @@ a view from a zoom** — the only way out of a view is the switcher.
 
 The valley — the basin Chiang Mai grew in — is drawn as a **hillshade**: a plaster relief model in
 the city's own Warm White, form from a north-west light, heights exaggerated four times with the
-caption saying so. A hypsometric gradient and a terraced contour style are both still behind
+caption saying so. **Its shadows carry purple since 24 Sep 2026** — `RELIEF_HILLSHADE` runs a slope
+from Warm White in the light to a dusk violet in the shade, so the relief sits in the palette beside
+the building stock instead of being the one grey thing on the page; the lit end is unchanged. The
+rivers are fat lines weighted by name (the Ping heaviest), and the Futures lays OSM main roads and
+the railway over it as its own overlay — `scripts/fetch-valley.ts` fetches all three. A hypsometric gradient and a terraced contour style are both still behind
 `?relief=`, and `?relief=thread` renders it as five flat tones of purple off the exhibition's key
 visual — the terracing argument won on a different field, because it quantises the shading and
 leaves the mesh alone. See "Three views" in `docs/architecture.md`.
@@ -164,7 +168,11 @@ That raster is **exact rather than approximate**, and the reason is load-bearing
 orthographic and never rotates, so zoom is a 2D scale and pan a 2D translation. **Enabling orbit
 would silently turn it into a lie.** The attitude itself — the isometric diagonal — is two
 constants in `camera.ts` since 24 Sep 2026 and nothing else may restate it; the backdrop's
-fingerprint hashes it, so changing it fails a test until the raster is re-rendered. A north-up
+fingerprint hashes it, so changing it fails a test until the raster is re-rendered. **And the rig
+places the camera, never the controls**: OrbitControls answers a moved target by keeping the camera
+still and re-deriving the orbit, which is a rotation — the Futures valley beats found this on
+24 Sep 2026 with a 30° swing. `standFor()` gives the one position for a target and `CameraRig`
+applies it with every pose. A north-up
 camera was built and rejected that morning: Yan wants the angle the piece has always had. See "Level of detail" in `docs/architecture.md` and
 `plans/2026-09-21_backdrop-lod.plan.md`. The device test on a cheap Android is still outstanding.
 

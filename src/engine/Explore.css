@@ -31,6 +31,33 @@
   white-space: nowrap;
 }
 
+/* The scale toggle, Futures only, top right under the chapter rail: a pill on the card's
+   ground, the pressed half a purple pill inside it — the invitation's shape, because
+   this is the one control in the bowl that changes what you are looking at. */
+.explore-scale {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  z-index: 2;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--register-page-ground);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--register-page-ink) 16%, transparent);
+}
+.explore-scale button {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  color: var(--register-page-ink);
+}
+.explore-scale button[aria-pressed='true'] {
+  color: var(--register-invert-ink);
+  background: var(--register-invert-ground);
+}
+.explore-scale button[aria-pressed='true']:hover { color: var(--register-invert-kicker); }
+
 .explore-hint {
   flex: 1;
   font-size: 0.8125rem;

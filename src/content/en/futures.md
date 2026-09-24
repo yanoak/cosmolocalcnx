@@ -1,8 +1,8 @@
 [beats]
 id: gen-c
 kicker: Faiways
-headline: This is one Chiang Mai in 2045
-body: The newspaper and the places pinned here belong to one Chiang Mai in 2045. Follow the pins to see how its residents learn, farm, travel and work.
+headline: This is one possible Chiang Mai in 2045
+body: The newspaper and the places pinned here belong to one possible Chiang Mai in 2045. Follow the pins to see how its residents learn, farm, travel and work.
 :end
 
 id: fai
@@ -22,6 +22,42 @@ kicker: Lanna World School
 headline: Local and international children share one school system
 body: Lanna World School is a joint demonstration school of all eight Chiang Mai universities. Thai sits at the core of the curriculum, with English, Mandarin and an IB year opening outward from it.
 :end
+id: valley
+kicker: The valley
+headline: The valley connects these places
+body: Schools and workshops in the city sit among farms, forests and neighbouring towns. Pull back to see how food, skills and care move through the wider valley.
+:end
+
+id: doi-suthep
+kicker: Doi Suthep
+headline: A festival asks its crowd to be still
+body: L-Pop leaves long stretches of silence around a low resonance measured along the ridge. Its clinicians offer a pause for the nervous system, then point people towards the slower work of healing elsewhere.
+:end
+
+id: mae-taeng
+kicker: Mae Taeng
+headline: Highland tea reaches buyers in three languages
+body: At one tea business, Thai connects the growers, Mandarin reaches Kunming and English reaches other buyers. The crop travels through distant markets while cultivation stays in the mountains.
+:end
+
+id: doi-saket
+kicker: Doi Saket
+headline: The farm's best idea outlives the farm
+body: The uncareering farm is closing, and its tool libraries, kitchens and mutual credit already operate elsewhere. The land returns to agriculture, while buildings remain in use by farmers and apprentices.
+:end
+
+id: lamphun-hills
+kicker: Lamphun hills
+headline: Farmers share the machines that carry their harvest
+body: Villages elect dispatchers and earn flight time by maintaining drones and solar stations. The machines carry shade-grown crops down steep slopes, making forest farming practical without clearing the hills.
+:end
+
+id: kae
+kicker: KAE
+headline: Disaster response brings skills back to the valley
+body: KAE's multilingual crews travel to floods, fires and difficult terrain across borders. The organisation trains specialists and publishes open methods, so relief work also builds capacity in northern Thailand.
+:end
+
 []
 
 [hotspots]

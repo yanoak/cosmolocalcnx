@@ -109,6 +109,14 @@ export interface Hotspot {
   image?: string;
   label?: LocaleMap;
   body?: LocaleMap;
+  /**
+   * An authoring note, never rendered: where the coordinate came from and how much to
+   * trust it. The Futures pins are fiction placed to the nearest kilometre and each one
+   * says so here, because the Past chapter draws similar shapes for the opposite reason
+   * and a later session must not unify the two. See the precision policy in
+   * docs/research/2026-09-23_futures-chapter.context.md.
+   */
+  note?: string;
 }
 
 export interface Scenario {

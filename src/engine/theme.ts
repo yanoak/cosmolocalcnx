@@ -317,6 +317,22 @@ export const RELIEF_RAMP_THREAD = [
 /** How many thread tones the valley is quantised to. See `posterise`. */
 export const THREAD_BANDS = 5;
 
+/**
+ * The valley in plaster, with purple in its shadows. Added 24 Sep 2026, Yan's ask.
+ *
+ * Until then the hillshade was Warm White multiplied by the light — a lit slope white, a
+ * shaded one the same white gone dark grey, which sat beside the purple building stock
+ * and the purple key visual as the one neutral thing on the page. Now a slope runs from
+ * Warm White in the light to a dusk violet in the shade: slate pulled toward the brand
+ * violet, so the darkest face is unmistakably in the family without the whole range
+ * becoming the `thread` style. The lit end is unchanged, which keeps the valley floor and
+ * the diorama's ground the same material.
+ */
+export const RELIEF_HILLSHADE = {
+  lit: PALETTE['cosmo.white'],
+  shadow: mix(PALETTE_EXTENDED['cosmo.slate'], PALETTE['cosmo.violet'], 0.45),
+} as const satisfies Record<string, Hex>;
+
 /** Linear interpolation along a ramp. `t` outside [0,1] clamps to an end stop. */
 export function sampleRamp(stops: readonly string[], t: number): [number, number, number] {
   if (stops.length === 0) return [0, 0, 0];

@@ -81,9 +81,11 @@ the Thai date, so we do too.
 | `headline` | The card's title |
 | `body` | The card text. Paragraphs are separated by a blank line; links allowed |
 | `footnote` | Optional. A quieter line under the body — the method behind a number, a caveat. One line, no paragraphs |
-| `label` | The hotspot's name, on hover |
-| `blurb` | One or two lines in the hover popup |
-| `body` (hotspot) | The full write-up in the modal or story overlay |
+| `label` | The hotspot's name, under the pin and at the top of its popup |
+| `kicker` (hotspot) | Optional. The small line above the name in the popup — in the Futures, the year |
+| `blurb` | One or two lines, bold, at the top of the popup |
+| `body` (hotspot) | The popup's text — a couple of paragraphs at most. On screen this IS the story; the full article is in print |
+| `story` | Optional. The headline of the Faiways piece the place appears in. The popup names it and sends the reader to the paper on the table |
 
 A `[]` on its own line closes an array. Anything outside `[beats]` and `[hotspots]` is ignored, so
 notes to yourself are fine as long as they are not `key: value` lines.

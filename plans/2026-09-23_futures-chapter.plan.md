@@ -71,9 +71,21 @@ a popup; the popup leads to the full story. The scene stays mounted throughout.
 all `2026-09-24_scrolly-shell`, shared with Past — including the icon system, which the Past
 chapter's point items use too.
 
-**The stem reveals one pin per beat, and changes view partway.** Specified 24 Sep 2026: it opens in
-the **city**, introduces the four places there one at a time, and once the city items are done it
-**shifts to the valley** for the rest. Explore then offers both views switchable.
+**The stem changes view partway: four city beats, then a six-beat sweep of the valley.** Yan's
+revised copy file (local, `docs/references/`) proposed the valley extension on the evening of
+24 Sep and it was written into the doc's Future tab the same hour, so the doc is still the one
+source. The shape: one 2045, the weir, Journeyfolk with its two pins and the school with its two,
+all over the district — then the cut to the whole field, empty, and a sweep west (Doi Suthep, Wat
+Umong), north (Mae Taeng, Chiang Dao on the edge), east (Doi Saket), south (the Lamphun pair), and
+back to the middle as KAE arrives at Wiang Kum Kam, framed on all eight. Explore opens holding that
+frame, in the valley, with the scale toggle for the district.
+
+Two mechanics had to exist for that: **a move across views is a cut whatever the beat's duration**
+— `moveDuration` in `camera.ts`, so the valley never arrives at the city's zoom and slides into
+place — and **the chapter's views are kept warm** — `Diorama`'s `warm` prop builds the city while
+the valley beats play, so the cut lands on geometry that exists. A chapter is now available when
+*any* of its views is, and `defaultView` skips a view the scene lacks, which is what keeps Futures
+on a scene with no valley field.
 
 That is a view change *inside* a chapter, which the earlier plans did not anticipate. It is
 legitimate precisely because the beat **names** the view: the invariant that matters is that no view
@@ -171,29 +183,56 @@ landscape you want to look around, which a repeated marker does not give you.
 
 In build order. Each step leaves the piece working.
 
-- [ ] **Data.** The twelve places as `Hotspot`s in `wat-ket.json` — `chapter: 'futures'`, `view`,
+- [x] **Data.** The twelve places as `Hotspot`s in `wat-ket.json` — `chapter: 'futures'`, `view`,
       `icon`, `at` projected from approximate lat/lon with the imprecision reason at each valley
       entry. `validateCopyJoin` and `validateIconJoin` against the *real* document and doc become a
-      test, so the three sides — coordinates, words, artwork — can never disagree silently
-- [ ] **`Pins.tsx`.** drei `Html` buttons at each hotspot's position, sprite `<img>` on its
-      measured anchor, place name as the button's text. Mounted in the city by `Diorama` and in the
-      valley by `ValleyView` on the sampled height. Filtered by chapter and view; in the stem only
-      the current beat's `hotspots` show, in the bowl all of them
-- [ ] **Popup.** Tap opens the card above the pin — kicker, name, blurb, body, Faiways piece —
-      one at a time, dismissed by tap-away or `Escape`; focus returns to the pin
-- [ ] **Chiang Dao clamped** to the valley frame edge along its bearing, distance in the label —
-      a pure function with the two-case test below reduced to one
-- [ ] **Explore's `City · Valley` pair**, Futures only, in the explore bar
-- [ ] **The valley beats** in `scores.ts` once the doc has their copy — the view change on the
-      first, the terminal flag moved to the last
-- [ ] **Keyboard in the bowl.** Arrows move between pins by proximity, `Enter` opens, `Escape`
-      closes — `nearestPin` as a pure function
+      test, so the three sides — coordinates, words, artwork — can never disagree silently.
+      **Done 24 Sep evening:** `note` field on `Hotspot`, twelve entries spliced into both the
+      source and the viewer document, `pins.test.ts` joins all three sides
+- [x] **`PinLayer.tsx`** (not `Pins.tsx`: a case-insensitive disk cannot hold it beside `pins.ts`).
+      drei `Html` buttons at each hotspot's position, sprite `<img>` on its measured anchor, place
+      name as the button's text. Mounted in the city by `Diorama` and in the valley by `ValleyView`
+      on the sampled height. Filtered by chapter and view; in the stem only the current beat's
+      `hotspots` show, in the bowl all of them. `pins.ts` is the pure half — `pinsFor`,
+      `placeInFrame`, `nearestPin`, `firstPin` — with 13 tests. **Unverified in the browser**
+- [x] **Popup.** Tap opens the card above the pin — kicker, name, blurb, the Faiways headline, a
+      couple of paragraphs, and the line that sends the reader to the paper on the table — one at a
+      time, dismissed by tap-away or `Escape`; focus returns to the pin. Built inside `PinLayer`;
+      the `kicker` and `story` fields are documented in `docs/copy-schema.md` and wait for the doc.
+      Second pass the same evening: the pin's events no longer bubble into the fiber's container
+      (a tap on the card's own text used to register as a miss and close it — native listeners,
+      since React's run after the fiber's), the card slides in from the stage edges and flips
+      under the icon when there is no room above (`fitPopup`, pure, tested), and it has a tail
+- [x] **Chiang Dao clamped** to the valley frame edge along its bearing, distance in the label —
+      `placeInFrame` in `pins.ts`, tested on the real coordinate
+- [x] **Explore's `City · Valley` toggle**, Futures only — a pill under the chapter rail, the pressed
+      half filled in the invert register, per Yan's sketch; `views`/`view`/`onView` on `Explore`;
+      the switch closes any open pin
+- [x] **The stem crosses the views.** Four city beats, then six in the valley — the extension from
+      Yan's revised copy file, inserted into the doc's Future tab with `gws docs documents
+      batchUpdate` and fetched back. City pins arrive on the two pin beats (Wua Lai with Ban Tawan,
+      Anusarn with the school); the valley reveals cumulatively through the sweep and ends on all
+      eight. `moveDuration` makes the cross-view move a cut; `warm`
+      builds the city under the valley beats. Tests pin that Futures crosses exactly once and ends
+      in the city. **Unverified in the browser**
+- [x] **Keyboard in the bowl.** In a chapter with pins the arrows walk the pins — nearest in that
+      screen direction from the open one, or the one nearest the origin — and `Escape` closes.
+      Opening IS landing, so there is no separate `Enter`. Buildings keep the arrows elsewhere
+- [x] **The valley dressed for 2045.** Yan, 24 Sep evening, three asks in a row: purple in the
+      hillshade's shadows (`RELIEF_HILLSHADE`, both valley chapters), the rivers "much much larger"
+      (fat `LineSegments2` in three weights — the Ping, the named rivers, reservoir outlines — see
+      `waterwayWeight` and `STROKE_PX`), and OSM main roads and the railway as a Futures-only
+      overlay (`fetch-valley.ts` now pulls motorway/trunk/primary and `railway=rail`;
+      `ValleyView`'s `transport` prop, set from the chapter). A town label yields to a pin that
+      carries the same name, so Lamphun is not written twice. **Unverified in the browser**
 - [ ] **Credit line** for the generated artwork in the footer, carried over from `2026-09-24_pin-icons`
-- [ ] **Copy in the doc, Yan's:** five valley beats; an optional `kicker` (the date) and `story`
-      (the Faiways headline) on each hotspot; Thai is the bilingual pass, not this plan
+- [ ] **Copy in the doc, Yan's, optional:** a `kicker` (the year) and `story` (the Faiways
+      headline) on each hotspot — the popup renders both when present and is complete without
+      them. Thai is the bilingual pass, not this plan
 - [ ] ~~`/jig` — the icon comparison page~~ superseded by the generator's contact sheets
 - [x] ~~Twelve isometric icons~~ done in `2026-09-24_pin-icons`
-- [ ] ~~Stories wired to the shell's overlay state~~ **proposed cut for September**, pending Yan
+- [ ] ~~Stories wired to the shell's overlay state~~ cut for September, Yan 24 Sep: the popup
+      carries the headline, a couple of paragraphs and the prompt to the paper on the table
 
 ## UI mockups (ASCII)
 
@@ -314,22 +353,29 @@ two things asking for the same thumb.
 
 ## Open questions
 
-- [ ] **Cut the story overlay for September?** Proposed yes — see "Where it stands". Yan's call.
-- [ ] **The valley in three grouped beats rather than eight singles?** Proposed above; nine cards
-      in all. The grouping is a suggestion and the copy is Yan's either way.
+- [x] ~~Cut the story overlay for September?~~ Yan, 24 Sep evening: no full overlay, but not
+      nothing either. The pin's card carries the Faiways headline, a couple of paragraphs, and a
+      prompt to read the actual paper on the table. The popup IS the story, at standfirst length;
+      `Story.tsx` stays December.
+- [x] ~~Chiang Dao clamped, not arrowed?~~ Agreed, 24 Sep evening.
+- [x] ~~The valley in three grouped beats rather than eight singles?~~ Agreed, 24 Sep evening; nine
+      cards. The copy is Yan's.
 - [x] ~~How many beats does the stem have?~~ Two intro beats exist and read well; the rest is the
       question above.
-- [x] ~~Where does the stem hand over from city to valley?~~ On the first valley beat, which is
-      also the first group — the cut IS the transition, no dedicated beat.
+- [x] ~~Where does the stem hand over between the views?~~ City to valley, on the `valley`
+      establishing beat — the cut IS the transition. A valley-first draft lasted twenty minutes on
+      the evening of 24 Sep; Yan wants the city first.
 - [ ] Does the chapter end anywhere, or is the bowl terminal? It is the last chapter, so there is
       nothing to hand to. The explore bar already shows no "Next" on the last chapter; the attract
       loop, when it exists, is what cycles back to Past.
 - [x] ~~Icon style: roundels or bare sprites?~~ Bare sprites, keyed out to alpha — settled by the
       icon round Yan kept on 24 Sep.
-- [ ] Do the pins show during the stem at all, or only their beat's? Proposed: only the beat's,
-      cumulative within the city half, then the groups — a pin arriving is what a beat *does*.
+- [x] ~~Do the pins show during the stem at all, or only their beat's?~~ Only the beat's, agreed
+      24 Sep evening: cumulative within the city half, then the groups. A pin arriving is what a
+      beat *does*.
 
 ## Outcome
 
-_In progress. Revised 24 Sep 2026 evening against the day's work; artwork and copy done, renderer
-not started._
+_In progress. Revised 24 Sep 2026 evening against the day's work; the same evening the data, the
+pin layer, the popup, the clamp, the view pair and the keyboard landed — typecheck and 635 tests
+green, nothing yet seen in a browser. Waiting on: the valley beats' copy, and Yan's eyes._

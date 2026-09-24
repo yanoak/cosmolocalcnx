@@ -25,6 +25,8 @@ import {
   VIEW_ORDER,
   CHAPTER_ORDER,
   CHAPTER_TENSE,
+  CHAPTER_VIEWS,
+  isAvailable,
   availableChapters,
   chaptersOf,
   defaultView,
@@ -35,6 +37,9 @@ import {
 import { Rail } from '@/engine/Rail';
 import { Scrolly, type BeatCopy } from '@/engine/Scrolly';
 import { Explore } from '@/engine/Explore';
+import type { PinCopy } from '@/engine/PinLayer';
+import { firstPin, nearestPin, pinsFor } from '@/engine/pins';
+import type { Hotspot } from '@/engine/scene';
 import {
   beatAt,
   mapPoseBetween,
@@ -240,6 +245,28 @@ export default function Page() {
     return (byLocale[locale] ?? byLocale.en)?.[chapter]?.beats ?? [];
   }, [locale, chapter]);
 
+  /**
+   * The chapter's pins: the document's hotspots that carry this tense, and the words the
+   * doc has for them, by id. Hotspots are overlay and overlay carries the tense, so
+   * filtering on chapter is what keeps a 2045 pin off the valley-as-past.
+   */
+  const chapterHotspots = useMemo<Hotspot[]>(
+    () => [...DOC.hotspots, ...DOC.scenarios.flatMap((s) => s.hotspots)].filter((h) => h.chapter === chapter),
+    [chapter],
+  );
+  const pinCopy = useMemo<ReadonlyMap<string, PinCopy>>(() => {
+    const byLocale = copyDoc as unknown as Record<string, Record<string, { hotspots?: PinCopy[] }>>;
+    const list = (byLocale[locale] ?? byLocale.en)?.[chapter]?.hotspots ?? [];
+    return new Map(list.map((c) => [c.id, c]));
+  }, [locale, chapter]);
+  /** The views this chapter can show here: what the Diorama keeps warm and what the explore pair offers. */
+  const chapterViews = useMemo(
+    () => CHAPTER_VIEWS[chapter].filter((v) => isAvailable(v, HAS_VIEWS)),
+    [chapter],
+  );
+  /** The pin whose popup is open. One at a time; the stem, a view change and a chapter change all close it. */
+  const [openPin, setOpenPin] = useState<string | null>(null);
+
   // The beat names the view. This is the ONLY place a view is chosen during a stem.
   useEffect(() => {
     if (mode === 'stem') setView(resolveView(beat.view, HAS_VIEWS));
@@ -253,6 +280,7 @@ export default function Page() {
   /** Back to the first card: re-enter the stem and put the scroll at its top. */
   const reread = useCallback(() => {
     setMode('stem');
+    setOpenPin(null);
     setPosition({ index: 0, t: 0 });
     requestAnimationFrame(() => viewer.current?.scrollTo({ top: 0 }));
   }, []);
@@ -271,7 +299,7 @@ export default function Page() {
     if (!el) return;
     el.scrollTo({ top: Math.max(0, index) * el.clientHeight, behavior: smooth ? 'smooth' : 'auto' });
   }, []);
-  const [view, setView] = useState<ViewId>(() => resolveView(defaultView(resolveChapter(null, HAS_VIEWS)), HAS_VIEWS));
+  const [view, setView] = useState<ViewId>(() => resolveView(defaultView(resolveChapter(null, HAS_VIEWS), HAS_VIEWS), HAS_VIEWS));
 
   /**
    * `?view=`, `?relief=` and `?lod=` — deep links into a view, a topography style and
@@ -313,7 +341,7 @@ export default function Page() {
     const fromHash = chapterInHash(window.location.hash);
     if (fromHash) {
       setChapter(resolveChapter(fromHash, HAS_VIEWS));
-      setView(resolveView(defaultView(fromHash), HAS_VIEWS));
+      setView(resolveView(defaultView(fromHash, HAS_VIEWS), HAS_VIEWS));
     }
   }, []);
 
@@ -376,10 +404,11 @@ export default function Page() {
     navigated.current = true;
     setChapter(c);
     setMode('stem');
+    setOpenPin(null);
     setPosition({ index: 0, t: 0 });
     viewer.current?.scrollTo({ top: 0 });
-    setView(resolveView(defaultView(c), HAS_VIEWS));
-    if (defaultView(c) !== 'circle') setMapPick(null);
+    setView(resolveView(defaultView(c, HAS_VIEWS), HAS_VIEWS));
+    if (defaultView(c, HAS_VIEWS) !== 'circle') setMapPick(null);
   }, []);
 
   /** Back and forward, or a hash typed into the bar, move the chapter too. */
@@ -470,6 +499,31 @@ export default function Page() {
           return;
         }
       }
+      // In a chapter with pins, the arrows walk the pins rather than the buildings:
+      // nearest in that screen direction, from the open one or from the one nearest
+      // the origin. Screen directions, in projectView's frame — y is positive UP.
+      const visiblePins = pinsFor(chapterHotspots, view, null);
+      if (visiblePins.length > 0) {
+        const dirs: Record<string, [number, number]> = {
+          ArrowRight: [1, 0],
+          ArrowLeft: [-1, 0],
+          ArrowUp: [0, 1],
+          ArrowDown: [0, -1],
+        };
+        const dir = dirs[e.key];
+        if (dir) {
+          e.preventDefault();
+          const from = openPin ? visiblePins.find((p) => p.id === openPin) : undefined;
+          const next = from ? nearestPin(from, dir, visiblePins) : firstPin(visiblePins);
+          if (next) setOpenPin(next.id);
+          return;
+        }
+        if (e.key === 'Escape' && openPin) {
+          setOpenPin(null);
+          stage.current?.focus();
+          return;
+        }
+      }
       const arrows: Record<string, [1 | -1, 'horizontal' | 'vertical']> = {
         ArrowRight: [1, 'horizontal'],
         ArrowLeft: [-1, 'horizontal'],
@@ -505,7 +559,7 @@ export default function Page() {
       const n = Number(e.key);
       if (n >= 1 && n <= CHAPTER_ORDER.length) goToChapter(CHAPTER_ORDER[n - 1]);
     },
-    [buildings, close, goToChapter, mode, openExplore, position.index, score, scrollToBeat],
+    [buildings, chapterHotspots, close, goToChapter, mode, openExplore, openPin, position.index, score, scrollToBeat, view],
   );
 
   return (
@@ -578,6 +632,12 @@ export default function Page() {
               reliefStyle={relief}
               beat={mode === 'stem' ? beat : null}
               interactive={mode === 'explore'}
+              hotspots={chapterHotspots}
+              pinCopy={pinCopy}
+              openPin={openPin}
+              onOpenPin={setOpenPin}
+              warm={chapterViews}
+              valleyTransport={chapter === 'futures'}
             />
             </div>
             {REGION && CLAIM && (
@@ -641,13 +701,19 @@ export default function Page() {
               </p>
             )
           ) : view === 'valley' ? (
-            <p>
-              <strong>The valley the city grew in.</strong>{' '}
-              <span>
-                120 km across, from Doi Inthanon to the Ping. Heights are exaggerated
-                four times, so the ground reads as ground.
-              </span>
-            </p>
+            chapter === 'futures' ? (
+              // The valley-as-futures: a place and a date, like the city's caption. The
+              // method line belongs to the Past, where the relief is the subject.
+              <p>Ping Valley, 2045.</p>
+            ) : (
+              <p>
+                <strong>The valley the city grew in.</strong>{' '}
+                <span>
+                  120 km across, from Doi Inthanon to the Ping. Heights are exaggerated
+                  four times, so the ground reads as ground.
+                </span>
+              </p>
+            )
           ) : (
             <p>Wat Ket, 2045.</p>
           )}
@@ -659,6 +725,12 @@ export default function Page() {
             nextLabel={CHAPTER_TENSE[CHAPTERS[CHAPTERS.indexOf(chapter) + 1] ?? chapter]}
             onReread={reread}
             onNext={goToChapter}
+            views={chapterViews}
+            view={view}
+            onView={(v) => {
+              setOpenPin(null);
+              setView(resolveView(v, HAS_VIEWS));
+            }}
           />
         )}
 

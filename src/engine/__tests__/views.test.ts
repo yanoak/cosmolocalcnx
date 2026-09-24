@@ -228,8 +228,10 @@ describe('chapters', () => {
     expect(chaptersOf('city')).toEqual(['futures']);
   });
 
-  it('opens Futures in the city — the stem starts there and shifts to the valley later', () => {
+  it('opens Futures in the city — the stem starts there and cuts to the valley for the close', () => {
     expect(defaultView('futures')).toBe('city');
+    expect(defaultView('futures', CITY_ONLY)).toBe('city');
+    expect(defaultView('past', CITY_ONLY)).toBe('valley'); // nothing to fall to; resolveView handles it
     expect(defaultView('past')).toBe('valley');
     expect(defaultView('present')).toBe('circle');
   });
@@ -239,7 +241,7 @@ describe('chapters', () => {
     for (const id of CHAPTER_ORDER) expect(CHAPTER_TENSE[id]).toBeTruthy();
   });
 
-  it('is available when its opening view is — so a city-only scene still has Futures', () => {
+  it('is available when any of its views is — so a city-only scene still has Futures', () => {
     expect(availableChapters(ALL_VIEWS)).toEqual(['past', 'present', 'futures']);
     expect(availableChapters(CITY_ONLY)).toEqual(['futures']);
     expect(availableChapters({ circle: true, valley: false })).toEqual(['present', 'futures']);
@@ -252,7 +254,7 @@ describe('chapters', () => {
     expect(resolveChapter(null, CITY_ONLY)).toBe('futures');
   });
 
-  it('never resolves to a chapter whose opening view is missing', () => {
+  it('never resolves to a chapter none of whose views exist', () => {
     for (const id of CHAPTER_ORDER as ChapterId[]) {
       const r = resolveChapter(id, CITY_ONLY);
       expect(availableChapters(CITY_ONLY)).toContain(r);

@@ -17,6 +17,18 @@ import type { ChapterId } from '@/engine/views';
  * These are the sample beats seeded on 24 Sep 2026, so the stems can be scrolled before
  * the real copy exists. Replace freely; the test says what has to stay consistent.
  */
+/** The eight Futures pins outside the diorama — what the valley beats put on the landscape. */
+const VALLEY_PINS = [
+  'kae',
+  'wat-umong',
+  'doi-suthep',
+  'doi-saket',
+  'lamphun-hills',
+  'lamphun-town',
+  'mae-taeng',
+  'chiang-dao',
+] as const;
+
 export const SCORES: Record<ChapterId, Score> = {
   past: {
     chapter: 'past',
@@ -47,13 +59,72 @@ export const SCORES: Record<ChapterId, Score> = {
   futures: {
     chapter: 'futures',
     beats: [
+      // Opens in the city — Yan, 24 Sep 2026 evening — on the district the newspaper's
+      // world grows out of. No pins yet: "follow the pins" is the invitation, and they
+      // arrive one piece at a time.
       { id: 'gen-c', view: 'city' },
+      // The weir's idea, still over the district: the doc's order, restored once the doc
+      // gained its own valley beats.
       { id: 'fai', view: 'city' },
-      // Ban Tawan: just inside the eastern gate — 1.15 km west, 0.40 km south of the origin.
-      { id: 'ban-tawan', view: 'city', pose: { zoom: 4, target: [-1150, 0, 400] }, hotspots: ['ban-tawan'] },
-      // The shed, on the origin. Terminal until the doc gains valley beats; then the stem
-      // shifts to the valley here and this stops being the end.
-      { id: 'lanna-world-school', view: 'city', pose: { zoom: 4, target: [0, 0, 0] }, hotspots: ['ban-tawan', 'lanna-world-school'], terminal: true },
+      // Journeyfolk: Ban Tawan just inside Tha Phae Gate and Wua Lai's silver quarter — one
+      // piece, two pins, so both arrive on its beat. Framed between them.
+      {
+        id: 'ban-tawan',
+        view: 'city',
+        pose: { zoom: 2.5, target: [-1615, 0, 935] },
+        hotspots: ['ban-tawan', 'wua-lai'],
+      },
+      // Lanna World School: the shed at Wat Ket, then Anusarn. The last city beat.
+      {
+        id: 'lanna-world-school',
+        view: 'city',
+        pose: { zoom: 3, target: [-235, 0, 375] },
+        hotspots: ['ban-tawan', 'wua-lai', 'lanna-world-school', 'anusarn'],
+      },
+      // The cut to the valley — CameraRig cuts across views whatever a beat's duration is —
+      // and the establishing shot: the whole 120 km field, nothing on it yet but the city.
+      // Then a sweep, west → north → east → south → the middle, each beat landing on its
+      // pin and the neighbours the copy file puts with it. Six beats written into the doc
+      // on 24 Sep 2026 evening from Yan's revised copy file.
+      { id: 'valley', view: 'valley' },
+      // West: the ridge, and Wat Umong at its foot.
+      {
+        id: 'doi-suthep',
+        view: 'valley',
+        pose: { zoom: 3, target: [-11000, 0, -4000] },
+        hotspots: ['doi-suthep', 'wat-umong'],
+      },
+      // North: the tea, and Chiang Dao beyond it on the frame's edge.
+      {
+        id: 'mae-taeng',
+        view: 'valley',
+        pose: { zoom: 2.2, target: [-5000, 0, -45000] },
+        hotspots: ['doi-suthep', 'wat-umong', 'mae-taeng', 'chiang-dao'],
+      },
+      // East: the farm.
+      {
+        id: 'doi-saket',
+        view: 'valley',
+        pose: { zoom: 3, target: [13560, 0, -9110] },
+        hotspots: ['doi-suthep', 'wat-umong', 'mae-taeng', 'chiang-dao', 'doi-saket'],
+      },
+      // South: the hills and the town, framed between them.
+      {
+        id: 'lamphun-hills',
+        view: 'valley',
+        pose: { zoom: 2.5, target: [6300, 0, 25300] },
+        hotspots: ['doi-suthep', 'wat-umong', 'mae-taeng', 'chiang-dao', 'doi-saket', 'lamphun-hills', 'lamphun-town'],
+      },
+      // The middle, and the close: pull back to the frame that holds all eight — 1.9× the
+      // fit on the pins' screen centre, computed from projectView over the placed pins;
+      // recompute if a pin moves — as KAE arrives at Wiang Kum Kam. The bowl holds this.
+      {
+        id: 'kae',
+        view: 'valley',
+        pose: { zoom: 1.9, target: [2200, 0, -11400] },
+        hotspots: VALLEY_PINS,
+        terminal: true,
+      },
     ],
   },
 };

@@ -1,0 +1,117 @@
+/* Colour tokens are injected in layout.tsx from src/engine/theme.ts.
+   Never write a hex value in this file. */
+
+/* The projected node is the ground point. The pin hangs above it — bottom-centre of the
+   icon on the point, label under the point, popup over the icon — so nothing here needs
+   to know where on the screen the point is. */
+.pin {
+  position: relative;
+  transform: translate(-50%, -100%);
+  width: max-content;
+  pointer-events: none;
+}
+.pin > * { pointer-events: auto; }
+.pin.is-static > * { pointer-events: none; }
+
+/* The button is the icon: no box, no rule, thumb-sized by the sprite itself. */
+.pin-button {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0 auto;
+  line-height: 0;
+  background: transparent;
+}
+.pin-button:hover .pin-icon,
+.pin-button:focus-visible .pin-icon,
+.pin-button[aria-expanded='true'] .pin-icon { transform: translateY(-3px); }
+
+.pin-icon {
+  display: block;
+  margin: 0 auto;
+  transition: transform 160ms ease;
+  filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--register-page-ink) 22%, transparent));
+}
+
+/* A pin with no sprite: the rail's bead, so the landscape is never blank while art loads. */
+.pin-node {
+  display: block;
+  width: 14px; height: 14px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--register-page-kicker);
+}
+
+/* The name, under the ground point. The pill itself is `.map-label` in globals.css,
+   shared with the town and city labels; this only places it. */
+.pin-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 6px);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* The story, at standfirst length, over the icon. The card's own register and shadow. */
+.pin-popup {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(22rem, calc(100vw - 32px));
+  /* No inner scroll: the copy is a couple of paragraphs by rule (docs/copy-schema.md),
+     so the card is as tall as its words. Yan, 24 Sep 2026. */
+  padding: 16px 18px 18px;
+  border-radius: 8px;
+  background: var(--register-page-ground);
+  color: var(--register-page-ink);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--register-page-ink) 16%, transparent);
+  text-align: left;
+  line-height: 1.45;
+  cursor: auto;
+}
+/* Under the icon instead, when the pin is near the top of the stage. The label sits
+   there too, so the card clears it. */
+.pin-popup.is-below {
+  bottom: auto;
+  top: calc(100% + 28px);
+}
+
+/* The tail: the card's ground, rotated, pointing at the icon it belongs to. */
+.pin-tail {
+  position: absolute;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  background: var(--register-page-ground);
+  transform: rotate(45deg);
+  box-shadow: 4px 4px 8px color-mix(in srgb, var(--register-page-ink) 8%, transparent);
+}
+.pin-popup.is-below .pin-tail {
+  bottom: auto;
+  top: -7px;
+  box-shadow: -2px -2px 6px color-mix(in srgb, var(--register-page-ink) 6%, transparent);
+}
+
+.pin-popup .kicker { margin-bottom: 2px; }
+.pin-headline { font-size: 1.125rem; margin: 0 0 6px; padding-right: 36px; }
+.pin-headline:focus { outline: none; }
+.pin-blurb { font-weight: 600; }
+.pin-popup .body { font-size: 0.9375rem; margin: 0 0 8px; }
+.pin-popup .footnote { margin: 10px 0 0; font-size: 0.8125rem; }
+.pin-popup .body a { color: inherit; text-decoration: underline; }
+
+.pin-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+}

@@ -265,6 +265,9 @@ export function terracedHeights(
  * it is named because a shaded-relief map is a drawing convention rather than a
  * simulation.
  */
+/** The light on a slope facing straight away: the bottom of the hillshade's range. */
+export const HILLSHADE_FLOOR = 0.32;
+
 export function hillshade(nx: number, ny: number, nz: number): number {
   const length = Math.hypot(nx, ny, nz) || 1;
   // Light from the north-west, well above the horizon. Scene north is -z.
@@ -274,7 +277,25 @@ export function hillshade(nx: number, ny: number, nz: number): number {
   const dot = (nx / length) * lx + (ny / length) * ly + (nz / length) * lz;
   // Lifted off the floor so a slope facing away is still readable rather than black,
   // but with enough range that a ridge reads at a glance.
-  return 0.32 + 0.68 * Math.max(0, dot);
+  return HILLSHADE_FLOOR + (1 - HILLSHADE_FLOOR) * Math.max(0, dot);
+}
+
+export type Rgb01 = readonly [number, number, number];
+
+/**
+ * A hillshade value → a colour between two ends: the shadow colour at the floor, the lit
+ * colour at 1, straight through in between. Two ends rather than one base multiplied by
+ * the light, so the shade can carry a hue of its own — purple, since 24 Sep 2026 — while
+ * the lit slope stays exactly the ground's white. See RELIEF_HILLSHADE in theme.ts.
+ */
+export function hillshadeColour(shade: number, lit: Rgb01, shadow: Rgb01): [number, number, number] {
+  const raw = (shade - HILLSHADE_FLOOR) / (1 - HILLSHADE_FLOOR);
+  const t = raw < 0 ? 0 : raw > 1 ? 1 : raw;
+  return [
+    shadow[0] + (lit[0] - shadow[0]) * t,
+    shadow[1] + (lit[1] - shadow[1]) * t,
+    shadow[2] + (lit[2] - shadow[2]) * t,
+  ];
 }
 
 /**
@@ -296,3 +317,38 @@ export function sampleHeight(
   if (i < 0 || j < 0 || i >= size || j >= size) return 0;
   return heights[i * size + j];
 }
+
+// ---------------------------------------------------------------------------
+// Strokes on the valley.
+
+/** The river the basin is named for, as OSM names it. */
+export const PING = 'แม่น้ำปิง';
+
+export type WaterwayWeight = 'main' | 'named' | 'reservoir';
+
+/**
+ * How heavily a waterway is drawn. The Ping is the subject and gets the heaviest line;
+ * every other named river is a river; an unnamed entry is a reservoir outline — the
+ * fetch only admits named rivers, so "no name" means "not a river" here. Since 24 Sep
+ * 2026 the rivers are fat lines rather than the one-pixel hairlines WebGL gives for
+ * free, because at 120 km across a hairline river is a scratch.
+ */
+export function waterwayWeight(name: string): WaterwayWeight {
+  if (name === PING) return 'main';
+  return name ? 'named' : 'reservoir';
+}
+
+/**
+ * Screen-pixel widths per weight, and per road class. Constant on screen at every zoom,
+ * like a drawn map's lines and like the pins — a river that got fatter as you zoomed in
+ * would read as a lake.
+ */
+export const STROKE_PX = {
+  main: 7,
+  named: 3.5,
+  reservoir: 1.25,
+  motorway: 2.75,
+  trunk: 2.75,
+  primary: 1.75,
+  rail: 1.75,
+} as const;

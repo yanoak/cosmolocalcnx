@@ -126007,7 +126007,20 @@
   "scenarios": [
     { "id": "commons-2045", "label": { "en": "Riverside Commons", "th": "ริมน้ำร่วม" }, "edits": [], "hotspots": [] }
   ],
-  "hotspots": [],
+  "hotspots": [
+    { "id": "lanna-world-school", "chapter": "futures", "view": "city", "icon": "lanna-world-school", "at": [0, 0], "note": "the borrowed shed, on the scene origin at Wat Ket" },
+    { "id": "ban-tawan", "chapter": "futures", "view": "city", "icon": "ban-tawan", "at": [-1300, -400], "note": "just inside Tha Phae Gate, WEST of it — the notes doc said east and was superseded on 23 Sep 2026" },
+    { "id": "anusarn", "chapter": "futures", "view": "city", "icon": "anusarn", "at": [-470, -750], "note": "Anusarn market, San Pa Khoi side; approximate" },
+    { "id": "wua-lai", "chapter": "futures", "view": "city", "icon": "wua-lai", "at": [-1930, -1470], "note": "the silver quarter on Wua Lai Road; approximate" },
+    { "id": "kae", "chapter": "futures", "view": "valley", "icon": "kae", "at": [-150, -4930], "note": "Wiang Kum Kam, the flooded old city; fiction, placed to the nearest km; see the precision policy in docs/research/2026-09-23_futures-chapter.context.md" },
+    { "id": "wat-umong", "chapter": "futures", "view": "valley", "icon": "wat-umong", "at": [-5830, -910], "note": "the forest temple; fiction, placed to the nearest km; see the precision policy in docs/research/2026-09-23_futures-chapter.context.md" },
+    { "id": "doi-suthep", "chapter": "futures", "view": "valley", "icon": "doi-suthep", "at": [-11000, 4000], "note": "on the ridge toward Doi Pui rather than at the temple, so the pin stands clear of Wat Umong at the foot of the mountain 3 km away; the festival is a ridgeline anyway. Fiction, placed to the nearest km; see the precision policy in docs/research/2026-09-23_futures-chapter.context.md" },
+    { "id": "doi-saket", "chapter": "futures", "view": "valley", "icon": "doi-saket", "at": [13560, 9110], "note": "the district town; fiction, placed to the nearest km; see the precision policy in docs/research/2026-09-23_futures-chapter.context.md" },
+    { "id": "lamphun-town", "chapter": "futures", "view": "valley", "icon": "lamphun-town", "at": [390, -23730], "note": "the walled town; fiction, placed to the nearest km; see the precision policy in docs/research/2026-09-23_futures-chapter.context.md" },
+    { "id": "lamphun-hills", "chapter": "futures", "view": "valley", "icon": "lamphun-hills", "at": [12190, -26850], "note": "an invented spot in the hills south-east of Lamphun; fiction, placed to the nearest km; see the precision policy in docs/research/2026-09-23_futures-chapter.context.md" },
+    { "id": "mae-taeng", "chapter": "futures", "view": "valley", "icon": "mae-taeng", "at": [-6670, 36940], "note": "the district town; fiction, placed to the nearest km; see the precision policy in docs/research/2026-09-23_futures-chapter.context.md" },
+    { "id": "chiang-dao", "chapter": "futures", "view": "valley", "icon": "chiang-dao", "at": [-4040, 63880], "note": "64 km north, 4 km past the valley frame; drawn clamped to the edge with its distance in the label. fiction, placed to the nearest km; see the precision policy in docs/research/2026-09-23_futures-chapter.context.md" }
+  ],
   "terrain": null,
   "region": {
     "projection": { "kind": "aeqd", "centre": [18.7912, 99.0043], "radiusKm": 3437 },

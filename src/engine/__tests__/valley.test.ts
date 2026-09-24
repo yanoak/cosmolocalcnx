@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { RELIEF_HILLSHADE } from '@/engine/theme';
 import {
   cityMarkerAt,
   cityPatchExtent,
@@ -10,6 +11,11 @@ import {
   valleyVertexAt,
   VALLEY_EXAGGERATION,
   VALLEY_STRIDE,
+  hillshadeColour,
+  HILLSHADE_FLOOR,
+  PING,
+  STROKE_PX,
+  waterwayWeight,
 } from '../valley';
 import { reliefHeights, type ReliefMeta } from '../relief';
 
@@ -181,5 +187,53 @@ describe('the committed valley field', () => {
   it('puts the plain where the city stands', () => {
     expect(meta.base).toBeGreaterThan(280);
     expect(meta.base).toBeLessThan(340);
+  });
+});
+
+describe('hillshadeColour', () => {
+  const lit = [1, 0.96, 0.93] as const;
+  const shadow = [0.38, 0.34, 0.6] as const;
+
+  it('is the shadow colour at the floor and the lit colour at full light', () => {
+    expect(hillshadeColour(HILLSHADE_FLOOR, lit, shadow)).toEqual([...shadow]);
+    expect(hillshadeColour(1, lit, shadow)).toEqual([...lit]);
+  });
+
+  it('runs straight between them and clamps outside the range', () => {
+    const mid = hillshadeColour(HILLSHADE_FLOOR + (1 - HILLSHADE_FLOOR) / 2, lit, shadow);
+    for (let i = 0; i < 3; i++) expect(mid[i]).toBeCloseTo((lit[i] + shadow[i]) / 2, 9);
+    expect(hillshadeColour(0, lit, shadow)).toEqual([...shadow]);
+    expect(hillshadeColour(2, lit, shadow)).toEqual([...lit]);
+  });
+
+  it('keeps the shade end in the purple family: blue above red above green', () => {
+    const [r, g, b] = toRgb01(RELIEF_HILLSHADE.shadow);
+    expect(b).toBeGreaterThan(r);
+    expect(r).toBeGreaterThan(g);
+    // And darker than the lit end, so the light still carries the form.
+    const litL = toRgb01(RELIEF_HILLSHADE.lit).reduce((a, c) => a + c, 0);
+    expect(r + g + b).toBeLessThan(litL * 0.7);
+  });
+});
+
+function toRgb01(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+}
+
+describe('waterwayWeight', () => {
+  it('draws the Ping heaviest, other named rivers as rivers, and unnamed outlines thin', () => {
+    expect(waterwayWeight(PING)).toBe('main');
+    expect(waterwayWeight('น้ำแม่แตง')).toBe('named');
+    expect(waterwayWeight('')).toBe('reservoir');
+    expect(STROKE_PX.main).toBeGreaterThan(STROKE_PX.named);
+    expect(STROKE_PX.named).toBeGreaterThan(STROKE_PX.reservoir);
+  });
+
+  it('is what the committed features file needs: the Ping is in it under that name', () => {
+    const features = JSON.parse(
+      readFileSync(new URL('../../scenes/wat-ket.valley.features.json', import.meta.url), 'utf8'),
+    ) as { rivers: { name: string }[] };
+    expect(features.rivers.some((r) => r.name === PING)).toBe(true);
   });
 });

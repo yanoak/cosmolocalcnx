@@ -1,6 +1,9 @@
 'use client';
 
-import { Html } from '@react-three/drei';
+import { Html, Line } from '@react-three/drei';
+import { PinLayer, type PinCopy } from './PinLayer';
+import type { Hotspot } from './scene';
+import type { Point2 } from './extrude';
 import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { decodeRelief, reliefColour, reliefShade, type ReliefMeta } from './relief';
@@ -8,6 +11,7 @@ import { toneForNormal } from './shading';
 import {
   GROUND,
   PALETTE_EXTENDED,
+  RELIEF_HILLSHADE,
   posterise,
   ramp,
   RELIEF_RAMP_THREAD,
@@ -18,6 +22,7 @@ import {
 import {
   cityPatchExtent,
   hillshade,
+  hillshadeColour,
   sampleHeight,
   smoothField,
   terracedHeights,
@@ -28,7 +33,10 @@ import {
   valleySide,
   valleyVertexAt,
   VALLEY_STRIDE,
+  STROKE_PX,
+  waterwayWeight,
   type ValleyStyle,
+  type WaterwayWeight,
 } from './valley';
 
 /**
@@ -48,6 +56,9 @@ import {
 
 export interface ValleyFeatures {
   rivers: { id: string; name: string; path: [number, number][] }[];
+  /** motorway, trunk and primary, by OSM class. Optional: an older features file has none. */
+  roads?: { id: string; kind: string; path: [number, number][] }[];
+  rails?: { id: string; path: [number, number][] }[];
   towns: { name: string; population: number; at: [number, number] }[];
 }
 
@@ -226,20 +237,25 @@ export function valleyGeometry(
   const normals = geometry.getAttribute('normal') as THREE.BufferAttribute;
   const colours = new Float32Array(side * side * 3);
   /**
-   * A warm near-white, so the hillshade reads as a plaster relief model.
-   *
-   * This is the same Warm White the city's ground plane uses, which is the point: the
-   * valley and the diorama are then made of the same material at different scales. A
-   * mid-tone base multiplied by a shade only ever goes muddy.
+   * A warm near-white in the light, so the hillshade reads as a plaster relief model —
+   * the same Warm White the city's ground plane uses, which is the point: the valley and
+   * the diorama are then made of the same material at different scales. The shade end
+   * carries purple since 24 Sep 2026, so the relief sits in the palette beside the
+   * building stock rather than as the one grey thing on the page.
    */
-  const base = new THREE.Color(GROUND.ground);
+  const litColour = new THREE.Color(RELIEF_HILLSHADE.lit);
+  const shadowColour = new THREE.Color(RELIEF_HILLSHADE.shadow);
+  const lit = [litColour.r, litColour.g, litColour.b] as const;
+  const shadow = [shadowColour.r, shadowColour.g, shadowColour.b] as const;
 
   for (let k = 0; k < side * side; k++) {
     if (style === 'hillshade') {
+      // Warm White in the light, a dusk violet in the shade — see RELIEF_HILLSHADE.
       const shade = hillshade(normals.getX(k), normals.getY(k), normals.getZ(k));
-      colours[k * 3] = base.r * shade;
-      colours[k * 3 + 1] = base.g * shade;
-      colours[k * 3 + 2] = base.b * shade;
+      const [r, g, b] = hillshadeColour(shade, lit, shadow);
+      colours[k * 3] = r;
+      colours[k * 3 + 1] = g;
+      colours[k * 3 + 2] = b;
     } else if (style === 'thread') {
       /**
        * The same light as `hillshade`, quantised to five flat tones and mapped onto
@@ -270,12 +286,74 @@ export function valleyGeometry(
   return geometry;
 }
 
+type Path = { path: [number, number][] };
+
 /**
- * The rivers that drew the basin, hung on the surface.
- *
- * One geometry for all of them — 387 named waterways would otherwise be 387 draw calls
- * against a budget of a few dozen, which is the same arithmetic that made merging
- * mandatory for the buildings.
+ * Line segments for a set of paths, hung on the surface: every consecutive pair of
+ * points becomes one segment, so a whole class of features is ONE fat-line draw. Points
+ * are three.js world coordinates — [east, height, −north].
+ */
+function segmentsOn(
+  paths: readonly Path[],
+  heights: Float32Array,
+  meta: ReliefMeta,
+  lift: number,
+): [number, number, number][] {
+  const out: [number, number, number][] = [];
+  for (const { path } of paths) {
+    for (let i = 0; i + 1 < path.length; i++) {
+      for (const p of [path[i], path[i + 1]]) {
+        out.push([p[0], sampleHeight(heights, meta, p) + lift, -p[1]]);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * One class of strokes — the Ping, the other rivers, the trunk roads — as a single
+ * `LineSegments2`. Fat lines, because `lineBasicMaterial` is a hairline on every GPU
+ * that matters and a hairline at 120 km reads as a scratch; widths are screen pixels,
+ * constant at every zoom. Never raycast: there are tens of thousands of segments and
+ * nothing here is a target.
+ */
+function Strokes({
+  points,
+  width,
+  color,
+  opacity = 1,
+  dashed = false,
+}: {
+  points: [number, number, number][];
+  width: number;
+  color: string;
+  opacity?: number;
+  dashed?: boolean;
+}) {
+  if (points.length < 2) return null;
+  return (
+    <Line
+      points={points}
+      segments
+      lineWidth={width}
+      color={color}
+      transparent={opacity < 1}
+      opacity={opacity}
+      dashed={dashed}
+      // Dash lengths are world metres: a 2 km dash and a 1.2 km gap read as a railway
+      // at the field's fit and are still a dashed line at three times it.
+      dashSize={2000}
+      gapSize={1200}
+      toneMapped={false}
+      raycast={() => null}
+    />
+  );
+}
+
+/**
+ * The rivers that drew the basin, hung on the surface — three weights, three draws.
+ * The Ping is the subject; the named tributaries are rivers; the unnamed entries are
+ * reservoir outlines and stay thin.
  */
 function Rivers({
   rivers,
@@ -288,31 +366,66 @@ function Rivers({
   meta: ReliefMeta;
   lift: number;
 }) {
-  const geometry = useMemo(() => {
-    const points: number[] = [];
-    for (const river of rivers) {
-      for (let i = 0; i + 1 < river.path.length; i++) {
-        for (const p of [river.path[i], river.path[i + 1]]) {
-          points.push(p[0], sampleHeight(heights, meta, p) + lift, -p[1]);
-        }
-      }
-    }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(points), 3));
-    return g;
+  const byWeight = useMemo(() => {
+    const groups: Record<WaterwayWeight, ValleyFeatures['rivers']> = { main: [], named: [], reservoir: [] };
+    for (const r of rivers) groups[waterwayWeight(r.name)].push(r);
+    return (Object.keys(groups) as WaterwayWeight[]).map((w) => ({
+      weight: w,
+      points: segmentsOn(groups[w], heights, meta, lift),
+    }));
   }, [rivers, heights, meta, lift]);
 
-  useEffect(() => () => geometry.dispose(), [geometry]);
+  return (
+    <>
+      {byWeight.map(({ weight, points }) => (
+        <Strokes
+          key={weight}
+          points={points}
+          width={STROKE_PX[weight]}
+          color={PALETTE_EXTENDED['cosmo.skyBlue']}
+          opacity={weight === 'reservoir' ? 0.7 : 0.95}
+        />
+      ))}
+    </>
+  );
+}
+
+/**
+ * The ways out of the basin: the main roads and the one railway, from OSM. An overlay,
+ * so the caller says which chapter shows it — the Futures does, since 24 Sep 2026; the
+ * Past draws its own routes as evidence allows and does not want these. Roads in slate
+ * so they sit under the purple shadows rather than over them; the railway dashed and
+ * darker, the map convention.
+ */
+function Transport({
+  roads,
+  rails,
+  heights,
+  meta,
+  lift,
+}: {
+  roads: NonNullable<ValleyFeatures['roads']>;
+  rails: NonNullable<ValleyFeatures['rails']>;
+  heights: Float32Array;
+  meta: ReliefMeta;
+  lift: number;
+}) {
+  const strokes = useMemo(() => {
+    const major = roads.filter((r) => r.kind === 'motorway' || r.kind === 'trunk');
+    const primary = roads.filter((r) => r.kind === 'primary');
+    return {
+      major: segmentsOn(major, heights, meta, lift),
+      primary: segmentsOn(primary, heights, meta, lift),
+      rail: segmentsOn(rails, heights, meta, lift + 5),
+    };
+  }, [roads, rails, heights, meta, lift]);
 
   return (
-    <lineSegments geometry={geometry}>
-      <lineBasicMaterial
-        color={PALETTE_EXTENDED['cosmo.skyBlue']}
-        toneMapped={false}
-        transparent
-        opacity={0.9}
-      />
-    </lineSegments>
+    <>
+      <Strokes points={strokes.primary} width={STROKE_PX.primary} color={PALETTE_EXTENDED['cosmo.slate']} opacity={0.55} />
+      <Strokes points={strokes.major} width={STROKE_PX.motorway} color={PALETTE_EXTENDED['cosmo.slate']} opacity={0.75} />
+      <Strokes points={strokes.rail} width={STROKE_PX.rail} color={PALETTE_EXTENDED['cosmo.charcoal']} opacity={0.85} dashed />
+    </>
   );
 }
 
@@ -375,15 +488,18 @@ function Towns({
   heights,
   meta,
   lift,
+  hide,
 }: {
   towns: ValleyFeatures['towns'];
   heights: Float32Array;
   meta: ReliefMeta;
   lift: number;
+  /** Names a pin already carries — a town with an icon on it needs no marker. */
+  hide: ReadonlySet<string>;
 }) {
   return (
     <>
-      {towns.slice(0, MAX_LABELS).map((town) => (
+      {towns.slice(0, MAX_LABELS).filter((t) => !hide.has(t.name)).map((town) => (
         <Html
           key={town.name}
           position={[town.at[0], sampleHeight(heights, meta, town.at) + lift, -town.at[1]]}
@@ -397,11 +513,22 @@ function Towns({
   );
 }
 
+/** A little under the city's 88: eight landmarks on one field, some a few kilometres apart. */
+const VALLEY_PIN_PX = 72;
+const NO_PINS: readonly Hotspot[] = [];
+const NO_COPY: ReadonlyMap<string, PinCopy> = new Map();
+
 export function ValleyView({
   source,
   sceneBounds,
   style = 'hillshade',
   labelled = true,
+  pins = NO_PINS,
+  pinCopy = NO_COPY,
+  openPin = null,
+  onOpenPin,
+  pinsInteractive = false,
+  transport = false,
 }: {
   source: ValleySource;
   sceneBounds: [number, number, number, number];
@@ -413,8 +540,26 @@ export function ValleyView({
    * caller says when this one is the view.
    */
   labelled?: boolean;
+  /** The Futures pins placed in the valley, already filtered to what this beat shows. */
+  pins?: readonly Hotspot[];
+  pinCopy?: ReadonlyMap<string, PinCopy>;
+  openPin?: string | null;
+  onOpenPin?: (id: string | null) => void;
+  pinsInteractive?: boolean;
+  /** Draw the main roads and the railway. An overlay, so it is the chapter's call. */
+  transport?: boolean;
 }) {
   const raw = useValleyField(source.url, source.meta);
+
+  /** Town names a visible pin already carries, so the two never label one place twice. */
+  const pinnedNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const p of pins) {
+      const label = pinCopy.get(p.id)?.label;
+      if (label) names.add(label);
+    }
+    return names;
+  }, [pins, pinCopy]);
 
   /**
    * The canopy taken off, once.
@@ -454,9 +599,32 @@ export function ValleyView({
       {features && features.rivers.length > 0 && (
         <Rivers rivers={features.rivers} heights={heights} meta={source.meta} lift={60} />
       )}
+      {transport && features && (features.roads?.length || features.rails?.length) ? (
+        <Transport
+          roads={features.roads ?? []}
+          rails={features.rails ?? []}
+          heights={heights}
+          meta={source.meta}
+          lift={70}
+        />
+      ) : null}
       <CityPatch bounds={sceneBounds} heights={heights} meta={source.meta} lift={90} />
       {labelled && features && features.towns.length > 0 && (
-        <Towns towns={features.towns} heights={heights} meta={source.meta} lift={200} />
+        <Towns towns={features.towns} heights={heights} meta={source.meta} lift={200} hide={pinnedNames} />
+      )}
+      {/* The 2045 overlay on the valley-as-futures: DOM, so gated like the labels — a valley
+          kept mounted behind another view must not leave its pins on the screen. */}
+      {labelled && pins.length > 0 && (
+        <PinLayer
+          pins={pins}
+          copy={pinCopy}
+          heightAt={(at: Point2) => sampleHeight(heights, source.meta, at)}
+          halfFrameM={Math.abs(source.meta.grid.bboxM[2])}
+          sizePx={VALLEY_PIN_PX}
+          openId={openPin}
+          onOpen={onOpenPin ?? (() => {})}
+          interactive={pinsInteractive}
+        />
       )}
     </group>
   );

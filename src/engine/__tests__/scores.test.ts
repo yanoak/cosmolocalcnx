@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import copy from '@/content/copy.json';
 import { SCORES } from '@/content/scores';
 import { joinBeatCopy, validateScore } from '@/engine/chapters';
-import { CHAPTER_ORDER } from '@/engine/views';
+import { CHAPTER_ORDER, defaultView } from '@/engine/views';
 
 /**
  * The build-time promise behind the copy pipeline: a score and the doc's `[beats]` for
@@ -28,8 +28,19 @@ describe('the committed scores', () => {
     expect(Object.keys(SCORES).sort()).toEqual([...CHAPTER_ORDER].sort());
   });
 
-  /** Futures opens in the city: the stem introduces the four places there first. */
-  it('opens Futures in the city, which is also the chapter\'s default view', () => {
-    expect(SCORES.futures.beats[0].view).toBe('city');
+  /** The first beat is the view the chapter opens on, so the cut into a chapter is not two cuts. */
+  for (const chapter of CHAPTER_ORDER) {
+    it(`${chapter}: opens on the chapter's default view`, () => {
+      expect(SCORES[chapter].beats[0].view).toBe(defaultView(chapter));
+    });
+  }
+
+  /** Futures is the stem that crosses a view: the city first, then the valley for the close. */
+  it('Futures crosses from the city to the valley, once', () => {
+    const views = SCORES.futures.beats.map((b) => b.view);
+    expect(views[0]).toBe('city');
+    expect(views[views.length - 1]).toBe('valley');
+    const changes = views.filter((v, i) => i > 0 && v !== views[i - 1]).length;
+    expect(changes).toBe(1);
   });
 });

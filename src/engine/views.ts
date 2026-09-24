@@ -79,10 +79,12 @@ export type ChapterId = 'past' | 'present' | 'futures';
 export const CHAPTER_ORDER: readonly ChapterId[] = ['past', 'present', 'futures'] as const;
 
 /**
- * Which views a chapter uses, opening view first. Futures opens in the city — the stem
- * introduces the four places there before shifting to the valley for the rest — and the
- * city is always the scene, which is why Futures survives a scene with no region or valley
- * field.
+ * Which views a chapter uses, opening view first. Futures opens in the CITY — Yan's call,
+ * 24 Sep 2026 — on the district the newspaper's world grows out of: the stem walks the
+ * four places there and then cuts to the valley for the close, with the regional pins.
+ * The stem crosses a view partway, which is legitimate because the beat NAMES the view;
+ * nothing derives one from a zoom. The city is always the scene, which is why Futures
+ * survives a scene with no valley field: it simply never leaves the city.
  */
 export const CHAPTER_VIEWS: Record<ChapterId, readonly ViewId[]> = {
   past: ['valley'],
@@ -108,9 +110,14 @@ export function chaptersOf(view: ViewId): ChapterId[] {
   return CHAPTER_ORDER.filter((c) => CHAPTER_VIEWS[c].includes(view));
 }
 
-/** The view a chapter opens on. */
-export function defaultView(chapter: ChapterId): ViewId {
-  return CHAPTER_VIEWS[chapter][0];
+/**
+ * The view a chapter opens on: its first, or — given what the scene has — the first of
+ * its views that exists. Futures on a scene with no valley field opens in the city.
+ */
+export function defaultView(chapter: ChapterId, has?: ViewAvailability): ViewId {
+  const views = CHAPTER_VIEWS[chapter];
+  if (!has) return views[0];
+  return views.find((v) => isAvailable(v, has)) ?? views[0];
 }
 
 export interface ViewAvailability {
@@ -222,12 +229,13 @@ export function stepView(
  * what the piece is about.
  */
 /**
- * A chapter is available when its OPENING view is. Past needs the valley field, Present the
- * region field, and Futures needs only the city, which is always there — so a second
- * neighbourhood with nothing generated yet still has a Futures chapter.
+ * A chapter is available when ANY of its views is. Past needs the valley field, Present
+ * the region field, and Futures has the city, which is always there — so a second
+ * neighbourhood with nothing generated yet still has a Futures chapter, opening in the
+ * city because `defaultView` skips the valley it lacks.
  */
 export function availableChapters(has: ViewAvailability): ChapterId[] {
-  return CHAPTER_ORDER.filter((c) => isAvailable(defaultView(c), has));
+  return CHAPTER_ORDER.filter((c) => CHAPTER_VIEWS[c].some((v) => isAvailable(v, has)));
 }
 
 /** The wanted chapter if it is available, else the first that is. Never an empty result. */

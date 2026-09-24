@@ -119,30 +119,39 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
    rule the hotspot copy follows, and what keeps them selectable, translatable and
    readable by a screen reader. */
 .city-label { pointer-events: none; }
-.city-label-text {
+/* Every map label in the piece is the same thing: dark text in a white pill. Yan,
+   24 Sep 2026 evening — the haloed text that preceded it was unreadable over the
+   population cells and over the hillshade alike. `.map-label` is the shared shape;
+   the three label classes below compose it. */
+.map-label,
+.city-label-text,
+.valley-town,
+.pin-label {
   display: inline-block;
-  transform: translate(8px, -50%);
+  padding: 2px 9px 3px;
+  border-radius: 999px;
+  background: var(--cosmo-white);
+  color: var(--register-page-ink);
+  line-height: 1.25;
   white-space: nowrap;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--register-page-ink) 18%, transparent);
+}
+.city-label-text {
+  transform: translate(10px, -50%);
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--ui-text);
-  /* A halo rather than a plate: a filled background would hide the population
-     underneath, which is the thing the label is pointing at. */
-  text-shadow:
-    0 0 3px var(--cosmo-white), 0 0 3px var(--cosmo-white),
-    0 0 6px var(--cosmo-white), 0 0 6px var(--cosmo-white);
 }
 /* The rim cities carry the circle's size, so they are the ones worth emphasising. */
-.city-label-text.is-rim { color: var(--ui-accent); font-weight: 600; }
+.city-label-text.is-rim { font-weight: 600; }
 .city-label-text::before {
   content: '';
   position: absolute;
-  left: -8px; top: 50%;
+  left: -10px; top: 50%;
   width: 4px; height: 4px;
   margin-top: -2px;
   border-radius: 50%;
-  background: currentColor;
+  background: var(--register-page-ink);
 }
 
 /* R3F measures its parent to size the canvas. A flex child whose height is only
@@ -154,7 +163,10 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
 .canvas-fill { position: absolute; inset: 0; }
 /* One stage, two renderers: the diorama for the valley and the city, the map for the
    circle. The inactive one is hidden, not removed — see page.tsx. */
-.renderer { position: absolute; inset: 0; }
+/* `isolation` makes each renderer its own stacking context: drei's Html markers carry
+   very large z-indexes to sort among themselves, and without this the pins would sit
+   over the explore bar and the credits. */
+.renderer { position: absolute; inset: 0; isolation: isolate; }
 .renderer.is-hidden { visibility: hidden; pointer-events: none; }
 /* Diorama measures this box itself and sizes the canvas from it — see the comment
    in Diorama.tsx. It must therefore have a definite size of its own. */
@@ -202,17 +214,11 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
 
 /* Town names on the valley view. DOM over the canvas, like every other piece of copy
    in this project — selectable, scalable, and readable by a screen reader. */
+/* Composes `.map-label` above: the pill. */
 .valley-town {
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: var(--ui-text);
-  white-space: nowrap;
-  /* A halo rather than a box, so a label never hides the ridge it sits on. */
-  text-shadow:
-    0 0 3px var(--ui-surface),
-    0 0 6px var(--ui-surface),
-    0 0 9px var(--ui-surface);
 }
 
 /* ------------------------------------------------------------------ type scale
