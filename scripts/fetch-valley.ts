@@ -152,8 +152,9 @@ interface ValleyFeatures {
   _comment: string;
   halfKm: number;
   rivers: { id: string; name: string; path: [number, number][] }[];
-  /** motorway, trunk or primary — the OSM class, so a renderer can weight them. */
-  roads: { id: string; kind: string; path: [number, number][] }[];
+  /** motorway, trunk or primary — the OSM class, so a renderer can weight them — and the
+   *  route number, so the Past can pick Highway 11 out of the rest. */
+  roads: { id: string; kind: string; ref?: string; path: [number, number][] }[];
   rails: { id: string; path: [number, number][] }[];
   towns: { name: string; population: number; at: [number, number] }[];
 }
@@ -208,7 +209,8 @@ async function main(): Promise<number> {
     if (tags.waterway || tags.natural) {
       rivers.push({ id, name: tags.name ?? '', path });
     } else if (tags.highway) {
-      roads.push({ id, kind: tags.highway, path });
+      const ref = tags.ref?.split(';')[0].trim();
+      roads.push(ref ? { id, kind: tags.highway, ref, path } : { id, kind: tags.highway, path });
     } else if (tags.railway) {
       rails.push({ id, path });
     }

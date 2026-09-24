@@ -4,6 +4,7 @@ import { Html, Line } from '@react-three/drei';
 import { PinLayer, type PinCopy } from './PinLayer';
 import type { Hotspot } from './scene';
 import type { Point2 } from './extrude';
+import { threadStrokes, type ThreadId } from './threads';
 import { useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { decodeRelief, reliefColour, reliefShade, type ReliefMeta } from './relief';
@@ -57,7 +58,7 @@ import {
 export interface ValleyFeatures {
   rivers: { id: string; name: string; path: [number, number][] }[];
   /** motorway, trunk and primary, by OSM class. Optional: an older features file has none. */
-  roads?: { id: string; kind: string; path: [number, number][] }[];
+  roads?: { id: string; kind: string; ref?: string; path: [number, number][] }[];
   rails?: { id: string; path: [number, number][] }[];
   towns: { name: string; population: number; at: [number, number] }[];
 }
@@ -323,12 +324,15 @@ function Strokes({
   color,
   opacity = 1,
   dashed = false,
+  dashScale = 1,
 }: {
   points: [number, number, number][];
   width: number;
   color: string;
   opacity?: number;
   dashed?: boolean;
+  /** Stretches the dash pattern: 0.25 makes a 2 km dash an 8 km one, for a corridor. */
+  dashScale?: number;
 }) {
   if (points.length < 2) return null;
   return (
@@ -344,6 +348,7 @@ function Strokes({
       // at the field's fit and are still a dashed line at three times it.
       dashSize={2000}
       gapSize={1200}
+      dashScale={dashScale}
       toneMapped={false}
       raycast={() => null}
     />
@@ -384,6 +389,59 @@ function Rivers({
           width={STROKE_PX[weight]}
           color={PALETTE_EXTENDED['cosmo.skyBlue']}
           opacity={weight === 'reservoir' ? 0.7 : 0.95}
+        />
+      ))}
+    </>
+  );
+}
+
+/** What each of the Past's threads is drawn in. The grammar — solid, dashed, nothing — is threads.ts's. */
+const THREAD_COLOUR: Record<ThreadId, string> = {
+  river: PALETTE_EXTENDED['cosmo.skyBlue'],
+  caravans: PALETTE_EXTENDED['cosmo.coral'],
+  roads: PALETTE_EXTENDED['cosmo.slate'],
+  rail: PALETTE_EXTENDED['cosmo.charcoal'],
+  air: PALETTE_EXTENDED['cosmo.slate'],
+};
+
+/**
+ * The Past's threads, as the certainty grammar says: the Ping solid, the caravan
+ * corridors broad and dashed, Highway 11 and the railway solid, and nothing at all for
+ * remote work. One fat-line draw per thread. The dashes here mean UNCERTAIN — not the
+ * railway convention the Futures overlay uses — which is why the two never share code.
+ */
+function Threads({
+  on,
+  features,
+  heights,
+  meta,
+  lift,
+}: {
+  on: ReadonlySet<ThreadId>;
+  features: ValleyFeatures;
+  heights: Float32Array;
+  meta: ReliefMeta;
+  lift: number;
+}) {
+  const strokes = useMemo(
+    () =>
+      threadStrokes(on, features).map((s) => ({
+        ...s,
+        points: segmentsOn(s.paths.map((path) => ({ path })), heights, meta, lift),
+      })),
+    [on, features, heights, meta, lift],
+  );
+  return (
+    <>
+      {strokes.map((s) => (
+        <Strokes
+          key={s.thread}
+          points={s.points}
+          width={s.style.widthPx}
+          color={THREAD_COLOUR[s.thread]}
+          opacity={s.style.opacity}
+          dashed={s.style.dashed}
+          dashScale={s.style.dashed && s.thread === 'caravans' ? 0.25 : 1}
         />
       ))}
     </>
@@ -529,6 +587,7 @@ export function ValleyView({
   onOpenPin,
   pinsInteractive = false,
   transport = false,
+  threads = null,
 }: {
   source: ValleySource;
   sceneBounds: [number, number, number, number];
@@ -548,6 +607,12 @@ export function ValleyView({
   pinsInteractive?: boolean;
   /** Draw the main roads and the railway. An overlay, so it is the chapter's call. */
   transport?: boolean;
+  /**
+   * The Past's threads to draw, or null when this is not the valley-as-past. When set,
+   * the rivers are not drawn as substrate: the Ping is the first thread and arrives with
+   * its beat. See threads.ts for why these strokes are not the transport overlay.
+   */
+  threads?: ReadonlySet<ThreadId> | null;
 }) {
   const raw = useValleyField(source.url, source.meta);
 
@@ -596,8 +661,11 @@ export function ValleyView({
       <mesh geometry={geometry} raycast={() => null}>
         <meshBasicMaterial vertexColors toneMapped={false} />
       </mesh>
-      {features && features.rivers.length > 0 && (
+      {!threads && features && features.rivers.length > 0 && (
         <Rivers rivers={features.rivers} heights={heights} meta={source.meta} lift={60} />
+      )}
+      {threads && features && (
+        <Threads on={threads} features={features} heights={heights} meta={source.meta} lift={60} />
       )}
       {transport && features && (features.roads?.length || features.rails?.length) ? (
         <Transport

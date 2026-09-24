@@ -68,3 +68,27 @@
 @media (max-width: 560px) {
   .explore-hint { display: none; }   /* thumbs already know */
 }
+
+/* The Past's layer toggles, bottom left of the bowl: pills on the card's ground, a
+   pressed layer filled in the invert register like the scale toggle. */
+.explore-layers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--register-page-ground);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--register-page-ink) 16%, transparent);
+}
+.explore-layers button {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  color: var(--register-page-muted);
+}
+.explore-layers button[aria-pressed='true'] {
+  color: var(--register-invert-ink);
+  background: var(--register-invert-ground);
+}
+.explore-layers button[aria-pressed='true']:hover { color: var(--register-invert-kicker); }

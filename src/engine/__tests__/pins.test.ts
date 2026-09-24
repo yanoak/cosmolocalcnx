@@ -6,6 +6,7 @@ import { validateIconJoin } from '@/engine/icons';
 import { CHAPTER_VIEWS } from '@/engine/views';
 import scene from '@/scenes/wat-ket.json';
 import viewer from '@/scenes/wat-ket.viewer.json';
+import { SCORES } from '@/content/scores';
 
 const DOC = scene as unknown as SceneDocument;
 const VIEWER = viewer as unknown as SceneDocument;
@@ -155,4 +156,26 @@ describe('fitPopup', () => {
     // No room either way: stays above and scrolls, rather than flipping into the same problem.
     expect(fitPopup({ left: 300, top: -50, width: 320, height: 240 }, stage, 100).below).toBe(false);
   });
+});
+
+describe('the committed past pins', () => {
+  const PAST = DOC.hotspots.filter((h) => h.chapter === 'past');
+  const en = (copy as { en: Record<string, { hotspots?: Array<{ id: string }> }> }).en;
+
+  it('are the station, the tunnel and the airport, in the valley, with icons and copy', () => {
+    expect(PAST.map((h) => h.id).sort()).toEqual(['airport', 'khun-tan', 'station']);
+    for (const h of PAST) expect(h.view).toBe('valley');
+    expect(validateIconJoin(PAST)).toEqual([]);
+    expect(validateCopyJoin({ ...DOC, hotspots: PAST, scenarios: [] }, { past: en.past })).toEqual([]);
+    expect(VIEWER.hotspots.filter((h) => h.chapter === 'past')).toEqual(PAST);
+  });
+});
+
+describe('every beat names hotspots the document has', () => {
+  const ids = new Set(DOC.hotspots.map((h) => h.id));
+  for (const [chapter, score] of Object.entries(SCORES)) {
+    it(`${chapter}`, () => {
+      for (const b of score.beats) for (const id of b.hotspots ?? []) expect(ids.has(id), `${b.id} → ${id}`).toBe(true);
+    });
+  }
 });

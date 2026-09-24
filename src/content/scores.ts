@@ -36,9 +36,17 @@ export const SCORES: Record<ChapterId, Score> = {
       { id: 'river', view: 'valley', layers: ['river'] },
       { id: 'caravans', view: 'valley', layers: ['river', 'caravans'] },
       { id: 'roads', view: 'valley', layers: ['river', 'caravans', 'roads'] },
-      { id: 'rail', view: 'valley', layers: ['river', 'caravans', 'roads', 'rail'] },
-      // The thread with no route, and therefore the one that ends the chapter.
-      { id: 'air', view: 'valley', layers: ['river', 'caravans', 'roads', 'rail', 'air'], terminal: true },
+      // The station and the tunnel arrive with the track.
+      { id: 'rail', view: 'valley', layers: ['river', 'caravans', 'roads', 'rail'], hotspots: ['station', 'khun-tan'] },
+      // The thread with no route, and therefore the one that ends the chapter. Its only
+      // geometry is the airport, which is a pin.
+      {
+        id: 'air',
+        view: 'valley',
+        layers: ['river', 'caravans', 'roads', 'rail', 'air'],
+        hotspots: ['station', 'khun-tan', 'airport'],
+        terminal: true,
+      },
     ],
   },
   present: {

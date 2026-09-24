@@ -40,6 +40,7 @@ import { Explore } from '@/engine/Explore';
 import type { PinCopy } from '@/engine/PinLayer';
 import { firstPin, nearestPin, pinsFor } from '@/engine/pins';
 import type { Hotspot } from '@/engine/scene';
+import { THREAD_ORDER, THREADS, type ThreadId } from '@/engine/threads';
 import {
   beatAt,
   mapPoseBetween,
@@ -283,6 +284,25 @@ export default function Page() {
     () => CHAPTER_VIEWS[chapter].filter((v) => isAvailable(v, HAS_VIEWS)),
     [chapter],
   );
+  /**
+   * The Past's threads on screen. In the stem, the beat's own `layers` — cumulative, one
+   * arriving per card; in the bowl, whatever the toggles say, all five to begin with.
+   * Null outside the Past, so the valley-as-futures never sees them. See threads.ts.
+   */
+  const [threadsOn, setThreadsOn] = useState<ReadonlySet<ThreadId>>(() => new Set(THREAD_ORDER));
+  const toggleThread = useCallback((id: string) => {
+    setThreadsOn((on) => {
+      const next = new Set(on);
+      if (next.has(id as ThreadId)) next.delete(id as ThreadId);
+      else next.add(id as ThreadId);
+      return next;
+    });
+  }, []);
+  const valleyThreads = useMemo<ReadonlySet<ThreadId> | null>(() => {
+    if (chapter !== 'past') return null;
+    if (mode === 'stem') return new Set((beat.layers ?? []) as ThreadId[]);
+    return threadsOn;
+  }, [chapter, mode, beat, threadsOn]);
   /** The pin whose popup is open. One at a time; the stem, a view change and a chapter change all close it. */
   const [openPin, setOpenPin] = useState<string | null>(null);
 
@@ -657,6 +677,7 @@ export default function Page() {
               onOpenPin={setOpenPin}
               warm={chapterViews}
               valleyTransport={chapter === 'futures'}
+              valleyThreads={valleyThreads}
             />
             </div>
             {REGION && CLAIM && (
@@ -749,6 +770,9 @@ export default function Page() {
             nextLabel={CHAPTER_TENSE[CHAPTERS[CHAPTERS.indexOf(chapter) + 1] ?? chapter]}
             onReread={reread}
             onNext={goToChapter}
+            layers={chapter === 'past' ? THREAD_ORDER.map((id) => ({ id, label: THREADS[id].label })) : undefined}
+            active={threadsOn}
+            onToggle={toggleThread}
             views={chapterViews}
             view={view}
             onView={(v) => {

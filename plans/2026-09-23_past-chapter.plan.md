@@ -1,6 +1,6 @@
 ---
 slug: 2026-09-23_past-chapter
-status: draft
+status: active
 started: 2026-09-23
 finished:
 issue:
@@ -91,15 +91,37 @@ obliged to repeat its sibling and should not.
 
 ## Tasks
 
-- [ ] `threads.ts` — layer definitions with an explicit `certainty` field, and an OSM fetch for the
-      confirmed alignments
-- [ ] Line styles per certainty, from the KV: solid, dashed corridor, node-and-arc
-- [ ] The stem — five beats, one layer arriving per beat, over the hillshade
-- [ ] Point items as `Hotspot`s in `wat-ket.json`, `chapter: 'past'`, icons from the shared registry
-- [ ] Blurb and modal copy for every icon and every line
-- [ ] Copy for five layers plus the dated nuggets, EN and TH, **written from the findings file**
-- [ ] The remote-work beat as terminal — it releases into the timeline; the rail is what carries
-      a visitor on to Present
+Built on the evening of 24 Sep 2026, after the Futures landscape, on the same valley machinery
+— fat-line strokes, the pin layer, `fetch-valley.ts`. What is drawn and why, per thread:
+
+| Thread | Drawn as | From |
+|---|---|---|
+| River | the Ping alone, solid, sky blue | OSM, by name |
+| Caravans | two broad dashed coral bands, origin → Mae Taeng → the north edge, origin → Lamphun → the south edge | documented nodes; the band is the claim |
+| Roads | Highway 11 by its `ref`, solid slate — no other road | OSM `ref=11`, 382 ways |
+| Rail | the whole railway, solid charcoal, with the station and the tunnel as pins | OSM `railway=rail`, findings' coordinates |
+| Air | the airport pin and nothing else | — |
+
+- [x] `threads.ts` — layer definitions with an explicit `certainty` field; `styleFor` maps it to a
+      stroke and `threadStrokes` builds them from the committed features. The OSM fetch is the
+      valley's own, which now keeps each road's `ref`
+- [x] Line styles per certainty: solid, dashed corridor, nothing. Dashed means UNCERTAIN here; the
+      Futures overlay dashes its railway by map convention, and the two deliberately share no code
+- [x] The stem — five beats, one layer arriving per beat, over the hillshade; the rivers are not
+      substrate in the valley-as-past, so the Ping arrives with the first card
+- [x] Point items as `Hotspot`s in `wat-ket.json`, `chapter: 'past'`, icons from the shared registry;
+      the station and tunnel arrive with the rail beat, the airport with the air beat
+- [x] Blurb and modal copy for every icon: in the doc, joined and tested. Lines have no popup yet —
+      the shell's line hit-testing is still unbuilt
+- [x] Copy for five layers, EN, from the findings file — in the doc since 24 Sep; Thai is the
+      bilingual pass
+- [x] The remote-work beat as terminal — it releases into the bowl, where the five threads are pill
+      toggles in the explore bar; the rail is what carries a visitor on to Present
+- [ ] **The timeline scrubber.** Not built: the bowl has toggles, not a timeline. The dated nuggets
+      are in the cards' kickers. Whether the scrubber is worth its complexity for September is an
+      open question below
+- [ ] Hover blurb and click modal on the lines themselves — needs the shell's screen-pixel line
+      hit-testing
 
 ## UI mockups (ASCII)
 
@@ -198,7 +220,10 @@ which is the point and the caption says so.
 
 ## Open questions
 
-- [ ] Does the bowl's timeline span 1850–2045, or stop at the present? Running it to 2045 invites a
+- [ ] **Is the timeline scrubber wanted at all for September?** The bowl shipped with five layer
+      toggles and no scrubber on 24 Sep. The toggles already let a visitor pull the layers apart;
+      the scrubber adds the dated nuggets as a readout and a slider to build and test.
+- [ ] If it is: does it span 1850–2045, or stop at the present? Running it to 2045 invites a
       comparison with the Futures chapter that this chapter is not making.
 - [ ] Do the caravan corridors animate direction of travel, or stay static? Movement would imply a
       confidence the corridors do not have.
@@ -207,4 +232,5 @@ which is the point and the caption says so.
 
 ## Outcome
 
-_Not started._
+_In progress. The stem and the bowl's toggles built 24 Sep 2026 evening, 667 tests green, unseen
+in a browser. The scrubber and line popups are the open items._

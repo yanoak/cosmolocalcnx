@@ -30,6 +30,9 @@ export function Explore({
   views,
   view,
   onView,
+  layers,
+  active,
+  onToggle,
 }: {
   /** The chapter after this one, or null on the last. */
   next: ChapterId | null;
@@ -44,6 +47,13 @@ export function Explore({
   views?: readonly ViewId[];
   view?: ViewId;
   onView?: (view: ViewId) => void;
+  /**
+   * Layer toggles — the Past's five threads. Each is a pressed/unpressed pill; the set
+   * is stable, so a layer that is off is dim rather than gone.
+   */
+  layers?: readonly { id: string; label: string }[];
+  active?: ReadonlySet<string>;
+  onToggle?: (id: string) => void;
 }) {
   const pair = views && views.length > 1 ? views : null;
   return (
@@ -64,6 +74,20 @@ export function Explore({
         </div>
       )}
       <div className="explore" role="group" aria-label="Explore">
+        {layers && layers.length > 0 && (
+          <div className="explore-layers" role="group" aria-label="Layers">
+            {layers.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                aria-pressed={active?.has(l.id) ?? true}
+                onClick={() => onToggle?.(l.id)}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        )}
         <span className="explore-hint">Drag to pan, pinch or scroll to zoom.</span>
         {next && (
           <button type="button" className="button--invite" onClick={() => onNext(next)}>

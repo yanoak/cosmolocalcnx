@@ -19,6 +19,7 @@ import { BridgeMesh } from './BridgeMesh';
 import type { BaselineArea, BaselineBuilding, BaselineRoad, Hotspot } from './scene';
 import { PinLayer, type PinCopy } from './PinLayer';
 import { pinsFor } from './pins';
+import type { ThreadId } from './threads';
 import { PALETTE_EXTENDED, UI_TOKENS } from './theme';
 
 export type { Bounds };
@@ -137,6 +138,7 @@ export function Diorama({
   onOpenPin,
   warm = NO_WARM,
   valleyTransport = false,
+  valleyThreads = null,
 }: {
   bounds: Bounds;
   buildings: BaselineBuilding[];
@@ -196,6 +198,8 @@ export function Diorama({
   warm?: readonly ViewId[];
   /** The valley's roads and railway: an overlay the Futures shows and the Past does not. */
   valleyTransport?: boolean;
+  /** The Past's threads to draw, or null outside the Past. See threads.ts. */
+  valleyThreads?: ReadonlySet<ThreadId> | null;
 }) {
   const [stage, size] = useMeasuredStage();
   const ready = !!size && size.width > 0 && size.height > 0;
@@ -353,6 +357,7 @@ export function Diorama({
                 onOpenPin={onOpenPin}
                 pinsInteractive={interactive}
                 transport={valleyTransport}
+                threads={valleyThreads}
               />
             </group>
           )}
