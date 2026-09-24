@@ -117,6 +117,12 @@ export interface Hotspot {
    * docs/research/2026-09-23_futures-chapter.context.md.
    */
   note?: string;
+  /**
+   * Which side of the icon its name sits. Below by default; above for a sprite whose
+   * base is wide and low — a boat, a tunnel mouth, an airfield — where a label under it
+   * would sit on the water or the runway rather than under the thing.
+   */
+  labelSide?: 'above' | 'below';
 }
 
 export interface Scenario {

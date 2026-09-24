@@ -160,7 +160,14 @@ function Pin({
       zIndexRange={open ? TOP : undefined}
       style={{ pointerEvents: 'none' }}
     >
-      <div ref={wrapper} className={interactive ? 'pin' : 'pin is-static'}>
+      <div
+        ref={wrapper}
+        className={[
+          'pin',
+          interactive ? '' : 'is-static',
+          hotspot.labelSide === 'above' ? 'label-above' : '',
+        ].filter(Boolean).join(' ')}
+      >
         <button
           ref={button}
           type="button"

@@ -55,6 +55,16 @@
   letter-spacing: 0.01em;
 }
 
+/* A label over the icon instead — set per hotspot with `labelSide`, for a sprite whose
+   base is wide and low. The popup then opens above the label. */
+.pin.label-above .pin-label {
+  top: auto;
+  bottom: 100%;
+  transform: translate(-50%, -6px);
+}
+.pin.label-above .pin-popup { bottom: calc(100% + 34px); }
+.pin.label-above .pin-popup.is-below { top: calc(100% + 12px); }
+
 /* The story, at standfirst length, over the icon. The card's own register and shadow. */
 .pin-popup {
   position: absolute;
