@@ -196,3 +196,39 @@ describe('ringAt and the ring rule', () => {
     expect(validateScore(score).join('\n')).toMatch(/negative ring/);
   });
 });
+
+import { mapPoseBetween, resolveMapPose, type MapPose } from '../chapters';
+
+describe('map poses', () => {
+  const home: MapPose = { zoom: 8, pitch: 55, bearing: 0, centre: [18.7912, 99.0043] };
+
+  it('fills a beat\'s partial pose from the chapter default', () => {
+    const b: Beat = { id: 'x', view: 'circle', mapPose: { zoom: 3 } };
+    expect(resolveMapPose(b, home)).toEqual({ ...home, zoom: 3 });
+    expect(resolveMapPose({ id: 'y', view: 'circle' }, home)).toEqual(home);
+  });
+
+  it('interpolates every field and is pinned at both ends', () => {
+    const far: MapPose = { zoom: 2, pitch: 35, bearing: 10, centre: [20, 100] };
+    expect(mapPoseBetween(home, far, 0)).toEqual(home);
+    expect(mapPoseBetween(home, far, 1)).toEqual(far);
+    const mid = mapPoseBetween(home, far, 0.5);
+    expect(mid.zoom).toBeCloseTo(5, 9);
+    expect(mid.pitch).toBeCloseTo(45, 9);
+    expect(mid.bearing).toBeCloseTo(5, 9);
+    expect(mid.centre[0]).toBeCloseTo((18.7912 + 20) / 2, 9);
+  });
+
+  it('rejects a map pose outside the circle, and a pitch MapLibre cannot do', () => {
+    const outside: Score = {
+      chapter: 'past',
+      beats: [{ id: 'a', view: 'valley', mapPose: { zoom: 3 }, terminal: true }],
+    };
+    expect(validateScore(outside).join('\n')).toMatch(/map pose/);
+    const steep: Score = {
+      chapter: 'present',
+      beats: [{ id: 'a', view: 'circle', mapPose: { pitch: 90 }, terminal: true }],
+    };
+    expect(validateScore(steep).join('\n')).toMatch(/pitch/);
+  });
+});

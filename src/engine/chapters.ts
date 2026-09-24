@@ -57,8 +57,46 @@ export interface Beat {
    * within the beat interpolates between the two.
    */
   ring?: { from: number; to: number };
+  /**
+   * Where the MAP camera is, for a beat in the circle view — since 24 Sep 2026 that view
+   * is a MapLibre map rather than the three.js scene, and its camera is a globe camera:
+   * zoom in MapLibre's own scale, pitch and bearing in degrees, centre as lat/lon.
+   * Absent fields hold the score's default for the chapter. A beat with a `ring`
+   * interpolates toward the next beat's map pose as it plays.
+   */
+  mapPose?: Partial<MapPose>;
   /** The last beat: ends the stem and releases the bowl. Exactly one per score, and last. */
   terminal?: boolean;
+}
+
+/** A MapLibre camera. */
+export interface MapPose {
+  zoom: number;
+  pitch: number;
+  bearing: number;
+  /** [lat, lon]. */
+  centre: [number, number];
+}
+
+/** A beat's map pose, filled from the chapter's default. */
+export function resolveMapPose(beat: Beat, fallback: MapPose): MapPose {
+  return { ...fallback, ...beat.mapPose };
+}
+
+/**
+ * The map pose `u` of the way from one to another: zoom linearly (MapLibre's zoom is
+ * already logarithmic), pitch and bearing linearly, centre linearly in lat/lon — the
+ * moves here are short enough that a straight line is a great circle to the eye.
+ */
+export function mapPoseBetween(from: MapPose, to: MapPose, u: number): MapPose {
+  const t = u < 0 ? 0 : u > 1 ? 1 : u;
+  const lerp = (a: number, b: number) => a + (b - a) * t;
+  return {
+    zoom: lerp(from.zoom, to.zoom),
+    pitch: lerp(from.pitch, to.pitch),
+    bearing: lerp(from.bearing, to.bearing),
+    centre: [lerp(from.centre[0], to.centre[0]), lerp(from.centre[1], to.centre[1])],
+  };
 }
 
 export interface Score {
@@ -149,6 +187,12 @@ export function validateScore(score: Score): string[] {
     }
     if (b.terminal && i !== score.beats.length - 1) {
       errors.push(`${where}: beat "${b.id}" is terminal but not last — the release ends the stem`);
+    }
+    if (b.mapPose && b.view !== 'circle') {
+      errors.push(`${where}: beat "${b.id}" has a map pose but is in view "${b.view}" — only the circle is a map`);
+    }
+    if (b.mapPose?.pitch !== undefined && !(b.mapPose.pitch >= 0 && b.mapPose.pitch <= 85)) {
+      errors.push(`${where}: beat "${b.id}" has pitch ${b.mapPose.pitch} — MapLibre allows 0 to 85`);
     }
     if (b.ring) {
       if (b.view !== 'circle') {

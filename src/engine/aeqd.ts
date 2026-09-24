@@ -29,6 +29,7 @@
  */
 
 import type { LatLon } from './project';
+export type { LatLon };
 
 /** Mean earth radius (IUGG). NOT project.ts's equatorial radius — see the header. */
 export const AEQD_EARTH_RADIUS_KM = 6371.0088;
@@ -116,4 +117,23 @@ export function aeqdInverse([east, north]: RegionKm, centre: LatLon): LatLon {
 
   // Normalise into [-180, 180) so the output is comparable with any GeoJSON.
   return [lat / DEG, (((lon / DEG + 180) % 360) + 360) % 360 - 180];
+}
+
+/**
+ * The points `km` from `centre`, as lat/lon — a circle on the sphere.
+ *
+ * Nothing new: a point at distance r and bearing θ IS the inverse projection of
+ * (r sin θ, r cos θ), which is what azimuthal equidistant means. This is the ring the
+ * Present chapter draws on the globe, and it is a true circle there for the same reason
+ * it was on the AEQD plane. Closed — the last point repeats the first — so it can be a
+ * GeoJSON polygon or line as it stands.
+ */
+export function circleAround(centre: LatLon, km: number, steps = 256): LatLon[] {
+  const n = Math.max(3, Math.floor(steps));
+  const out: LatLon[] = [];
+  for (let i = 0; i <= n; i++) {
+    const theta = (i / n) * Math.PI * 2;
+    out.push(aeqdInverse([km * Math.sin(theta), km * Math.cos(theta)], centre));
+  }
+  return out;
 }

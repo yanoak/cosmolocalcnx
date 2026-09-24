@@ -1,5 +1,13 @@
 # Architecture
 
+> **The circle is a MapLibre map since 24 Sep 2026.** Sections below that describe the
+> circle as an AEQD raster on a scaled plane under the one three.js camera are stale in that
+> respect: the projection, the fields and the curve survive as data, but the Present chapter
+> renders in `PresentMap.tsx` on a MapLibre globe over a Protomaps basemap, with the population
+> as a `fill-extrusion` cells layer and the ring as GeoJSON. The two renderers meet only at the
+> cut between views. See `plans/2026-09-24_present-on-maplibre.plan.md` and the stack section of
+> `CLAUDE.md`.
+
 ## The one decision everything depends on: the scene is a document
 
 A single JSON document fully describes a city. The viewer reads it. The editor reads and writes it.

@@ -51,6 +51,17 @@ When they disagree with this file, this file is stale; fix it or delete it.
   screenshot shows the valley as a tilted slab in the stem, which no camera produces from a
   square field — see the diary's ad hoc todo. **Browser verification is Yan's**, by request.
 
+## The Present chapter is a MapLibre map (24 Sep, evening)
+
+`plans/2026-09-24_present-on-maplibre.plan.md`, `active`, built and unverified on screen.
+`PresentMap.tsx` on a MapLibre globe; `mapstyle.ts` from tokens, no symbol layers; the basemap
+at `public/basemap/protomaps-20260923-z6.pmtiles` (45 MB, committed; `npm run fetch:basemap`
+regenerates it); the cells at `public/cells/wat-ket.cells.pmtiles` from `npm run build:cells`,
+with `src/scenes/wat-ket.cells.json` as its sidecar and a test on its hash. The three.js circle
+is deleted. The Past and Futures chapters are untouched. **What Yan should look at first:** `2`
+— the globe comes up with the basemap in Warm White, the cells extruded, the ring growing with
+the scroll; `Escape` — drag and pinch; hover a cell — the readout.
+
 ## What the shell still lacks, and why
 
 All in the shell plan's task list, unticked with reasons:

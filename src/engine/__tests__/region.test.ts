@@ -390,3 +390,45 @@ describe('the committed fields', () => {
     expect(r[2]).toBeGreaterThan(r[1]);
   });
 });
+
+import { createHash } from 'node:crypto';
+
+describe('the committed cells layer', () => {
+  const SCENES = new URL('../../scenes/', import.meta.url);
+  const PUBLIC = new URL('../../../public/', import.meta.url);
+  const meta = JSON.parse(readFileSync(new URL('wat-ket.cells.json', SCENES), 'utf8')) as {
+    file: string;
+    sha256: string;
+    origin: [number, number];
+    radiusKm: number;
+    stats: { cells: number; totalPeople: number };
+  };
+  const scene = JSON.parse(readFileSync(new URL('wat-ket.json', SCENES), 'utf8')) as {
+    origin: [number, number];
+    region: { world: { meta: string } };
+  };
+
+  it('is the file the sidecar describes', () => {
+    const bytes = readFileSync(new URL(meta.file, PUBLIC));
+    expect(
+      createHash('sha256').update(bytes).digest('hex'),
+      'public/cells/wat-ket.cells.pmtiles is stale — run `npm run build:cells`',
+    ).toBe(meta.sha256);
+    expect(bytes.length).toBeGreaterThan(1_000_000);
+  });
+
+  it('is centred on the scene origin and covers the world disc', () => {
+    expect(meta.origin[0]).toBeCloseTo(scene.origin[0], 4);
+    expect(meta.origin[1]).toBeCloseTo(scene.origin[1], 4);
+    expect(meta.radiusKm).toBe(12_000);
+  });
+
+  /** The same disc as the world field, binned differently: the totals must agree. */
+  it("holds the same people as the world field, within a rim's worth", () => {
+    const world = JSON.parse(readFileSync(new URL(scene.region.world.meta, SCENES), 'utf8')) as {
+      stats: { totalInside: number };
+    };
+    expect(Math.abs(meta.stats.totalPeople - world.stats.totalInside) / world.stats.totalInside).toBeLessThan(0.01);
+    expect(meta.stats.cells).toBeGreaterThan(50_000);
+  });
+});

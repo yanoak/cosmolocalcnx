@@ -152,6 +152,10 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
    size at first layout, which is the standard fix. */
 .canvas-wrap { position: relative; flex: 1; min-width: 0; }
 .canvas-fill { position: absolute; inset: 0; }
+/* One stage, two renderers: the diorama for the valley and the city, the map for the
+   circle. The inactive one is hidden, not removed — see page.tsx. */
+.renderer { position: absolute; inset: 0; }
+.renderer.is-hidden { visibility: hidden; pointer-events: none; }
 /* Diorama measures this box itself and sizes the canvas from it — see the comment
    in Diorama.tsx. It must therefore have a definite size of its own. */
 .diorama { position: absolute; inset: 0; }

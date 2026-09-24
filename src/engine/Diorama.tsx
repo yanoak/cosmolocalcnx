@@ -4,11 +4,10 @@ import { MapControls } from '@react-three/drei';
 import { Canvas, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { aeqdForward } from './aeqd';
 import { Buildings } from './Buildings';
-import { circleBounds, isometricFit, poseBetween, regionScale, stageFit, type Bounds, type CameraPose } from './camera';
+import { isometricFit, type Bounds, type CameraPose } from './camera';
 import { CameraRig } from './CameraRig';
-import { resolvePose, ringAt, type Beat, type ViewFits } from './chapters';
+import { resolvePose, type Beat, type ViewFits } from './chapters';
 import { DebugOverlay } from './DebugOverlay';
 import { Ground, GroundAreas } from './Ground';
 import { BackdropPlane, type BackdropSource } from './BackdropPlane';
@@ -17,9 +16,6 @@ import type { ValleyStyle } from './valley';
 import { clampZoom, viewSpec, type ViewId } from './views';
 import { ReliefBackdrop, type ReliefSource } from './ReliefBackdrop';
 import { BridgeMesh } from './BridgeMesh';
-import { RegionPlane } from './RegionPlane';
-import type { City } from './cities';
-import type { RegionMeta } from './region';
 import type { BaselineArea, BaselineBuilding, BaselineRoad } from './scene';
 import { PALETTE_EXTENDED, UI_TOKENS } from './theme';
 
@@ -28,19 +24,6 @@ export type { Bounds };
 interface Size {
   width: number;
   height: number;
-}
-
-export interface RegionSource {
-  url: string;
-  meta: RegionMeta;
-  /** The scene's lat/lon origin, so the anchor can be projected onto the circle. */
-  origin: [number, number];
-  /** Every city over the threshold inside the circle, biggest first. */
-  cities: City[];
-  /** The subset that carries a permanent label. */
-  labels: City[];
-  /** The world outside the circle. Absent is valid. */
-  world?: { url: string; meta: RegionMeta } | null;
 }
 
 /**
@@ -114,52 +97,17 @@ function RedrawOnVisible() {
 }
 
 /**
- * The "you are here" ring, at the scene origin's true place on the circle.
- *
- * A ring rather than a dot: at this scale a filled dot is indistinguishable from a
- * dense city, and the one thing this marker must not be is data. It is a mesh
- * rather than part of the texture so it stays crisp at any zoom, and so it can fade
- * in on its own schedule as the diorama shrinks onto it.
- */
-function AnchorMarker({
-  at,
-  radiusKm,
-}: {
-  at: [number, number];
-  radiusKm: number;
-}) {
-  // Sized against the circle, so it reads the same whatever radius a scene uses.
-  const outer = radiusKm / 70;
-  return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[at[0], 0.5, -at[1]]}
-      raycast={() => null}
-    >
-      <ringGeometry args={[outer * 0.62, outer, 32]} />
-      <meshBasicMaterial
-        color={UI_TOKENS['ui.accent']}
-        toneMapped={false}
-        transparent
-        depthWrite={false}
-        opacity={1}
-      />
-    </mesh>
-  );
-}
-
-/**
  * A fixed isometric diorama you inspect, not a world you traverse.
  *
  * Orthographic camera on the isometric diagonal `camera.ts` fixes. MapControls constrained to pan and
  * zoom, never rotate: touch is the primary input and a visitor who rotates the
  * camera into a wall leaves a broken screen for the next person.
  *
- * ONE camera serves two coordinate frames — district metres and circle kilometres —
- * because an orthographic camera's zoom is pixels per stage unit, so a group with a
- * scale is exactly equivalent to a second camera and keeps MapControls, depth and
- * picking all bound to one thing. See camera.ts. Every camera move is a `CameraPose`
- * applied by `CameraRig`; nothing else here touches the camera.
+ * Two views live here — the valley and the city — in one frame of district metres.
+ * The circle used to be a third, in kilometres under a scaled group; since 24 Sep 2026
+ * it is a MapLibre map (`PresentMap.tsx`) behind the cut between views, and nothing
+ * here knows about it. Every camera move is a `CameraPose` applied by `CameraRig`;
+ * nothing else here touches the camera.
  */
 export function Diorama({
   bounds,
@@ -171,7 +119,6 @@ export function Diorama({
   onSelect,
   debug,
   wireframe,
-  region,
   relief = null,
   backdrop = null,
   valley = null,
@@ -179,14 +126,9 @@ export function Diorama({
   view = 'city',
   heroIds,
   beat = null,
-  nextBeat = null,
-  progress = 0,
-  claimKm = 0,
   beatDurationMs = 600,
   interactive = true,
   onArrive,
-  onPickCell,
-  highlight = null,
 }: {
   bounds: Bounds;
   buildings: BaselineBuilding[];
@@ -197,7 +139,6 @@ export function Diorama({
   onSelect: (id: string | null) => void;
   debug: boolean;
   wireframe: boolean;
-  region?: RegionSource | null;
   /** The land around the district, flattened under it. Never under the buildings. */
   relief?: ReliefSource | null;
   /**
@@ -224,29 +165,12 @@ export function Diorama({
    * from the beat, which is the only way a view is ever chosen during a stem.
    */
   beat?: Beat | null;
-  /**
-   * The beat after this one, for a beat that moves CONTINUOUSLY with scroll — one with a
-   * ring. Its pose is then the way-point the camera is interpolated toward as `progress`
-   * runs 0–1, so the world pulls back as the ring grows rather than jumping at the
-   * beat boundary. Null on the last beat, or for beats that cut and tween.
-   */
-  nextBeat?: Beat | null;
-  /** 0–1 within the current beat. Drives the ring and, for a ring beat, the camera. */
-  progress?: number;
-  /**
-   * The claim radius, km: the distance from the circle's centre that holds half of
-   * humanity, derived from the committed field. What a beat's `ring` is a multiple of.
-   */
-  claimKm?: number;
   /** How long a move between beats takes. A view switch with no beat is a cut. */
   beatDurationMs?: number;
   /** Pan and zoom by hand. Off during the stem, where the wheel scrolls the story. */
   interactive?: boolean;
   /** After the camera settles on a new pose — not on mount. */
   onArrive?: () => void;
-  /** A position on the circle, in km, that the visitor pointed at. */
-  onPickCell?: (km: [number, number]) => void;
-  highlight?: [number, number] | null;
 }) {
   const [stage, size] = useMeasuredStage();
   const ready = !!size && size.width > 0 && size.height > 0;
@@ -262,41 +186,21 @@ export function Diorama({
     [bounds, size],
   );
 
-  const radiusKm = region?.meta.projection.radiusKm ?? 0;
-
-  /** Stage units per kilometre — the one constant absorbing the 2,500:1 scale gap. */
-  const k = useMemo(
-    () => (region ? regionScale(bounds, radiusKm) : 1),
-    [region, bounds, radiusKm],
-  );
-
-  /** The scene origin's place on the circle, in stage units. North flips to -Z. */
-  const anchorStage = useMemo<[number, number]>(() => {
-    if (!region) return [0, 0];
-    const [east, north] = aeqdForward(region.origin, region.meta.projection.centre);
-    return [east * k, -north * k];
-  }, [region, k]);
-
   const districtCentre = useMemo<[number, number]>(
     () => [fit.target[0], fit.target[2]],
     [fit],
   );
 
-  /** The outermost thing in the scene — the world if there is one, else the circle. */
-  const outerRadiusKm = region?.world?.meta.projection.radiusKm ?? radiusKm;
-
-  const camera = useMemo(() => {
-    const staged = stageFit(bounds, outerRadiusKm * k, fit);
-    return { position: staged.position, zoom: staged.zoom, near: staged.near, far: staged.far };
-  }, [bounds, outerRadiusKm, k, fit]);
+  const camera = useMemo(
+    () => ({ position: fit.position, zoom: fit.zoom, near: fit.near, far: fit.far }),
+    [fit],
+  );
 
   /**
-   * One camera fit per view. `regionScale` and `stageFit` absorb the 2,500:1 gap
-   * between kilometres and district metres; each view's fit is computed from its own
-   * extent — the circle plus its margin, the valley's field, the district. What went on
-   * 21 Sep is the idea that a visitor travels across that gap by pinching; what went on
-   * 24 Sep is the circle's fit being derived from the district's, which only held for
-   * the diagonal camera.
+   * One camera fit per view: the valley's field and the district. The circle is a
+   * MapLibre map since 24 Sep 2026 (`PresentMap.tsx`) and has no fit here; its entry
+   * carries the district's numbers so the `ViewFits` record stays complete. What went
+   * on 21 Sep is the idea that a visitor travels between views by pinching.
    */
   const specs = useMemo(() => {
     const viewport = size ?? { width: 0, height: 0 };
@@ -304,13 +208,12 @@ export function Diorama({
     const valleyFit = valley
       ? isometricFit([-valleyHalfM, -valleyHalfM, valleyHalfM, valleyHalfM], viewport).zoom
       : fit.zoom;
-    const circleFit = region ? isometricFit(circleBounds(radiusKm, k), viewport).zoom : fit.zoom;
     return {
-      circle: viewSpec('circle', circleFit),
+      circle: viewSpec('circle', fit.zoom),
       valley: viewSpec('valley', valleyFit),
       city: viewSpec('city', fit.zoom),
     };
-  }, [valley, region, radiusKm, k, size, fit.zoom]);
+  }, [valley, size, fit.zoom]);
 
   const spec = specs[view];
 
@@ -329,26 +232,10 @@ export function Diorama({
    * otherwise the open view's own fit, centred on its world. A view switch is a cut and a
    * beat is a move — the duration is the whole difference.
    */
-  const pose = useMemo<CameraPose>(() => {
-    if (!beat) return { view, zoom: fits[view].zoom, target: fits[view].target };
-    const here = resolvePose(beat, fits);
-    // A ring beat is scroll-linked: the camera sits `progress` of the way to the next
-    // beat's pose, so the world recedes continuously as the circle grows.
-    if (beat.ring && nextBeat && nextBeat.view === beat.view) {
-      return poseBetween(here, resolvePose(nextBeat, fits), progress);
-    }
-    return here;
-  }, [beat, nextBeat, progress, fits, view]);
-  const continuous = !!(beat?.ring && nextBeat);
-
-  /**
-   * The growing circle's radius in km. A ring beat says; anything else holds the claim,
-   * which is what the bowl shows — the circle at half of humanity, the argument made.
-   */
-  const ringKm = useMemo(() => {
-    const fromBeat = beat ? ringAt(beat, progress, claimKm) : null;
-    return fromBeat ?? claimKm;
-  }, [beat, progress, claimKm]);
+  const pose = useMemo<CameraPose>(
+    () => (beat ? resolvePose(beat, fits) : { view, zoom: fits[view].zoom, target: fits[view].target }),
+    [beat, fits, view],
+  );
 
   /**
    * Which views have ever been opened.
@@ -394,31 +281,7 @@ export function Diorama({
 
           {/* Cuts the camera to the open view. Switching is a selection, not a
               journey — a tween here would be the rail coming back through the door. */}
-          <CameraRig
-            pose={pose}
-            durationMs={beat && !continuous ? beatDurationMs : 0}
-            onArrive={onArrive}
-          />
-
-          {region && (
-            <>
-              <group scale={k} visible={view === 'circle'}>
-                <RegionPlane
-                  url={region.url}
-                  meta={region.meta}
-                  anchor={aeqdForward(region.origin, region.meta.projection.centre)}
-                  labels={view === 'circle' ? region.labels : EMPTY_LABELS}
-                  interactive={view === 'circle'}
-                  onPickCell={onPickCell}
-                  highlight={highlight}
-                  world={region.world ?? null}
-                  ringKm={ringKm}
-                  claimKm={claimKm}
-                />
-                <AnchorMarker at={[anchorStage[0] / k, -anchorStage[1] / k]} radiusKm={radiusKm} />
-              </group>
-            </>
-          )}
+          <CameraRig pose={pose} durationMs={beat ? beatDurationMs : 0} onArrive={onArrive} />
 
           {/* Built on first visit, then kept. Discrete views mean never paying for a
               world nobody is looking at — and the valley's mesh is 130k triangles and a
@@ -490,4 +353,3 @@ export function Diorama({
 }
 
 const EMPTY_HEROES: ReadonlySet<string> = new Set();
-const EMPTY_LABELS: City[] = [];

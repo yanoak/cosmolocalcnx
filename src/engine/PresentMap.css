@@ -1,0 +1,16 @@
+/* Colour tokens are injected in layout.tsx from src/engine/theme.ts.
+   Never write a hex value in this file. */
+
+.present-map {
+  position: absolute;
+  inset: 0;
+  background: var(--cosmo-offWhite);
+}
+
+/* MapLibre's own chrome is not used: no logo, no attribution control (the credits
+   panel carries Protomaps and OSM), no navigation buttons. */
+.present-map .maplibregl-ctrl-bottom-left,
+.present-map .maplibregl-ctrl-bottom-right { display: none; }
+
+/* The city labels are DOM markers, styled exactly as they were over the canvas. */
+.present-map .maplibregl-marker { pointer-events: none; }

@@ -6,10 +6,10 @@
  * The one thing that applies a pose to a real camera is `CameraRig.tsx`; nothing else
  * in the piece touches `camera.zoom` directly.
  *
- * Since 24 Sep 2026 this also holds what survived `registers.ts`: the circle's framing
- * arithmetic. The rest of that module — the zoom ladder, the crossfade bands, the
- * district collapse — described a rail that was cut on 21 Sep, and it was still being
- * imported three days later. Deleted, not renamed.
+ * The circle's framing arithmetic lived here for one day, 24 Sep 2026, after
+ * `registers.ts` was deleted; it went the same evening when the circle became a
+ * MapLibre map with a camera of its own. What is left is the attitude, the fit, and
+ * the pose.
  *
  * The scene has to open sensibly on a phone in portrait, a laptop, and a projector
  * of unknown aspect ratio, and the scene extent itself is an editorial setting that
@@ -148,75 +148,6 @@ export function wallFacesCamera(nx: number, ny: number): boolean {
  */
 export function rightness(x: number, y: number, z: number): number {
   return x * BASIS.right[0] + y * BASIS.right[1] + z * BASIS.right[2];
-}
-
-// ------------------------------------------------------------- the circle's frame
-
-/** How much wider than the district the circle view sits. Tuned by eye. */
-export const DEFAULT_REGION_OUT = 8;
-
-/**
- * How much more than the circle the circle view frames.
- *
- * 1 would fit the circle exactly to the screen — and it made the claim unfalsifiable.
- * "Half of humanity lives inside this circle" is only a claim a visitor can weigh if
- * they can SEE that there is a world outside it and that the world outside is emptier.
- * A circle that fills the frame is just a picture of Asia. At 1.7 the circle occupies
- * about 60% of the shorter screen axis, with the rest of the world around it.
- */
-export const REGION_MARGIN = 1.7;
-
-/**
- * Stage units per kilometre for the circle's group.
- *
- * The stage unit is a district metre, so this is the one constant that absorbs the
- * 2,500:1 scale gap. Deriving it rather than hard-coding it is what makes the circle
- * work for a second neighbourhood.
- *
- * Until 24 Sep 2026 this also put the circle's fit in exact ratio to the district's,
- * a property of the diagonal camera's footprint that a differently turned camera
- * loses. The circle's fit is now computed directly from its own bounds — `circleBounds`
- * below — so this is only a scale, and the attitude is free to change.
- */
-export function regionScale(
-  districtBounds: Bounds,
-  radiusKm: number,
-  regionOut: number = DEFAULT_REGION_OUT,
-  margin: number = REGION_MARGIN,
-): number {
-  const [west, south, east, north] = districtBounds;
-  const spanX = Math.max(1, east - west);
-  const spanZ = Math.max(1, north - south);
-  if (!(radiusKm > 0)) return 1;
-  return (regionOut * (spanX + spanZ)) / (4 * radiusKm * Math.max(1e-6, margin));
-}
-
-/**
- * The stage rectangle the circle view fits: the circle plus its margin, on the origin.
- * Hand it to `isometricFit` like any other extent.
- */
-export function circleBounds(radiusKm: number, k: number, margin: number = REGION_MARGIN): Bounds {
-  const half = Math.max(1, radiusKm * k * margin);
-  return [-half, -half, half, half];
-}
-
-/**
- * A camera frustum deep enough for BOTH frames.
- *
- * isometricFit stays untouched — it still decides where the camera sits and what the
- * district fit is. This only widens near/far so the circle's plane, which is thousands
- * of stage units across, is not clipped away.
- */
-export function stageFit(
-  districtBounds: Bounds,
-  regionRadiusStage: number,
-  fit: CameraFit,
-): CameraFit {
-  const [west, south, east, north] = districtBounds;
-  const spanX = Math.max(1, east - west);
-  const spanZ = Math.max(1, north - south);
-  const reach = Math.max(Math.max(spanX, spanZ) * 2, regionRadiusStage * 2);
-  return { ...fit, near: -reach * 4, far: reach * 8 };
 }
 
 // ------------------------------------------------------------- poses and moves

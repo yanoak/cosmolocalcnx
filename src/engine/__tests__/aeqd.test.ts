@@ -124,3 +124,20 @@ describe('aeqdInverse', () => {
     expect(lon).toBeLessThan(180);
   });
 });
+
+import { circleAround } from '../aeqd';
+
+describe('circleAround', () => {
+  it('puts every point the asked distance from the centre, and closes', () => {
+    const ring = circleAround(WAT_KET, 3400, 64);
+    expect(ring.length).toBe(65);
+    for (const p of ring) expect(greatCircle(WAT_KET, p).distanceKm).toBeCloseTo(3400, 6);
+    expect(ring[0]).toEqual(ring[64]);
+  });
+
+  it('starts due north and goes clockwise', () => {
+    const ring = circleAround(WAT_KET, 1000, 4);
+    expect(greatCircle(WAT_KET, ring[0]).bearingDeg).toBeCloseTo(0, 6);
+    expect(greatCircle(WAT_KET, ring[1]).bearingDeg).toBeCloseTo(90, 6);
+  });
+});

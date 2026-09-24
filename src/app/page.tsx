@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Diorama } from '@/engine/Diorama';
-import { cellAt, citiesInCell, nearestCity, type City } from '@/engine/cities';
+import { nearestCity, type City } from '@/engine/cities';
 import { pickLabels } from '@/engine/cities';
 import { TokenSwatches } from '@/engine/DebugOverlay';
 import { SelectPanel, type Selection } from '@/engine/SelectPanel';
@@ -35,8 +35,19 @@ import {
 import { Rail } from '@/engine/Rail';
 import { Scrolly, type BeatCopy } from '@/engine/Scrolly';
 import { Explore } from '@/engine/Explore';
-import { beatAt, releasedAt, ringAt, type BeatPosition } from '@/engine/chapters';
+import {
+  beatAt,
+  mapPoseBetween,
+  releasedAt,
+  resolveMapPose,
+  ringAt,
+  type BeatPosition,
+  type MapPose,
+} from '@/engine/chapters';
 import { halfPopulationRadius, peopleWithin } from '@/engine/region';
+import { PresentMap, type MapPick } from '@/engine/PresentMap';
+import { aeqdForward, type LatLon } from '@/engine/aeqd';
+import { MAP_URLS } from '@/scenes/map';
 import { SCORES } from '@/content/scores';
 import copyDoc from '@/content/copy.json';
 import { ViewHeader } from '@/engine/ViewHeader';
@@ -70,7 +81,6 @@ const REGION = (() => {
   const asset = ref ? REGION_ASSETS[ref.field] : undefined;
   if (!asset) return null;
   return {
-    url: asset.url,
     meta: asset.meta,
     origin: DOC.origin as [number, number],
     cities: asset.cities.cities,
@@ -105,6 +115,13 @@ const CLAIM = (() => {
 
 /** "about 3,400 km" — rounded to the nearest hundred, which is all the bracket supports. */
 const roundKm = (km: number) => Math.round(km / 100) * 100;
+
+/**
+ * Where the Present map opens: close on Wat Ket, pitched. What a beat's `mapPose` is
+ * filled from. Zoom is MapLibre's own scale; pitch and bearing in degrees.
+ */
+const ORIGIN = DOC.origin as LatLon;
+const MAP_HOME: MapPose = { zoom: 8, pitch: 55, bearing: 0, centre: ORIGIN };
 
 /**
  * The relief backdrop, resolved the same way. Absent is a valid state: a scene with
@@ -299,32 +316,17 @@ export default function Page() {
   }, [lod, fullBuildings]);
 
   /**
-   * What the visitor is pointing at on the circle.
-   *
-   * A cell rather than a city, because the question a bright patch prompts is
-   * "what is that?" and the honest answer is sometimes two cities — Dhaka and
-   * Narayanganj share a 13 km cell, as do Shenzhen and Dongguan. Naming only the
-   * largest would misreport the patch.
+   * What the visitor is pointing at on the map: a cell, with the nearest named city if
+   * one is close. A cell rather than a city, because the question a bright patch
+   * prompts is "what is that?" and the honest answer is sometimes two cities.
    */
-  const [pickedCell, setPickedCell] = useState<[number, number] | null>(null);
-  const [pickedKm, setPickedKm] = useState<[number, number] | null>(null);
-
-  const onPickCell = useCallback((km: [number, number]) => {
-    if (!REGION) return;
-    const cell = cellAt(km, REGION.meta.projection.radiusKm, REGION.meta.grid.size);
-    setPickedKm(km);
-    setPickedCell(cell);
-  }, []);
-
+  const [mapPick, setMapPick] = useState<MapPick | null>(null);
   const pickedCities: City[] = useMemo(() => {
-    if (!REGION || !pickedCell) return [];
-    const { radiusKm } = REGION.meta.projection;
-    const found = citiesInCell(REGION.cities, pickedCell, radiusKm, REGION.meta.grid.size);
-    if (found.length > 0) return found;
-    // A near miss still answers. A tap that silently does nothing reads as broken.
-    const near = pickedKm ? nearestCity(REGION.cities, pickedKm, 120) : null;
+    if (!REGION || !mapPick) return [];
+    const km = aeqdForward([mapPick.lat, mapPick.lon], ORIGIN);
+    const near = nearestCity(REGION.cities, km, 60);
     return near ? [near.city] : [];
-  }, [pickedCell, pickedKm]);
+  }, [mapPick]);
 
   /** Chapter first, view from it. The only way the number keys and the rail move. */
   const goToChapter = useCallback((next: ChapterId) => {
@@ -334,20 +336,31 @@ export default function Page() {
     setPosition({ index: 0, t: 0 });
     viewer.current?.scrollTo({ top: 0 });
     setView(resolveView(defaultView(c), HAS_VIEWS));
-    if (defaultView(c) !== 'circle') {
-      setPickedCell(null);
-      setPickedKm(null);
-    }
+    if (defaultView(c) !== 'circle') setMapPick(null);
   }, []);
 
-  /** A view change inside the current chapter — what a Futures beat will do to reach the valley. */
-  const goToView = useCallback((next: ViewId) => {
-    setView(resolveView(next, HAS_VIEWS));
-    if (next !== 'circle') {
-      setPickedCell(null);
-      setPickedKm(null);
-    }
-  }, []);
+  /**
+   * The map's camera during the Present stem. A ring beat interpolates toward the next
+   * beat's pose as it plays, exactly as `poseBetween` does for the diorama; a beat
+   * without a ring eases to its own pose. In the bowl the last pose is HELD — pushing a
+   * new object would snap the map out from under a visitor's hands.
+   */
+  const nextBeat = score.beats[position.index + 1] ?? null;
+  const heldMapPose = useRef<MapPose>(MAP_HOME);
+  const mapPose = useMemo<MapPose>(() => {
+    if (mode !== 'stem' || chapter !== 'present') return heldMapPose.current;
+    const here = resolveMapPose(beat, MAP_HOME);
+    const p =
+      beat.ring && nextBeat
+        ? mapPoseBetween(here, resolveMapPose(nextBeat, MAP_HOME), position.t)
+        : here;
+    heldMapPose.current = p;
+    return p;
+  }, [mode, chapter, beat, nextBeat, position.t]);
+  const mapContinuous = mode === 'stem' && !!(beat.ring && nextBeat);
+  const mapRingKm = CLAIM
+    ? (mode === 'stem' ? ringAt(beat, position.t, CLAIM.km) : null) ?? CLAIM.km
+    : 0;
 
   /**
    * Already only the near buildings — the split happened in the generator, not here.
@@ -484,6 +497,10 @@ export default function Page() {
           onKeyDown={onKeyDown}
         >
           <div className="canvas-fill">
+            {/* Two renderers, one stage. The diorama stays mounted through the Present
+                chapter — its valley and city are expensive to rebuild — and is hidden
+                rather than unmounted; the map is the reverse, torn down on leave. */}
+            <div className={chapter === 'present' ? 'renderer is-hidden' : 'renderer'}>
             <Diorama
               bounds={bounds}
               buildings={buildings}
@@ -494,21 +511,30 @@ export default function Page() {
               onSelect={setSelectedId}
               debug={debug}
               wireframe={wireframe}
-              region={REGION}
               relief={RELIEF}
               backdrop={backdrop}
               heroIds={HERO_IDS}
               view={view}
               valley={VALLEY}
               reliefStyle={relief}
-              onPickCell={onPickCell}
-              highlight={pickedCell}
               beat={mode === 'stem' ? beat : null}
-              nextBeat={mode === 'stem' ? score.beats[position.index + 1] ?? null : null}
-              progress={position.t}
-              claimKm={CLAIM?.km ?? 0}
               interactive={mode === 'explore'}
             />
+            </div>
+            {chapter === 'present' && REGION && CLAIM && (
+              <PresentMap
+                basemapUrl={MAP_URLS.basemap}
+                cellsUrl={MAP_URLS.cells}
+                origin={ORIGIN}
+                claimKm={CLAIM.km}
+                ringKm={mapRingKm}
+                pose={mapPose}
+                continuous={mapContinuous}
+                interactive={mode === 'explore'}
+                labels={REGION.labels}
+                onPick={setMapPick}
+              />
+            )}
           </div>
         </div>
         {mode === 'stem' && chapter === 'present' && CLAIM && beat.ring && (() => {
@@ -526,16 +552,16 @@ export default function Page() {
         {mode === 'explore' && (
         <div className="view-caption" aria-live="polite">
           {view === 'circle' ? (
-            pickedCities.length > 0 ? (
+            mapPick ? (
               <p className="city-readout">
-                <strong>{pickedCities.map((c) => c.name).join(' · ')}</strong>{' '}
+                <strong>
+                  {pickedCities.length > 0
+                    ? `${pickedCities[0].name}, ${pickedCities[0].country}`
+                    : 'This cell'}
+                </strong>{' '}
                 <span>
-                  {pickedCities
-                    .reduce((total, c) => total + c.population, 0)
-                    .toLocaleString()}{' '}
-                  people ·{' '}
-                  {Math.round(Math.hypot(...(pickedKm ?? [0, 0]))).toLocaleString()} km from
-                  the centre
+                  {mapPick.people.toLocaleString()} people ·{' '}
+                  {mapPick.distKm.toLocaleString()} km from Wat Ket
                 </span>
               </p>
             ) : (
@@ -585,6 +611,8 @@ export default function Page() {
             on tap. See the table in README.md. */}
         <Credits>
           <p>
+            Map tiles from <a href="https://protomaps.com/">Protomaps</a> ©{' '}
+            <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, ODbL.
             Building footprints and street data ©{' '}
             <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, ODbL.
             Further footprints from <a href="https://overturemaps.org/">Overture Maps</a>, ODbL,

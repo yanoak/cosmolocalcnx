@@ -72,7 +72,7 @@ overlay**:
 | View | Substrate — no tense | Overlay — carries the tense |
 |---|---|---|
 | Valley | DEM, ridgelines | past: river · roads · rail · remote work — futures: pins |
-| Circle | AEQD graticule, landmass | the GHS-POP field |
+| Circle | the Protomaps basemap, on a globe | the GHS-POP cells and the ring |
 | City | OSM footprints | pins, and `edits` if any are ever authored |
 
 Geology and building outlines do not have a tense. The claim is in the overlay, and in the material
@@ -113,8 +113,8 @@ fields are centred on Wat Ket since 24 Sep 2026** — `regions/aeqd_18.791_99.00
 `region.test.ts` fails if a field's centre ever differs from the scene origin, because a
 constant-distance-from-Wat-Ket circle is not a circle in any other frame. Each sidecar carries a
 cumulative-population-by-radius `curve`; the claim radius is `halfPopulationRadius()` over it and
-is never typed into the code. The field is drawn as instanced columns (`RegionColumns.tsx`,
-`columns.ts`) with the growing ring as a shader uniform.
+is never typed into the code. The field is drawn by MapLibre as extruded cells over a basemap —
+see the stack section — with the growing ring as a GeoJSON circle from `circleAround()`.
 
 **This replaced one rail**, which from 16 to 21 Sep ran the circle, the district and the block
 through a single gesture. It went because a 3,437 km population raster and an 8 km building diorama
@@ -184,6 +184,18 @@ on the December roadmap with its numbers. Added 23 Sep 2026, see
 
 - **Next.js App Router + TypeScript**, deployed on **Vercel**. Public URL matters because of the QR.
 - **React Three Fiber + drei** for the 3D. This is three.js with React ergonomics, not an alternative to it.
+- **MapLibre GL JS + PMTiles for the Present chapter, since 24 Sep 2026.** A second renderer,
+  behind the cut between views — which the 21 Sep decision that the circle is "a different kind
+  of rendering" already licensed. `PresentMap.tsx` mounts a MapLibre globe when the chapter
+  opens and tears it down when it closes; the diorama stays mounted and hidden. The basemap is
+  a Protomaps world extract to zoom 6 in `public/basemap/` (45 MB, committed, because both the
+  offline laptop and the Vercel URL need it in place with no server), styled entirely from
+  `theme.ts` tokens by `mapstyle.ts` with **no symbol layers** — labels are DOM markers from the
+  city file, as they were over the canvas, so no glyph pipeline is needed. The population is
+  `scripts/build-cells.py`: 0.25° cells from the same GHS-POP tiles, cut by tippecanoe into
+  `public/cells/wat-ket.cells.pmtiles`, drawn as `fill-extrusion`. Yan's call after seeing the
+  three.js columns: there was no geography under the data. See
+  `plans/2026-09-24_present-on-maplibre.plan.md`.
 - **Not Godot, not Unity.** Considered and rejected: large wasm payloads, flaky iOS Safari, and the
   content is text panels over a 3D scene — which is DOM's job, not a game engine's.
 - Viewer at `/`, editor at `/admin`. Shared renderer components in `src/engine/`.

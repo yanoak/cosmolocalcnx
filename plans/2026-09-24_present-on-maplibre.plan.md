@@ -1,6 +1,6 @@
 ---
 slug: 2026-09-24_present-on-maplibre
-status: draft
+status: active
 started: 2026-09-24
 finished:
 issue:
@@ -125,27 +125,27 @@ visitor misses most. A basemap is all four, maintained by other people.
 
 ## Tasks
 
-- [ ] Research note: MapLibre 6.11 globe + fill-extrusion, PMTiles protocol, Protomaps extract
+- [ ] ~~Research note~~ — folded into this plan's Context and the diary; not written separately + fill-extrusion, PMTiles protocol, Protomaps extract
       sizing, style flavour recolouring — `docs/research/2026-09-24_maplibre.findings.md`
-- [ ] `pmtiles` CLI installed; `scripts/fetch-basemap.sh` extracts the world at zoom 0–6 to
+- [x] `pmtiles` CLI installed; `scripts/fetch-basemap.sh` extracts the world at zoom 0–6 to
       `public/basemap.pmtiles`, gitignored, with the build date pinned and recorded
-- [ ] `scripts/build-cells.py` — GHS-POP → 0.25° cells with `people`, `t`, `h`, `distKm` →
+- [x] `scripts/build-cells.py` — GHS-POP → 0.25° cells with `people`, `t`, `h`, `distKm` →
       GeoJSON → `tippecanoe` → `src/scenes/wat-ket.cells.pmtiles`; byte-identical on re-run;
       total conserved against the field's own total
-- [ ] `maplibre-gl`, `pmtiles`, `@protomaps/basemaps` added; the PMTiles protocol registered once
-- [ ] `engine/mapstyle.ts` — the basemap style from the flavour, recoloured from `theme.ts`;
+- [x] `maplibre-gl`, `pmtiles`, `@protomaps/basemaps` added; the PMTiles protocol registered once
+- [x] `engine/mapstyle.ts` — the basemap style from the flavour, recoloured from `theme.ts`;
       pure, tested for "no raw hex", fonts from the Plex face
-- [ ] `PresentMap.tsx` — the map in the stage for the Present chapter, globe projection, cells
+- [x] `PresentMap.tsx` — the map in the stage for the Present chapter, globe projection, cells
       layer, ring source, the anchor at Wat Ket
-- [ ] `Beat.mapPose` and `mapPoseBetween` in `chapters.ts`; the Present score rewritten
-- [ ] Scroll → `jumpTo`; beat change → `easeTo`; release → interaction on
-- [ ] The readout on hover/tap, from cell properties and `citiesInCell`
-- [ ] Retire the three.js circle: `RegionPlane`, `RegionColumns`, `columns.ts`, the circle branch
+- [x] `Beat.mapPose` and `mapPoseBetween` in `chapters.ts`; the Present score rewritten
+- [x] Scroll → `jumpTo`; beat change → `easeTo`; release → interaction on
+- [x] The readout on hover/tap, from cell properties and `citiesInCell`
+- [x] Retire the three.js circle: `RegionPlane`, `RegionColumns`, `columns.ts`, the circle branch
       of `Diorama`, `regionScale`/`circleBounds`/`stageFit`; their tests with them
-- [ ] Credits: Protomaps added beside OSM
+- [x] Credits: Protomaps added beside OSM
 - [ ] Measure: bundle delta, first paint of the Present chapter on the laptop, and on a phone over
       the Vercel URL; record in `docs/architecture.md`'s perf table
-- [ ] `docs/architecture.md` "Three views", `CLAUDE.md` stack section (a second renderer,
+- [x] `docs/architecture.md` "Three views", `CLAUDE.md` stack section (a second renderer,
       behind the cut), handover
 
 ## UI mockups (ASCII)
@@ -261,14 +261,17 @@ to fetch, the cells and the ring still draw over the ground colour and the capti
 
 ## Open questions
 
-- [ ] Zoom 0–6 or 0–7 for the extract? 6 is 35 MB and enough to read a delta; 7 is 70 MB and
+- [x] Zoom 0–6 — 45 MB, committed. Decided by doing; 7 waits for a reason.
+- [x] Squares: `h3` would not build on this machine, and a lat/lon grid needs no dependency.
+- [x] Labels are DOM markers from the city file, not symbol layers — no glyphs to self-host.
+- [ ] ~~Zoom 0–6 or 0–7 for the extract?~~ 6 is 35 MB and enough to read a delta; 7 is 70 MB and
       reads a city's shape. The laptop does not care; the phone streams either. Decide by looking.
-- [ ] Cells as a 0.25° lat/lon grid or H3 hexes? Squares match the existing 256² columns and need
+- [x] ~~Cells as a 0.25° lat/lon grid or H3 hexes?~~ squares, see above Squares match the existing 256² columns and need
       no dependency; hexes are what the Pudding used and read better as terrain. `h3` is a
       `pip install` away. Leaning hexes at resolution 3 (about 60 km) or 4 (about 23 km).
-- [ ] Does the ring keep growing past the claim into the muted tone, as the columns do now, or
+- [x] Keeps growing, muted past the claim. ~~Does the ring keep growing past the claim into the muted tone, as the columns do now, or
       stop at the claim with the flattening stated in the card? Carried over from the Present plan.
-- [ ] The field's old 3,437 km rim, currently drawn as a ghost of the original radius — kept as a
+- [x] Dropped. ~~The field's old 3,437 km rim, currently drawn as a ghost of the original radius — kept as a
       second ring, or dropped now that the basemap gives the eye something else?
 
 ## Outcome
