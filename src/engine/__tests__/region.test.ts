@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import innerMeta from '@/scenes/regions/aeqd_21.000_100.290_r3437_n512.json';
-import worldMeta from '@/scenes/regions/aeqd_21.000_100.290_r12000_n1024.json';
+import innerMeta from '@/scenes/regions/aeqd_18.791_99.004_r3437_n512.json';
+import worldMeta from '@/scenes/regions/aeqd_18.791_99.004_r12000_n1024.json';
 import {
   aggregate,
   decodeField,
@@ -264,10 +264,13 @@ describe('half of humanity', () => {
     expect(shown).toBeLessThan(8.192e9);
   });
 
-  it('puts essentially half of everyone inside the circle', () => {
-    // Against the TRUE global total, not the capped field's.
+  it('puts about half of everyone inside the 3,437 km circle, now that it is on Wat Ket', () => {
+    // Against the TRUE global total, not the capped field's. Re-centring on Wat Ket
+    // cost 2.6% of the people inside — 3.98 bn against 4.09 bn at the Valeriepieris
+    // centre — which is the whole point: the move costs almost nothing. The exact
+    // claim radius is derived from the curve; see 'the committed fields' below.
     const WORLD_TOTAL = 8.191966468e9;
-    expect(inside / WORLD_TOTAL).toBeGreaterThan(0.495);
+    expect(inside / WORLD_TOTAL).toBeGreaterThan(0.48);
     expect(inside / WORLD_TOTAL).toBeLessThan(0.505);
   });
 

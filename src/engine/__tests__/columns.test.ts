@@ -6,6 +6,7 @@ import {
   TONE_FACTORS,
   cellOf,
   columnGeometry,
+  heightT,
   layoutColumns,
   populationT,
 } from '../columns';
@@ -66,6 +67,14 @@ describe('layoutColumns', () => {
     expect(layout.heightKm[0]).toBeGreaterThan(0);
     expect(layout.heightKm[0]).toBeLessThan(layout.heightKm[1]);
     expect(layout.heightKm[1]).toBeLessThan(layout.heightKm[2]);
+  });
+
+  it('keeps a plain low: height is a cube root, colour is a log', () => {
+    // A thousand people against a peak of ten million.
+    expect(heightT(1e3, 1e7)).toBeLessThan(0.05);
+    expect(populationT(1e3, 1e7)).toBeGreaterThan(0.4);
+    expect(heightT(1e7, 1e7)).toBe(1);
+    expect(heightT(0, 1e7)).toBe(0);
   });
 
   it('handles an empty field without allocating anything', () => {

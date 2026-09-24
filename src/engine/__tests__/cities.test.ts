@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import cityFile from '@/scenes/regions/aeqd_21.000_100.290_r3437.cities.json';
+import cityFile from '@/scenes/regions/aeqd_18.791_99.004_r3437.cities.json';
 import {
   cellAt,
   cellCentreKm,
@@ -36,27 +36,22 @@ describe('the committed city file', () => {
   });
 
   /**
-   * The projection, checked against the printed A0 hanging in the same room.
+   * The rim, checked against the field's own radius.
    *
-   * The poster lists these as sitting on the rim. If our AEQD disagrees by more
-   * than a rounding error, the screen and the wall tell a visitor different things.
+   * Until 24 Sep 2026 this compared rim distances with the printed A0 hanging in the
+   * same room. The circle is centred on Wat Ket now and the poster's is not, so the
+   * two legitimately disagree about which cities sit on the rim; what must still hold
+   * is that every city is inside the circle and that the file reaches the rim at all.
    */
-  it('agrees with the poster on where the rim cities are', () => {
-    const expected: Record<string, number> = {
-      Karachi: 3433,
-      Changchun: 3429,
-      Surabaya: 3410,
-      Kabul: 3393,
-      Bishkek: 3408,
-      Fukuoka: 3275,
-      Almaty: 3288,
-    };
-    for (const [name, poster] of Object.entries(expected)) {
-      const city = CITIES.find((c) => c.name === name);
-      expect(city, `${name} is inside the circle`).toBeDefined();
-      // Within 0.5%: GeoNames' centroid is not necessarily the poster's point.
-      expect(Math.abs(distanceFromCentreKm(city!) - poster)).toBeLessThan(20);
+  it('keeps every city inside the circle, and reaches its rim', () => {
+    let furthest = 0;
+    for (const city of CITIES) {
+      const d = distanceFromCentreKm(city);
+      expect(d).toBeLessThanOrEqual(RADIUS + 1);
+      if (d > furthest) furthest = d;
     }
+    // Something within 1% of the rim, or the file was clipped short.
+    expect(furthest).toBeGreaterThan(RADIUS * 0.99);
   });
 });
 

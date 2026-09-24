@@ -30,16 +30,38 @@ import { toneForNormal, type Tone } from './shading';
 export const MAX_COLUMN_KM = 400;
 
 /**
- * Population → the ramp position AND the height fraction, log-scaled.
+ * Population → the ramp position, log-scaled — the COLOUR of a column's top.
  *
  * The same log10 mapping `fieldToRgba` uses for the flat plane, so a column's top
- * is exactly the colour the plane would have painted under it. Linear height would
- * render everything except the Ganges plain and the Pearl River delta as flat; a
- * cell of 10,000 people is not nothing and should not be invisible.
+ * is exactly the colour the plane would have painted under it. Height uses
+ * `heightT` below, which is a different curve for a different question.
  */
 export function populationT(people: number, max: number): number {
   if (!(people > 0) || !(max > 0)) return 0;
   const t = Math.log10(people + 1) / Math.log10(max + 1);
+  return t < 0 ? 0 : t > 1 ? 1 : t;
+}
+
+/**
+ * The grid the columns are drawn at. The committed field is 512²; block-summed by 2
+ * this is 27 km cells and about 26,000 columns — the plan's own middle row, and the
+ * resolution at which a column reads as a hill rather than a one-pixel needle at the
+ * fit. Exact, because population is additive.
+ */
+export const COLUMN_GRID = 256;
+
+/**
+ * Population → the HEIGHT fraction: a cube root, not the log the colour uses.
+ *
+ * Log is right for colour, where the question is "is anyone here"; it is wrong for
+ * height, where it makes a cell of a thousand people almost half as tall as
+ * Shanghai's and the field comes out as fur. The cube root keeps plains low and
+ * lets the megacity cells stand up as the peaks — the same curve the raster is
+ * stored with.
+ */
+export function heightT(people: number, max: number): number {
+  if (!(people > 0) || !(max > 0)) return 0;
+  const t = Math.cbrt(people / max);
   return t < 0 ? 0 : t > 1 ? 1 : t;
 }
 
@@ -90,11 +112,10 @@ export function layoutColumns(
       const i = row * size + col;
       const people = field[i];
       if (!(people > 0)) continue;
-      const u = populationT(people, max);
       east[k] = (col + 0.5) * cellKm - radiusKm;
       north[k] = radiusKm - (row + 0.5) * cellKm;
-      heightKm[k] = u * maxHeightKm;
-      t[k] = u;
+      heightKm[k] = heightT(people, max) * maxHeightKm;
+      t[k] = populationT(people, max);
       cell[k] = i;
       k++;
     }

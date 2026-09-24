@@ -4,6 +4,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import {
+  COLUMN_GRID,
   OUTSIDE_MIX,
   TONE_FACTORS,
   cellOf,
@@ -11,7 +12,7 @@ import {
   layoutColumns,
 } from './columns';
 import { cellCentreKm } from './cities';
-import type { RegionMeta } from './region';
+import { aggregate, type RegionMeta } from './region';
 import { GROUND, POPULATION_RAMP, sampleRamp } from './theme';
 
 /**
@@ -63,7 +64,11 @@ function useColumnMaterial(ringKm: number): THREE.MeshBasicMaterial {
   });
 
   const material = useMemo(() => {
-    const m = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
+    // NOT vertexColors: that reads a `color` attribute the shared box does not have,
+    // and a missing attribute is zero — every column came out black on 24 Sep 2026.
+    // `instanceColor` is picked up on its own (USE_INSTANCING_COLOR) once setColorAt
+    // has been called, and is exactly the ramp colour per column.
+    const m = new THREE.MeshBasicMaterial({ toneMapped: false });
     m.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, uniforms.current);
       shader.vertexShader = shader.vertexShader
@@ -121,13 +126,24 @@ export function RegionColumns({
   interactive?: boolean;
   onPickCell?: (km: [number, number]) => void;
 }) {
-  const { size } = meta.grid;
   const radiusKm = meta.projection.radiusKm;
-  const max = meta.encoding.max;
+
+  /**
+   * Coarsened to COLUMN_GRID by block-sum — exact, because population is additive —
+   * so a column is a hill and not a needle. The plane underneath keeps the full
+   * resolution; the columns are the relief on it.
+   */
+  const { coarse, size, max } = useMemo(() => {
+    const factor = Math.max(1, Math.round(meta.grid.size / COLUMN_GRID));
+    const { field: coarse, size } = aggregate(field, meta.grid.size, factor);
+    let max = 0;
+    for (let i = 0; i < coarse.length; i++) if (coarse[i] > max) max = coarse[i];
+    return { coarse, size, max };
+  }, [field, meta.grid.size]);
 
   const layout = useMemo(
-    () => layoutColumns(field, size, radiusKm, max),
-    [field, size, radiusKm, max],
+    () => layoutColumns(coarse, size, radiusKm, max),
+    [coarse, size, radiusKm, max],
   );
 
   const material = useColumnMaterial(ringKm);
