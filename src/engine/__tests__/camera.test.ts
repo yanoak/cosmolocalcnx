@@ -1,6 +1,123 @@
 import { describe, expect, it } from 'vitest';
-import { isometricFit } from '../camera';
+import {
+  CAMERA_PITCH,
+  CAMERA_YAW,
+  groundDepth,
+  isometricFit,
+  projectView,
+  rightness,
+  screenBasis,
+  screenFootprint,
+  wallFacesCamera,
+} from '../camera';
 import type { Bounds, Viewport } from '../camera';
+
+const dot = (a: readonly number[], b: readonly number[]) =>
+  a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+describe('the attitude', () => {
+  it('is the diagonal isometric: camera south-east of its target, north running up-left', () => {
+    expect(CAMERA_YAW).toBeCloseTo(Math.PI / 4, 12);
+    expect(CAMERA_PITCH).toBeCloseTo(Math.atan(Math.SQRT1_2), 12);
+    const { groundTrack, towards } = screenBasis();
+    expect(groundTrack[0]).toBeCloseTo(Math.SQRT1_2, 12);
+    expect(groundTrack[1]).toBeCloseTo(-Math.SQRT1_2, 12);
+    const s = 1 / Math.sqrt(3);
+    expect(towards[0]).toBeCloseTo(s, 12);
+    expect(towards[1]).toBeCloseTo(s, 12);
+    expect(towards[2]).toBeCloseTo(s, 12);
+  });
+
+  it('is pitched down, not level and not straight down', () => {
+    expect(CAMERA_PITCH).toBeGreaterThan(0);
+    expect(CAMERA_PITCH).toBeLessThan(Math.PI / 2);
+  });
+});
+
+describe('screenBasis', () => {
+  it('is orthonormal for any yaw and pitch', () => {
+    for (const yaw of [0, 0.3, Math.PI / 4, 2]) {
+      for (const pitch of [0.2, Math.atan(Math.SQRT1_2), Math.PI / 4, 1.2]) {
+        const { right, up, towards } = screenBasis(yaw, pitch);
+        for (const v of [right, up, towards]) expect(Math.hypot(...v)).toBeCloseTo(1, 12);
+        expect(dot(right, up)).toBeCloseTo(0, 12);
+        expect(dot(right, towards)).toBeCloseTo(0, 12);
+        expect(dot(up, towards)).toBeCloseTo(0, 12);
+      }
+    }
+  });
+
+  it('keeps screen-up pointing up and screen-right horizontal', () => {
+    const { right, up } = screenBasis();
+    expect(up[1]).toBeGreaterThan(0);
+    expect(right[1]).toBe(0);
+  });
+
+  /** The old diagonal, as a regression: yaw π/4 at the isometric pitch is (1, 1, 1)/√3. */
+  it('reproduces the (1, 1, 1) diagonal at yaw π/4 and the isometric pitch', () => {
+    const { towards, right, up } = screenBasis(Math.PI / 4, Math.atan(Math.SQRT1_2));
+    const s = 1 / Math.sqrt(3);
+    expect(towards.map((v) => +v.toFixed(9))).toEqual([s, s, s].map((v) => +v.toFixed(9)));
+    expect(right.map((v) => +v.toFixed(9))).toEqual([Math.SQRT1_2, 0, -Math.SQRT1_2].map((v) => +v.toFixed(9)));
+    expect(up.map((v) => +v.toFixed(9))).toEqual([-1, 2, -1].map((v) => +(v / Math.sqrt(6)).toFixed(9)));
+  });
+});
+
+describe('projectView', () => {
+  it('puts the origin at the origin', () => {
+    expect(projectView(0, 0, 0)).toEqual([0, 0]);
+  });
+
+  it('sends north-east and south-west to the same screen column', () => {
+    // On the diagonal (x + y) is the horizontal axis, so these differ only in height.
+    expect(projectView(1000, 0)[0]).toBeCloseTo(projectView(0, 1000)[0], 9);
+  });
+
+  it('puts north higher up the screen than south, and east to the right of west', () => {
+    expect(projectView(0, 1000)[1]).toBeGreaterThan(projectView(0, -1000)[1]);
+    expect(projectView(1000, 0)[0]).toBeGreaterThan(projectView(-1000, 0)[0]);
+  });
+
+  it('reproduces the hand-written isometric projection', () => {
+    const [sx, sy] = projectView(300, -100, 5);
+    expect(sx).toBeCloseTo((300 - 100) * Math.SQRT1_2, 9);
+    expect(sy).toBeCloseTo((-100 - 300 + 2 * 5) / Math.sqrt(6), 9);
+  });
+
+  it('raises a point straight up the screen as it gets taller, by cos(pitch)', () => {
+    const ground = projectView(100, 200, 0);
+    const tall = projectView(100, 200, 30);
+    expect(tall[0]).toBeCloseTo(ground[0], 9);
+    expect(tall[1] - ground[1]).toBeCloseTo(30 * Math.cos(CAMERA_PITCH), 9);
+  });
+
+  it('is linear, which is what makes an orthographic raster exact', () => {
+    const a = projectView(300, -100, 5);
+    const b = projectView(600, -200, 10);
+    expect(b[0]).toBeCloseTo(2 * a[0], 9);
+    expect(b[1]).toBeCloseTo(2 * a[1], 9);
+  });
+});
+
+describe('groundDepth and wallFacesCamera', () => {
+  it('grows toward the camera — south-east, on the diagonal', () => {
+    expect(groundDepth(100, -100)).toBeCloseTo(100 * Math.SQRT2, 9);
+    expect(groundDepth(-100, 100)).toBeCloseTo(-100 * Math.SQRT2, 9);
+    expect(groundDepth(100, 100)).toBeCloseTo(0, 9);
+  });
+
+  it('east- and south-facing walls face the camera; north- and west-facing do not', () => {
+    expect(wallFacesCamera(1, 0)).toBe(true);
+    expect(wallFacesCamera(0, -1)).toBe(true);
+    expect(wallFacesCamera(0, 1)).toBe(false);
+    expect(wallFacesCamera(-1, 0)).toBe(false);
+  });
+
+  it('rightness is positive for the east wall and negative for the south wall', () => {
+    expect(rightness(1, 0, 0)).toBeCloseTo(Math.SQRT1_2, 12);
+    expect(rightness(0, 0, 1)).toBeCloseTo(-Math.SQRT1_2, 12);
+  });
+});
 
 /** The committed Wat Ket extent: 1.5 km east-west by 2.7 km north-south. */
 const WAT_KET: Bounds = [-488, -1600, 1000, 1100];
@@ -17,22 +134,30 @@ describe('isometricFit', () => {
     expect(target[2]).toBeCloseTo(-(-1600 + 1100) / 2);
   });
 
-  it('places the camera on the (1, 1, 1) diagonal from the target', () => {
+  it('places the camera along the attitude\'s towards vector — the (1, 1, 1) diagonal', () => {
     const { position, target } = isometricFit(WAT_KET, LAPTOP);
-    const dx = position[0] - target[0];
-    const dy = position[1] - target[1];
-    const dz = position[2] - target[2];
-    expect(dx).toBeCloseTo(dy);
-    expect(dy).toBeCloseTo(dz);
-    expect(dx).toBeGreaterThan(0);
+    const d = [position[0] - target[0], position[1] - target[1], position[2] - target[2]];
+    const len = Math.hypot(...d);
+    const { towards } = screenBasis();
+    expect(d[0] / len).toBeCloseTo(towards[0], 9);
+    expect(d[1] / len).toBeCloseTo(towards[1], 9);
+    expect(d[2] / len).toBeCloseTo(towards[2], 9);
+    expect(d[0]).toBeCloseTo(d[1], 6);
+    expect(d[1]).toBeCloseTo(d[2], 6);
+    expect(d[0]).toBeGreaterThan(0);
+  });
+
+  it('projects a ground rectangle to the isometric footprint', () => {
+    const [west, south, east, north] = WAT_KET;
+    const { width, height } = screenFootprint(WAT_KET);
+    expect(width).toBeCloseTo((east - west + (north - south)) * Math.SQRT1_2, 9);
+    expect(height).toBeCloseTo(width * Math.sin(CAMERA_PITCH), 9);
   });
 
   it('fits the whole district on every surface', () => {
     for (const viewport of [LAPTOP, PHONE, PROJECTOR]) {
       const { zoom } = isometricFit(WAT_KET, viewport);
-      const [west, south, east, north] = WAT_KET;
-      const screenWidth = (east - west + (north - south)) * Math.SQRT1_2;
-      const screenHeight = screenWidth * Math.sin(Math.atan(Math.SQRT1_2));
+      const { width: screenWidth, height: screenHeight } = screenFootprint(WAT_KET);
 
       // Everything must land inside the viewport, on both axes.
       expect(screenWidth * zoom).toBeLessThanOrEqual(viewport.width);
@@ -43,9 +168,7 @@ describe('isometricFit', () => {
   it('touches at least one edge, so it fits tightly rather than receding', () => {
     for (const viewport of [LAPTOP, PHONE, PROJECTOR]) {
       const { zoom } = isometricFit(WAT_KET, viewport);
-      const [west, south, east, north] = WAT_KET;
-      const screenWidth = (east - west + (north - south)) * Math.SQRT1_2;
-      const screenHeight = screenWidth * Math.sin(Math.atan(Math.SQRT1_2));
+      const { width: screenWidth, height: screenHeight } = screenFootprint(WAT_KET);
       const fill = Math.max(
         (screenWidth * zoom) / viewport.width,
         (screenHeight * zoom) / viewport.height,
@@ -103,7 +226,7 @@ describe('isometricFit', () => {
 import {
   DEFAULT_REGION_OUT,
   REGION_MARGIN,
-  circleFitZoom,
+  circleBounds,
   poseBetween,
   regionScale,
   samePose,
@@ -118,24 +241,36 @@ const LAPTOP_1440: Viewport = { width: 1440, height: 900 };
 const PROJECTOR_2560: Viewport = { width: 2560, height: 1080 };
 const RADIUS_KM = 3437;
 
-describe('regionScale', () => {
+describe('regionScale and circleBounds', () => {
   /**
-   * The property that would hold on a laptop and break silently at the venue: a
-   * square circle and a rectangular district have the same constraining screen axis
-   * under an isometric orthographic camera, so the ratio of their fits is exactly
-   * regionOut on every aspect ratio.
+   * The circle's fit is computed from its own bounds since 24 Sep 2026 — the exact
+   * regionOut ratio to the district's fit was a property of the diagonal camera's
+   * symmetric footprint and does not hold north-up. What must still hold: the circle
+   * plus its margin fits every surface, touching an edge, and sits roughly regionOut
+   * times further out than the district.
    */
-  it('frames the circle PLUS its margin at exactly regionOut times the district, on every surface', () => {
+  it('frames the circle PLUS its margin inside every surface, about regionOut times out', () => {
     const k = regionScale(EXTENT, RADIUS_KM);
     for (const viewport of [PHONE_390, LAPTOP_1440, PROJECTOR_2560]) {
       const districtFit = isometricFit(EXTENT, viewport).zoom;
-      const framedStage = RADIUS_KM * REGION_MARGIN * k * 2;
-      const regionFit = isometricFit(
-        [-framedStage / 2, -framedStage / 2, framedStage / 2, framedStage / 2],
-        viewport,
-      ).zoom;
-      expect(districtFit / regionFit).toBeCloseTo(DEFAULT_REGION_OUT, 9);
+      const bounds = circleBounds(RADIUS_KM, k);
+      const regionFit = isometricFit(bounds, viewport).zoom;
+      const { width, height } = screenFootprint(bounds);
+      expect(width * regionFit).toBeLessThanOrEqual(viewport.width);
+      expect(height * regionFit).toBeLessThanOrEqual(viewport.height);
+      const ratio = districtFit / regionFit;
+      expect(ratio).toBeGreaterThan(DEFAULT_REGION_OUT / 2);
+      expect(ratio).toBeLessThan(DEFAULT_REGION_OUT * 2);
     }
+  });
+
+  it('circleBounds is a square on the origin, margin included', () => {
+    const k = regionScale(EXTENT, RADIUS_KM);
+    const [w, s, e, n] = circleBounds(RADIUS_KM, k);
+    expect(e).toBeCloseTo(RADIUS_KM * k * REGION_MARGIN, 9);
+    expect(w).toBe(-e);
+    expect(s).toBe(-n);
+    expect(n).toBe(e);
   });
 
   it('leaves room around the circle rather than letting it fill the frame', () => {
@@ -153,16 +288,6 @@ describe('regionScale', () => {
 
   it('survives a zero radius rather than emitting Infinity', () => {
     expect(Number.isFinite(regionScale(EXTENT, 0))).toBe(true);
-  });
-});
-
-describe('circleFitZoom', () => {
-  it('is the district fit, regionOut times further out — what the ladder anchor was', () => {
-    expect(circleFitZoom(80)).toBeCloseTo(80 / DEFAULT_REGION_OUT, 12);
-    expect(circleFitZoom(80, 4)).toBe(20);
-  });
-  it('never divides by zero', () => {
-    expect(Number.isFinite(circleFitZoom(80, 0))).toBe(true);
   });
 });
 

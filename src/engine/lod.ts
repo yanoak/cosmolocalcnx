@@ -22,6 +22,7 @@
  * function.
  */
 
+import { groundDepth } from './camera';
 import type { Point2 } from './extrude';
 import { centroid } from './ordering';
 import type { BaselineBuilding, BaselineRoad } from './scene';
@@ -112,21 +113,17 @@ export function partitionRoads(
 /**
  * Metres along the view axis. Larger is nearer the camera.
  *
- * `camera.ts` puts the camera at `target + (reach, reach, reach)` — so, with three.js
- * -z as north, south-east and elevated. The ground-plane component of the view
- * direction is the (x, -y) diagonal, so depth is (x - y) scaled to metres along the
- * camera's GROUND TRACK: moving 100 m south-east advances this by 100 m.
- *
- * Not the component along the view ray itself, which is shorter by a factor of
- * sqrt(2/3) because the camera is elevated. The two are monotonically equivalent for
- * ground positions, which is all the slicing needs, and the ground-track distance is
- * the one that can be read off a plan.
+ * `camera.ts` owns the attitude and this is its `groundDepth`: metres along the
+ * camera's GROUND TRACK, so moving 100 m straight toward the camera advances this by
+ * 100 m. Not the component along the view ray itself, which is shorter by cos(pitch);
+ * the two are monotonically equivalent for ground positions, which is all the slicing
+ * needs, and the ground-track distance is the one that can be read off a plan.
  *
  * Height is ignored. This orders and slices ground positions; the plane placement in
  * `BackdropPlane.tsx` works in the full camera basis.
  */
 export function viewDepth([x, y]: Point2): number {
-  return (x - y) * Math.SQRT1_2;
+  return groundDepth(x, y);
 }
 
 export interface DepthRange {

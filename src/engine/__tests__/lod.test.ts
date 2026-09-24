@@ -6,6 +6,7 @@ import {
   sliceFor,
   viewDepth,
 } from '../lod';
+import { screenBasis } from '../camera';
 import type { BaselineBuilding, BaselineRoad } from '../scene';
 
 /** A unit square building centred on (x, y). Height and kind are never read here. */
@@ -155,30 +156,37 @@ describe('partitionRoads', () => {
 
 describe('viewDepth', () => {
   /**
-   * The camera sits south-east and elevated — position (+x, +y, +z) against a target
-   * at the scene centre, with three.js -z as north. So north-west is far and
-   * south-east is near, and depth is a function of (x - y).
+   * The camera sits south-east of its target and elevated — three.js -z is north. So
+   * north-west is far and south-east is near. Written in terms of
+   * `screenBasis().groundTrack` so the test follows the attitude if it ever changes,
+   * and pins the diagonal case explicitly beneath.
    */
+  const [gx, gy] = screenBasis().groundTrack;
+
   it('is larger for a point nearer the camera', () => {
+    expect(viewDepth([gx * 1000, gy * 1000])).toBeGreaterThan(viewDepth([0, 0]));
+    expect(viewDepth([-gx * 1000, -gy * 1000])).toBeLessThan(viewDepth([0, 0]));
+  });
+
+  it('on the diagonal: south-east is near, north-west is far, and depth is (x − y)/√2', () => {
     expect(viewDepth([1000, -1000])).toBeGreaterThan(viewDepth([0, 0]));
     expect(viewDepth([-1000, 1000])).toBeLessThan(viewDepth([0, 0]));
+    expect(viewDepth([500, 500])).toBeCloseTo(0, 9);
   });
 
   it('is zero along the line of sight through the origin', () => {
     expect(viewDepth([0, 0])).toBe(0);
-    expect(viewDepth([500, 500])).toBeCloseTo(0, 9);
+    expect(viewDepth([-gy * 500, gx * 500])).toBeCloseTo(0, 9);
   });
 
   it("is metres along the camera's ground track", () => {
-    // Moving by (+d, -d) is moving straight at the camera's ground track.
-    const d = 100 * Math.SQRT1_2;
-    expect(viewDepth([d, -d]) - viewDepth([0, 0])).toBeCloseTo(100, 9);
+    expect(viewDepth([gx * 100, gy * 100]) - viewDepth([0, 0])).toBeCloseTo(100, 9);
   });
 
   it('is monotone along the view axis', () => {
     let previous = -Infinity;
     for (let i = -10; i <= 10; i++) {
-      const v = viewDepth([i * 100, -i * 100]);
+      const v = viewDepth([gx * i * 100, gy * i * 100]);
       expect(v).toBeGreaterThan(previous);
       previous = v;
     }
@@ -186,22 +194,25 @@ describe('viewDepth', () => {
 });
 
 describe('nearDepthRange and sliceFor', () => {
-  const near = [building('a', 0, 0), building('b', 500, -500), building('c', -500, 500)];
+  const [gx, gy] = screenBasis().groundTrack;
+  /** A ground point `d` metres toward the camera and `s` metres to its side. */
+  const at = (d: number, s: number): [number, number] => [gx * d - gy * s, gy * d + gx * s];
+  const near = [building('a', 0, 0), building('b', ...at(500, 0)), building('c', ...at(-500, 0))];
 
   it('spans the near set, footprint corners included', () => {
     const range = nearDepthRange(near);
-    expect(range.min).toBeLessThan(viewDepth([-500, 500]));
-    expect(range.max).toBeGreaterThan(viewDepth([500, -500]));
+    expect(range.min).toBeLessThan(viewDepth(at(-500, 0)));
+    expect(range.max).toBeGreaterThan(viewDepth(at(500, 0)));
   });
 
   it('puts a building further than the whole near set behind it', () => {
     const range = nearDepthRange(near);
-    expect(sliceFor(viewDepth([-4000, 4000]), range)).toBe('behind');
+    expect(sliceFor(viewDepth(at(-4000, 0)), range)).toBe('behind');
   });
 
   it('puts a building nearer the camera than the whole near set in front of it', () => {
     const range = nearDepthRange(near);
-    expect(sliceFor(viewDepth([4000, -4000]), range)).toBe('front');
+    expect(sliceFor(viewDepth(at(4000, 0)), range)).toBe('front');
   });
 
   /**
@@ -213,7 +224,7 @@ describe('nearDepthRange and sliceFor', () => {
    */
   it('puts one that merely overlaps the near set in depth in front of it', () => {
     const range = nearDepthRange(near);
-    expect(sliceFor(viewDepth([4000, 4000]), range)).toBe('front');
+    expect(sliceFor(viewDepth(at(0, 4000)), range)).toBe('front');
   });
 
   it('only sends something strictly behind the whole near set behind it', () => {
@@ -225,7 +236,7 @@ describe('nearDepthRange and sliceFor', () => {
 
   it('an empty near set gives a degenerate range, and everything falls behind', () => {
     const range = nearDepthRange([]);
-    expect(sliceFor(viewDepth([4000, -4000]), range)).toBe('behind');
-    expect(sliceFor(viewDepth([-4000, 4000]), range)).toBe('behind');
+    expect(sliceFor(viewDepth(at(4000, 0)), range)).toBe('behind');
+    expect(sliceFor(viewDepth(at(-4000, 0)), range)).toBe('behind');
   });
 });

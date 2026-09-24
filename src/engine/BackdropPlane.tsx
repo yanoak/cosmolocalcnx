@@ -8,6 +8,7 @@ import {
   type BackdropMeta,
   type BackdropSliceMeta,
 } from './backdrop';
+import { GROUND_TRACK_TO_VIEW_RAY, screenBasis } from './camera';
 
 /**
  * The far city, hung on planes normal to the view direction.
@@ -41,24 +42,21 @@ export interface BackdropSource {
 /**
  * The camera basis `camera.ts` fixes, as three.js vectors.
  *
- * The camera sits at `target + (reach, reach, reach)` looking back, so these are the
- * right, up and toward-the-camera axes of the view. They are constants because the
- * camera never rotates — the single fact this whole module rests on.
- */
-const RIGHT = new THREE.Vector3(1, 0, -1).normalize();
-const UP = new THREE.Vector3(-1, 2, -1).normalize();
-const TOWARDS_CAMERA = new THREE.Vector3(1, 1, 1).normalize();
-
-/**
- * Ground-track metres to metres along the view ray.
+ * Right, up and toward-the-camera axes of the view, derived from the attitude rather
+ * than written here — until 24 Sep 2026 they were three literal vectors, the fourth
+ * place the diagonal camera was restated. They are constants because the camera never
+ * rotates — the single fact this whole module rests on.
  *
- * `lod.ts` measures depth along the camera's ground track, which is the number you can
- * read off a plan. The view ray is steeper by this factor because the camera is
- * elevated. Only the sign and the ordering actually matter here — an orthographic
- * camera does not care how far away the plane is — but getting it right means the
- * planes sit where the sidecar says they do.
+ * `GROUND_TRACK_TO_VIEW_RAY`: `lod.ts` measures depth along the camera's ground track,
+ * which is the number you can read off a plan; the view ray is steeper by cos(pitch)
+ * because the camera is elevated. Only the sign and the ordering actually matter here —
+ * an orthographic camera does not care how far away the plane is — but getting it
+ * right means the planes sit where the sidecar says they do.
  */
-const GROUND_TRACK_TO_VIEW_RAY = Math.sqrt(2 / 3);
+const BASIS = screenBasis();
+const RIGHT = new THREE.Vector3(...BASIS.right);
+const UP = new THREE.Vector3(...BASIS.up);
+const TOWARDS_CAMERA = new THREE.Vector3(...BASIS.towards);
 
 /**
  * Turn the tone-index raster into a colour texture.

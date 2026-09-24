@@ -10,7 +10,7 @@
  * a permission this environment does not have.
  *
  * This reads the committed field, runs the SAME pure functions the viewer runs —
- * `smoothField`, `valleyHeights`, `terracedHeights`, `hillshade`, `projectIso`,
+ * `smoothField`, `valleyHeights`, `terracedHeights`, `hillshade`, `projectView`,
  * `reliefColour` — and rasterises them with a z-buffer. So what it shows is what the
  * viewer draws, not an impression of it.
  *
@@ -18,7 +18,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { inflateSync, deflateSync } from 'node:zlib';
-import { projectIso } from '../src/engine/backdrop';
+import { projectView } from '../src/engine/camera';
 import { reliefColour, reliefShade, type ReliefMeta } from '../src/engine/relief';
 import { hillshade, smoothField, terracedHeights, valleyHeights, valleyVertexAt, VALLEY_EXAGGERATION, type ValleyStyle } from '../src/engine/valley';
 import { toneForNormal } from '../src/engine/shading';
@@ -83,7 +83,7 @@ function render(style: ValleyStyle, path: string) {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (let i = 0; i < size; i += 8) for (let j = 0; j < size; j += 8) {
     const [x, n] = valleyVertexAt(meta, i, j);
-    const [sx, sy] = projectIso(x, n, heights[i * size + j]);
+    const [sx, sy] = projectView(x, n, heights[i * size + j]);
     if (sx < minX) minX = sx; if (sx > maxX) maxX = sx;
     if (sy < minY) minY = sy; if (sy > maxY) maxY = sy;
   }
@@ -91,7 +91,7 @@ function render(style: ValleyStyle, path: string) {
   const ox = (W - (maxX - minX) * scale) / 2, oy = (H - (maxY - minY) * scale) / 2;
   const px = (i: number, j: number): [number, number] => {
     const [x, n] = valleyVertexAt(meta, i, j);
-    const [sx, sy] = projectIso(x, n, heights[i * size + j]);
+    const [sx, sy] = projectView(x, n, heights[i * size + j]);
     return [(sx - minX) * scale + ox, (maxY - sy) * scale + oy];
   };
 

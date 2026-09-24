@@ -14,6 +14,7 @@
  * raster is the same picture the geometry would have drawn.
  */
 
+import { CAMERA_PITCH, CAMERA_YAW } from './camera';
 import type { Point2 } from './extrude';
 import type { BaselineBuilding } from './scene';
 import type { Tone } from './shading';
@@ -22,23 +23,13 @@ import { GROUND, ROAD_TONES, SURFACE_ROLES, roleForKind } from './theme';
 /**
  * World metres to screen metres, in the attitude `camera.ts` fixes.
  *
- * The camera sits at `target + (reach, reach, reach)` looking back at the target, so
- * the screen basis is the right vector (1, 0, -1)/sqrt(2) and the up vector
- * (-1, 2, -1)/sqrt(6) in three.js space. A scene point (x east, y north, h up) is
- * three.js (x, h, -y), and the two dot products collapse to this.
- *
- * `sy` is POSITIVE UP, like a plan drawing. The rasteriser flips it once, at the
- * point where it turns metres into image rows.
- *
- * Cross-check, and the reason this is safe to trust: for h = 0 the horizontal span is
- * (spanX + spanZ)/sqrt(2) and the vertical span is the same over sqrt(3), which is
- * exactly `isometricFit`'s `screenWidth` and `screenWidth * sin(ISO_PITCH)`.
+ * This used to be the diagonal camera's basis written out by hand — and it was the
+ * second of six places that basis was restated. Now it is `camera.ts`'s own
+ * `projectView`, re-exported under the name the generator and the plane both use, so
+ * the one thing they have to agree on is stated once. `backdrop.test.ts` still checks
+ * it against `isometricFit`'s footprint, which is what catches the two ever diverging.
  */
-const SQRT6 = Math.sqrt(6);
-
-export function projectIso(x: number, y: number, h = 0): Point2 {
-  return [(x + y) * Math.SQRT1_2, (y - x + 2 * h) / SQRT6];
-}
+export { projectView } from './camera';
 
 /**
  * What one byte of the backdrop means.
@@ -146,7 +137,7 @@ export function backdropPalette(): (string | null)[] {
  * One rendered slice, and where on the stage it belongs.
  *
  * `rectM` is the screen-metre rectangle the image covers, in the same frame
- * `projectIso` emits — so placing the plane is a scale and a translate, with no
+ * `projectView` emits — so placing the plane is a scale and a translate, with no
  * knowledge of how the image was made.
  */
 export interface BackdropSliceMeta {
@@ -226,6 +217,8 @@ export interface FingerprintInput {
   centre: Point2;
   radiusM: number;
   widthPx: number;
+  /** The camera's attitude. Defaults to the one `camera.ts` fixes; a test can turn it. */
+  attitude?: { yaw: number; pitch: number };
 }
 
 /**
@@ -262,6 +255,11 @@ export function backdropFingerprint(input: FingerprintInput): string {
 
   // The tone table is part of the format: reordering it repaints every raster.
   for (const token of BACKDROP_TOKENS) str(token);
+  // So is the camera's attitude: the raster is the picture THIS camera sees, and a
+  // camera that turned without the raster being re-rendered would hang the wrong
+  // picture behind the near set. Added 24 Sep 2026, the day the camera turned.
+  num(input.attitude?.yaw ?? CAMERA_YAW);
+  num(input.attitude?.pitch ?? CAMERA_PITCH);
   num(input.centre[0]);
   num(input.centre[1]);
   num(input.radiusM);

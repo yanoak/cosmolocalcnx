@@ -39,7 +39,7 @@ import {
   BACKDROP_TOKENS,
   backdropFingerprint,
   buildingToneIndex,
-  projectIso,
+  projectView,
   type BackdropMeta,
   type BackdropSliceMeta,
 } from '../src/engine/backdrop';
@@ -50,6 +50,7 @@ import {
   viewDepth,
   type BackdropSlice,
 } from '../src/engine/lod';
+import { wallFacesCamera } from '../src/engine/camera';
 import { centroid } from '../src/engine/ordering';
 import { toneForNormal } from '../src/engine/shading';
 import { sceneBoundsMetres } from '../src/engine/scene';
@@ -195,7 +196,7 @@ interface Raster {
 }
 
 function toPixel(r: Raster, x: number, y: number, h: number): Point2 {
-  const [sx, sy] = projectIso(x, y, h);
+  const [sx, sy] = projectView(x, y, h);
   // The one place screen-up becomes image-down.
   return [(sx - r.minX) * r.scalePx, (r.maxY - sy) * r.scalePx];
 }
@@ -219,9 +220,8 @@ function drawBuilding(r: Raster, b: BaselineBuilding): void {
     const nx = by - ay;
     const ny = -(bx - ax);
 
-    // The camera looks down the (1, 1, 1) diagonal, so a wall faces it when the
-    // three.js normal (nx, 0, -ny) has a positive component along it.
-    if (nx - ny <= 0) continue;
+    // Only the walls the camera can see, in the attitude `camera.ts` fixes.
+    if (!wallFacesCamera(nx, ny)) continue;
 
     const tone = toneForNormal(nx, 0, -ny);
     const quad: Point2[] = [
@@ -335,7 +335,7 @@ function main(): number {
   for (const b of doc.baseline.buildings) {
     for (const [x, y] of b.footprint) {
       for (const h of [0, b.height]) {
-        const [sx, sy] = projectIso(x, y, h);
+        const [sx, sy] = projectView(x, y, h);
         if (sx < minX) minX = sx;
         if (sx > maxX) maxX = sx;
         if (sy < minY) minY = sy;

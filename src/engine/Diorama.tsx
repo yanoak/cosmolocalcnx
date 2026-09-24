@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { aeqdForward } from './aeqd';
 import { Buildings } from './Buildings';
-import { circleFitZoom, isometricFit, regionScale, stageFit, type Bounds, type CameraPose } from './camera';
+import { circleBounds, isometricFit, regionScale, stageFit, type Bounds, type CameraPose } from './camera';
 import { CameraRig } from './CameraRig';
 import { resolvePose, type Beat, type ViewFits } from './chapters';
 import { DebugOverlay } from './DebugOverlay';
@@ -151,7 +151,7 @@ function AnchorMarker({
 /**
  * A fixed isometric diorama you inspect, not a world you traverse.
  *
- * Orthographic camera on the (1, 1, 1) diagonal. MapControls constrained to pan and
+ * Orthographic camera, north up, in the attitude `camera.ts` fixes. MapControls constrained to pan and
  * zoom, never rotate: touch is the primary input and a visitor who rotates the
  * camera into a wall leaves a broken screen for the next person.
  *
@@ -275,21 +275,25 @@ export function Diorama({
 
   /**
    * One camera fit per view. `regionScale` and `stageFit` absorb the 2,500:1 gap
-   * between kilometres and district metres; the circle's fit is the district's,
-   * `regionOut` times further out. What went on 21 Sep is the idea that a visitor
-   * travels across that gap by pinching.
+   * between kilometres and district metres; each view's fit is computed from its own
+   * extent — the circle plus its margin, the valley's field, the district. What went on
+   * 21 Sep is the idea that a visitor travels across that gap by pinching; what went on
+   * 24 Sep is the circle's fit being derived from the district's, which only held for
+   * the diagonal camera.
    */
   const specs = useMemo(() => {
+    const viewport = size ?? { width: 0, height: 0 };
     const valleyHalfM = valley ? Math.abs(valley.meta.grid.bboxM[2]) : 0;
     const valleyFit = valley
-      ? isometricFit([-valleyHalfM, -valleyHalfM, valleyHalfM, valleyHalfM], size ?? { width: 0, height: 0 }).zoom
+      ? isometricFit([-valleyHalfM, -valleyHalfM, valleyHalfM, valleyHalfM], viewport).zoom
       : fit.zoom;
+    const circleFit = region ? isometricFit(circleBounds(radiusKm, k), viewport).zoom : fit.zoom;
     return {
-      circle: viewSpec('circle', circleFitZoom(fit.zoom)),
+      circle: viewSpec('circle', circleFit),
       valley: viewSpec('valley', valleyFit),
       city: viewSpec('city', fit.zoom),
     };
-  }, [valley, size, fit.zoom]);
+  }, [valley, region, radiusKm, k, size, fit.zoom]);
 
   const spec = specs[view];
 
@@ -384,7 +388,12 @@ export function Diorama({
               instant. */}
           {valley && visited.valley && (
             <group visible={view === 'valley'}>
-              <ValleyView source={valley} sceneBounds={bounds} style={reliefStyle} />
+              <ValleyView
+                source={valley}
+                sceneBounds={bounds}
+                style={reliefStyle}
+                labelled={view === 'valley'}
+              />
             </group>
           )}
 

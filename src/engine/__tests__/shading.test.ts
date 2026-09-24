@@ -7,11 +7,20 @@ describe('toneForNormal', () => {
   });
 
   it('splits the two camera-facing vertical faces', () => {
-    // The camera sits at 45deg, so +x and +z are the two visible walls.
-    // They must differ or every building reads as a flat silhouette.
+    // The camera sits on the diagonal, so +x (east) and +z (south) are the two visible
+    // walls. They must differ or every building reads as a flat silhouette.
     expect(toneForNormal(1, 0, 0)).toBe('side');
     expect(toneForNormal(0, 0, 1)).toBe('shade');
-    expect(toneForNormal(1, 0, 0)).not.toBe(toneForNormal(0, 0, 1));
+  });
+
+  /**
+   * OSM footprints are a degree or two off the grid. A wall a degree either side of
+   * due east, or due south, must not change tone — the dead band in `shading.ts`.
+   */
+  it('does not flip tone across the walls the camera actually sees', () => {
+    const tilt = Math.sin((2 * Math.PI) / 180);
+    expect(toneForNormal(1, 0, tilt)).toBe(toneForNormal(1, 0, -tilt));
+    expect(toneForNormal(tilt, 0, 1)).toBe(toneForNormal(-tilt, 0, 1));
   });
 
   it('gives downward faces a tone rather than undefined', () => {

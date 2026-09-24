@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { backdropFingerprint, type BackdropMeta, type FingerprintInput } from '../backdrop';
+import { CAMERA_PITCH, CAMERA_YAW } from '../camera';
 import { partitionBuildings } from '../lod';
 import type { SceneDocument } from '../scene';
 
@@ -169,6 +170,21 @@ describe('backdropFingerprint', () => {
   it('notices a new hero', () => {
     const hero = { ...base, heroIds: new Set(['osm/way/1']) };
     expect(backdropFingerprint(hero)).not.toBe(backdropFingerprint(base));
+  });
+
+  /**
+   * The raster is the picture one camera sees. The attitude is hashed so that turning
+   * the camera fails this suite until `npm run render:backdrop` is re-run — which is
+   * exactly what happened on 24 Sep 2026, when north went up.
+   */
+  it('carries the camera attitude, so a turned camera reads as a stale raster', () => {
+    const turned = { ...base, attitude: { yaw: CAMERA_YAW + 0.1, pitch: CAMERA_PITCH } };
+    const tilted = { ...base, attitude: { yaw: CAMERA_YAW, pitch: CAMERA_PITCH + 0.1 } };
+    expect(backdropFingerprint(turned)).not.toBe(backdropFingerprint(base));
+    expect(backdropFingerprint(tilted)).not.toBe(backdropFingerprint(base));
+    // Stating the current attitude explicitly is the same as leaving it out.
+    const same = { ...base, attitude: { yaw: CAMERA_YAW, pitch: CAMERA_PITCH } };
+    expect(backdropFingerprint(same)).toBe(backdropFingerprint(base));
   });
 
   it('notices each generator parameter', () => {

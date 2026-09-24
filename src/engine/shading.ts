@@ -7,7 +7,20 @@
  * Pure and separate from three.js so the decision can be tested without a canvas.
  */
 
+import { rightness } from './camera';
+
 export type Tone = 'top' | 'side' | 'shade';
+
+/**
+ * A wall is shaded when it faces LEFT of the screen by more than this — sin(15°).
+ *
+ * On the diagonal the two visible walls face the camera's right (east) and left
+ * (south), so the split falls cleanly between them and the dead band never bites. It
+ * is there for a camera turned nearer north-up, where every visible wall faces the
+ * camera and a split at exactly zero would run through the south wall of every
+ * building — two neighbours a degree apart on the OSM grid in different tones.
+ */
+const SHADE_BELOW = -Math.sin(Math.PI / 12);
 
 export function toneForNormal(x: number, y: number, z: number): Tone {
   const length = Math.hypot(x, y, z) || 1;
@@ -16,10 +29,9 @@ export function toneForNormal(x: number, y: number, z: number): Tone {
   // Upward-facing surfaces read as roofs.
   if (ny > 0.5) return 'top';
 
-  // The camera looks down the (1, 1, 1) diagonal, so +x and +z are the two walls a
-  // visitor can see. Giving them different tones is what stops a building reading
-  // as a flat silhouette.
-  return x / length > z / length ? 'side' : 'shade';
+  // Walls split by which way they face on screen, in the basis `camera.ts` fixes.
+  // Giving them different tones is what stops a building reading as a flat silhouette.
+  return rightness(x / length, ny, z / length) < SHADE_BELOW ? 'shade' : 'side';
 }
 
 // ------------------------------------------------------------- emphasis
