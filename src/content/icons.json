@@ -193,6 +193,54 @@
         1.0
       ],
       "source": "r1-1"
+    },
+    {
+      "id": "ping-boat",
+      "chapter": "past",
+      "file": "/icons/ping-boat.webp",
+      "width": 1024,
+      "height": 852,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r2-2"
+    },
+    {
+      "id": "mule-caravan",
+      "chapter": "past",
+      "file": "/icons/mule-caravan.webp",
+      "width": 1024,
+      "height": 834,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r2-2"
+    },
+    {
+      "id": "bullock-cart",
+      "chapter": "past",
+      "file": "/icons/bullock-cart.webp",
+      "width": 1024,
+      "height": 922,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r2-1"
+    },
+    {
+      "id": "highway-truck",
+      "chapter": "past",
+      "file": "/icons/highway-truck.webp",
+      "width": 1024,
+      "height": 914,
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "source": "r2-2"
     }
   ]
 }

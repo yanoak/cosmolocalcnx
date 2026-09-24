@@ -126022,7 +126022,11 @@
     { "id": "chiang-dao", "chapter": "futures", "view": "valley", "icon": "chiang-dao", "at": [-4040, 63880], "note": "64 km north, 4 km past the valley frame; drawn clamped to the edge with its distance in the label. fiction, placed to the nearest km; see the precision policy in docs/research/2026-09-23_futures-chapter.context.md" },
     { "id": "station", "chapter": "past", "view": "valley", "icon": "station", "at": [1330, -840], "note": "the national terminus, 1.57 km south-east of the origin on the east bank — findings table, OSM" },
     { "id": "khun-tan", "chapter": "past", "view": "valley", "icon": "khun-tan", "at": [27520, -32370], "note": "the tunnel, from the findings table (≈99.2654, 18.5004); the track itself is OSM" },
-    { "id": "airport", "chapter": "past", "view": "valley", "icon": "airport", "at": [-4390, -2720], "note": "the airfield, OSM; operations began 1934, not 1921 — see the findings' corrections" }
+    { "id": "airport", "chapter": "past", "view": "valley", "icon": "airport", "at": [-4390, -2720], "note": "the airfield, OSM; operations began 1934, not 1921 — see the findings' corrections" },
+    { "id": "ping-boat", "chapter": "past", "view": "valley", "icon": "ping-boat", "at": [-1860, -10310], "note": "on the Ping downstream of the city, toward Saraphi — a vertex of the OSM centreline, so the boat sits on the water" },
+    { "id": "mule-caravan", "chapter": "past", "view": "valley", "icon": "mule-caravan", "at": [-5060, 28000], "note": "well up the northern caravan corridor, between the origin and Mae Taeng; the corridor is a band, so anywhere inside it is as true as anywhere else" },
+    { "id": "bullock-cart", "chapter": "past", "view": "valley", "icon": "bullock-cart", "at": [200, -11870], "note": "midway along the southern corridor toward Lamphun; same reasoning as the mules" },
+    { "id": "highway-truck", "chapter": "past", "view": "valley", "icon": "highway-truck", "at": [20730, -37600], "note": "a vertex of Highway 11 in the hills south-east, on the climb toward Lampang, from OSM — the road the truck arrived on" }
   ],
   "terrain": null,
   "region": {

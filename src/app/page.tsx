@@ -450,6 +450,22 @@ export default function Page() {
     if (defaultView(c, HAS_VIEWS) !== 'circle') setMapPick(null);
   }, []);
 
+  /**
+   * A chapter always opens at the top of its stem. `goToChapter` scrolls to 0 at once,
+   * but that runs before the new chapter's track is on screen — coming from the bowl the
+   * viewer is not even a scroll container yet — so the browser could carry an old
+   * position into the new stem. Yan saw exactly that on 24 Sep 2026: the rail landed
+   * wherever the chapter had last been scrolled to. This runs after the commit.
+   */
+  useLayoutEffect(() => {
+    if (mode !== 'stem') return;
+    const el = viewer.current;
+    if (!el) return;
+    el.scrollTo({ top: 0 });
+    setPosition({ index: 0, t: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chapter]);
+
   /** Back and forward, or a hash typed into the bar, move the chapter too. */
   useEffect(() => {
     const onHash = () => {

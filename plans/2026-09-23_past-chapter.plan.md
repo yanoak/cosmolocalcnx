@@ -117,6 +117,14 @@ Built on the evening of 24 Sep 2026, after the Futures landscape, on the same va
       bilingual pass
 - [x] The remote-work beat as terminal — it releases into the bowl, where the five threads are pill
       toggles in the explore bar; the rail is what carries a visitor on to Present
+- [x] **Vehicles.** Yan, 24 Sep evening: a scorpion-tailed cargo boat on the Ping, a Yunnanese
+      mule caravan in the northern corridor, a bullock cart in the southern one, a ten-wheel truck
+      on Highway 11 — generated in the set's style (round r2, two candidates each, four kept),
+      placed as `chapter: 'past'` hotspots with copy in the doc, arriving with their threads.
+      The research decided the caravan: mules, not a cart, for the Yunnan trade; the cart belongs
+      to the plain and the southern leg
+- [x] **An opening card**, before 1867: the Ping as the valley's crossroads, the river already
+      drawn under it. Six beats now
 - [ ] **The timeline scrubber.** Not built: the bowl has toggles, not a timeline. The dated nuggets
       are in the cards' kickers. Whether the scrubber is worth its complexity for September is an
       open question below

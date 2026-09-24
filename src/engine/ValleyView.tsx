@@ -11,6 +11,7 @@ import { decodeRelief, reliefColour, reliefShade, type ReliefMeta } from './reli
 import { toneForNormal } from './shading';
 import {
   GROUND,
+  PALETTE,
   PALETTE_EXTENDED,
   RELIEF_HILLSHADE,
   posterise,
@@ -399,9 +400,11 @@ function Rivers({
 const THREAD_COLOUR: Record<ThreadId, string> = {
   river: PALETTE_EXTENDED['cosmo.skyBlue'],
   caravans: PALETTE_EXTENDED['cosmo.coral'],
-  roads: PALETTE_EXTENDED['cosmo.slate'],
-  rail: PALETTE_EXTENDED['cosmo.charcoal'],
-  air: PALETTE_EXTENDED['cosmo.slate'],
+  // Purples, not slate and charcoal: on the plaster those read as black. The road and the
+  // rail are confirmed and solid; the colour says "in the family", the line says "sure".
+  roads: PALETTE['cosmo.violet'],
+  rail: PALETTE_EXTENDED['cosmo.deepViolet'],
+  air: PALETTE['cosmo.violet'],
 };
 
 /**
@@ -480,9 +483,11 @@ function Transport({
 
   return (
     <>
-      <Strokes points={strokes.primary} width={STROKE_PX.primary} color={PALETTE_EXTENDED['cosmo.slate']} opacity={0.55} />
-      <Strokes points={strokes.major} width={STROKE_PX.motorway} color={PALETTE_EXTENDED['cosmo.slate']} opacity={0.75} />
-      <Strokes points={strokes.rail} width={STROKE_PX.rail} color={PALETTE_EXTENDED['cosmo.charcoal']} opacity={0.85} dashed />
+      {/* In the purple family and well under full strength — Yan, 24 Sep 2026: slate and
+          charcoal read as black on the plaster, and the roads are context, not subject. */}
+      <Strokes points={strokes.primary} width={STROKE_PX.primary} color={PALETTE['cosmo.violet']} opacity={0.32} />
+      <Strokes points={strokes.major} width={STROKE_PX.motorway} color={PALETTE['cosmo.violet']} opacity={0.45} />
+      <Strokes points={strokes.rail} width={STROKE_PX.rail} color={PALETTE_EXTENDED['cosmo.deepViolet']} opacity={0.6} dashed />
     </>
   );
 }

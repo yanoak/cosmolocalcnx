@@ -23,6 +23,12 @@
     "past": {
       "beats": [
         {
+          "id": "crossroads",
+          "kicker": "The Ping",
+          "headline": "This valley has always been a crossroads",
+          "body": "The river that made the basin made it a meeting place. Teak, rice, salt and cotton moved along the Ping, and traders, monks and settlers came with them from Yunnan, Burma, Siam and further. Long before anyone said \"cosmo-local\", Chiang Mai lived by what connected it to the world."
+        },
+        {
           "id": "river",
           "kicker": "1867",
           "headline": "The Ping carried people and goods through the valley",
@@ -71,6 +77,30 @@
           "label": "Chiang Mai airport",
           "blurb": "Air travel added another route into the valley.",
           "body": "Air travel added another way into the valley. Decades later, it became one of the conditions that allowed people to stay in Chiang Mai while their work remained somewhere else."
+        },
+        {
+          "id": "ping-boat",
+          "label": "Scorpion-tailed cargo boat",
+          "blurb": "Sixteen metres of teak, a month through thirty-two rapids.",
+          "body": "The เรือหางแมงป่อง carried the river trade between Bangkok and Chiang Mai: a long narrow hull, a covered hold, and a stern that curls like a scorpion's tail. Upstream it was towed, poled and floated over temporary dams. One documented journey in 1867 took about three months."
+        },
+        {
+          "id": "mule-caravan",
+          "label": "Yunnanese mule caravan",
+          "blurb": "Strings of pack mules linked Chiang Mai to southwest China.",
+          "body": "The caravans that crossed the mountains from Yunnan were led by Muslim traders from the north and carried on mules and ponies, not wheels. No surveyed route survives: the trails shifted with season, water and politics, which is why this map draws a corridor and not a line."
+        },
+        {
+          "id": "bullock-cart",
+          "label": "Bullock cart",
+          "blurb": "The lowland vehicle of the valley, toward Lamphun and the south.",
+          "body": "On the plain, goods moved by เกวียน, the two-wheeled bullock cart, along the tracks that carried trade south from Chiang Mai through Lamphun. Like the mule trails to the north, these alignments were never surveyed, and the band on the map says so."
+        },
+        {
+          "id": "highway-truck",
+          "label": "Ten-wheel truck",
+          "blurb": "Highway 11 arrived in 1969 on a new alignment.",
+          "body": "The Superhighway's last section entered Chiang Mai from the south-east and brought the ten-wheel truck with it. It was not a caravan trail paved over but a new layer laid across the valley, drawn here as the road actually runs."
         }
       ]
     },

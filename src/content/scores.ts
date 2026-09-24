@@ -33,18 +33,34 @@ export const SCORES: Record<ChapterId, Score> = {
   past: {
     chapter: 'past',
     beats: [
-      { id: 'river', view: 'valley', layers: ['river'] },
-      { id: 'caravans', view: 'valley', layers: ['river', 'caravans'] },
-      { id: 'roads', view: 'valley', layers: ['river', 'caravans', 'roads'] },
+      // Each thread arrives with its vehicle: the boat on the Ping, the mules and the cart
+      // inside their corridors, the truck on Highway 11 — icons in the Futures' style, so
+      // the two chapters that share the valley share a grammar. Added 24 Sep 2026 evening.
+      // The base: the Ping as the valley's crossroads, before any date. The river is already
+      // drawn; the first dated card puts a boat on it. Yan, 24 Sep 2026 evening.
+      { id: 'crossroads', view: 'valley', layers: ['river'] },
+      { id: 'river', view: 'valley', layers: ['river'], hotspots: ['ping-boat'] },
+      { id: 'caravans', view: 'valley', layers: ['river', 'caravans'], hotspots: ['ping-boat', 'mule-caravan', 'bullock-cart'] },
+      {
+        id: 'roads',
+        view: 'valley',
+        layers: ['river', 'caravans', 'roads'],
+        hotspots: ['ping-boat', 'mule-caravan', 'bullock-cart', 'highway-truck'],
+      },
       // The station and the tunnel arrive with the track.
-      { id: 'rail', view: 'valley', layers: ['river', 'caravans', 'roads', 'rail'], hotspots: ['station', 'khun-tan'] },
+      {
+        id: 'rail',
+        view: 'valley',
+        layers: ['river', 'caravans', 'roads', 'rail'],
+        hotspots: ['ping-boat', 'mule-caravan', 'bullock-cart', 'highway-truck', 'station', 'khun-tan'],
+      },
       // The thread with no route, and therefore the one that ends the chapter. Its only
       // geometry is the airport, which is a pin.
       {
         id: 'air',
         view: 'valley',
         layers: ['river', 'caravans', 'roads', 'rail', 'air'],
-        hotspots: ['station', 'khun-tan', 'airport'],
+        hotspots: ['ping-boat', 'mule-caravan', 'bullock-cart', 'highway-truck', 'station', 'khun-tan', 'airport'],
         terminal: true,
       },
     ],

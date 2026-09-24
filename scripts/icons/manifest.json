@@ -96,6 +96,30 @@
       "chapter": "futures",
       "label": "Chiang Dao — beyond the edge",
       "subject": "a tall jagged limestone mountain peak with a dark cave mouth at its foot, forest on the lower slopes, a bamboo cargo drone in the air beside the peak, a mountain pass road curving away behind it"
+    },
+    {
+      "id": "ping-boat",
+      "chapter": "past",
+      "label": "Scorpion-tailed cargo boat",
+      "subject": "a traditional northern Thai scorpion-tailed cargo boat (ruea hang maeng pong): a long narrow wooden hull, a tall stern post curling up and over like a scorpion's tail, a low arched cream roof of woven bamboo covering the cargo hold amidships, a long steering oar at the stern and a bamboo punting pole along the gunwale, resting on a short sliver of pale river water, no crew"
+    },
+    {
+      "id": "mule-caravan",
+      "chapter": "past",
+      "label": "Yunnanese mule caravan",
+      "subject": "a Yunnanese pack-mule caravan on a mountain trail: five mules in single file, each under a wooden pack saddle carrying two cream bales roped on either side, a small gold bell at each neck, the lead mule with a gold-tasselled headstall, a few purple pines beside the trail, no riders and no people"
+    },
+    {
+      "id": "bullock-cart",
+      "chapter": "past",
+      "label": "Lan Na bullock cart",
+      "subject": "a northern Thai bullock cart (kwian): two very large spoked wooden wheels taller than the cart bed, a long bamboo-hooped cream awning arched over the cargo, a single curved wooden yoke pole, and two humped cream oxen standing in harness, a small purple shrub beside it, no driver"
+    },
+    {
+      "id": "highway-truck",
+      "chapter": "past",
+      "label": "Ten-wheel truck",
+      "subject": "a 1960s Thai ten-wheel cargo truck: a rounded cab-over cab in cream with purple trim and round headlamps, a tall wooden slatted cargo body painted with purple and gold geometric panels, a canvas tarpaulin roped over the load, ten wheels, standing on a short strip of purple-grey road, no driver"
     }
   ]
 }

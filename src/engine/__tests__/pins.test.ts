@@ -162,8 +162,10 @@ describe('the committed past pins', () => {
   const PAST = DOC.hotspots.filter((h) => h.chapter === 'past');
   const en = (copy as { en: Record<string, { hotspots?: Array<{ id: string }> }> }).en;
 
-  it('are the station, the tunnel and the airport, in the valley, with icons and copy', () => {
-    expect(PAST.map((h) => h.id).sort()).toEqual(['airport', 'khun-tan', 'station']);
+  it('are three places and four vehicles, in the valley, with icons and copy', () => {
+    expect(PAST.map((h) => h.id).sort()).toEqual([
+      'airport', 'bullock-cart', 'highway-truck', 'khun-tan', 'mule-caravan', 'ping-boat', 'station',
+    ]);
     for (const h of PAST) expect(h.view).toBe('valley');
     expect(validateIconJoin(PAST)).toEqual([]);
     expect(validateCopyJoin({ ...DOC, hotspots: PAST, scenarios: [] }, { past: en.past })).toEqual([]);
