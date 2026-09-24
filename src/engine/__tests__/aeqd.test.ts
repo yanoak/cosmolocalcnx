@@ -46,14 +46,14 @@ describe('aeqdForward', () => {
   });
 
   /**
-   * THE ANCHOR.
+   * Wat Ket against the ORIGINAL Valeriepieris centre. Since 24 Sep 2026 the circle is
+   * centred on Wat Ket itself and this offset is no longer the claim — the claim is
+   * how far from Wat Ket you go to hold half the world, about 3,400 km, computed from
+   * the committed field in region.test.ts. What this pins now is the arithmetic, and
+   * the reason the move cost almost nothing: 280 km is 8% of the radius.
    *
-   * This is the single number that tells you the projection is right, and the
-   * reason this file was written before anything that renders. If it drifts, the
-   * marker is in the wrong place on the circle and the piece's central claim —
-   * "this neighbourhood is at the centre of half of humanity" — is quietly false.
-   *
-   * Cross-checked against the printed A0, which hangs in the same room.
+   * Cross-checked against the printed A0, which hangs in the same room and still
+   * shows the original circle.
    */
   it('places Wat Ket 280 km from the Valeriepieris centre, at bearing 208.9', () => {
     const { distanceKm, bearingDeg } = greatCircle(VALERIEPIERIS, WAT_KET);
@@ -65,8 +65,7 @@ describe('aeqdForward', () => {
     expect(east).toBeCloseTo(-135.38, 1);
     expect(north).toBeCloseTo(-245.08, 1);
 
-    // 8.15% of the radius — comfortably inside, and the reason the marker reads as
-    // "near the middle" rather than "somewhere in there".
+    // 8.15% of the radius: the whole cost of re-centring the circle on Wat Ket.
     expect(distanceKm / VALERIEPIERIS_RADIUS_KM).toBeCloseTo(0.0815, 3);
   });
 

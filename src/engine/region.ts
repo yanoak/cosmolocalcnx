@@ -16,11 +16,73 @@
 
 import { POPULATION_RAMP, sampleRamp } from './theme';
 
+/**
+ * Cumulative population by distance from the centre, as `build-region.py` writes it.
+ *
+ * `cumulative[i]` is everyone within `(i + 1) * stepKm`; the last entry is the whole
+ * field. The growing circle's counter reads this, and the half-of-humanity radius is
+ * derived from it rather than typed in — so the number on screen cannot drift from
+ * the raster it came from.
+ */
+export interface PopulationCurve {
+  stepKm: number;
+  cumulative: number[];
+}
+
 /** What `scripts/build-region.py` writes beside the PNG. */
 export interface RegionMeta {
   projection: { kind: 'aeqd'; centre: [number, number]; radiusKm: number };
   grid: { size: number; cellKm: number };
   encoding: { gamma: number; max: number };
+  stats?: { totalInside: number; populated: number };
+  /** Absent only on a field generated before 24 Sep 2026. */
+  curve?: PopulationCurve;
+}
+
+// ------------------------------------------------------------------ the curve
+
+/**
+ * Everyone within `km` of the centre, read off the curve with linear interpolation
+ * between its steps. Zero at zero; clamped to the field's total beyond its rim,
+ * because the field has no opinion about anyone further out than that.
+ */
+export function peopleWithin(curve: PopulationCurve, km: number): number {
+  const { stepKm, cumulative } = curve;
+  const n = cumulative.length;
+  if (n === 0 || !(stepKm > 0) || !(km > 0)) return 0;
+  const u = km / stepKm; // in steps; entry i covers (i + 1) steps
+  if (u >= n) return cumulative[n - 1];
+  const i = Math.floor(u);
+  const below = i === 0 ? 0 : cumulative[i - 1];
+  const above = cumulative[Math.min(i, n - 1)];
+  return below + (above - below) * (u - i);
+}
+
+/**
+ * The radius at which the curve first reaches half of `worldTotal`, in km, with
+ * linear interpolation inside the step it crosses in.
+ *
+ * `worldTotal` is a parameter and not the field's own total, deliberately: the
+ * committed 12,000 km field excludes the Americas, so its total is not the world's,
+ * and the honest answer is a bracket over plausible world populations. If the curve
+ * never reaches half — a smaller field would do this — the field's rim is returned
+ * rather than an exception, because "at least this far" is still an answer.
+ */
+export function halfPopulationRadius(curve: PopulationCurve, worldTotal: number): number {
+  const { stepKm, cumulative } = curve;
+  const n = cumulative.length;
+  if (n === 0 || !(stepKm > 0)) return 0;
+  const half = worldTotal / 2;
+  if (!(half > 0)) return 0;
+  for (let i = 0; i < n; i++) {
+    if (cumulative[i] >= half) {
+      const below = i === 0 ? 0 : cumulative[i - 1];
+      const span = cumulative[i] - below;
+      const f = span > 0 ? (half - below) / span : 1;
+      return (i + f) * stepKm;
+    }
+  }
+  return n * stepKm;
 }
 
 /** Kilometres east and north of the circle's centre. */

@@ -11,11 +11,11 @@
  * rather than by scene precisely so that it can be shared.
  */
 
-import fieldUrl from './aeqd_21.000_100.290_r3437_n512.png';
-import meta from './aeqd_21.000_100.290_r3437_n512.json';
-import cityFile from './aeqd_21.000_100.290_r3437.cities.json';
-import worldUrl from './aeqd_21.000_100.290_r12000_n1024.png';
-import worldMeta from './aeqd_21.000_100.290_r12000_n1024.json';
+import fieldUrl from './aeqd_18.791_99.004_r3437_n512.png';
+import meta from './aeqd_18.791_99.004_r3437_n512.json';
+import cityFile from './aeqd_18.791_99.004_r3437.cities.json';
+import worldUrl from './aeqd_18.791_99.004_r12000_n1024.png';
+import worldMeta from './aeqd_18.791_99.004_r12000_n1024.json';
 import type { CityFile } from '@/engine/cities';
 import type { RegionMeta } from '@/engine/region';
 
@@ -28,7 +28,7 @@ export interface RegionAsset {
 }
 
 export const REGION_ASSETS: Record<string, RegionAsset> = {
-  'regions/aeqd_21.000_100.290_r3437_n512.png': {
+  'regions/aeqd_18.791_99.004_r3437_n512.png': {
     url: fieldUrl.src,
     meta: meta as unknown as RegionMeta,
     // Named without the cell count: cities belong to the CIRCLE, so changing the

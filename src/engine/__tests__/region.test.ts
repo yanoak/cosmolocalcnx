@@ -293,3 +293,97 @@ describe('half of humanity', () => {
     expect(innerMeta.grid.cellKm).toBeLessThan(worldMeta.grid.cellKm);
   });
 });
+
+// ---------------------------------------------------------------------------------
+// The curve. Added 24 Sep 2026 with the Present chapter: the half-of-humanity radius is
+// derived from committed data, never typed in.
+
+import { readFileSync } from 'node:fs';
+import { halfPopulationRadius, peopleWithin, type PopulationCurve } from '../region';
+
+describe('peopleWithin and halfPopulationRadius', () => {
+  // 50 km steps; 100 people per step for the first four, then flat.
+  const curve: PopulationCurve = { stepKm: 50, cumulative: [100, 200, 300, 400, 400, 400] };
+
+  it('is zero at zero and interpolates inside a step', () => {
+    expect(peopleWithin(curve, 0)).toBe(0);
+    expect(peopleWithin(curve, 25)).toBeCloseTo(50, 9);
+    expect(peopleWithin(curve, 50)).toBeCloseTo(100, 9);
+    expect(peopleWithin(curve, 125)).toBeCloseTo(250, 9);
+  });
+
+  it('clamps to the field total beyond the rim', () => {
+    expect(peopleWithin(curve, 5000)).toBe(400);
+  });
+
+  it('returns the radius where the curve crosses half the world', () => {
+    // Half of 500 is 250, reached 125 km out.
+    expect(halfPopulationRadius(curve, 500)).toBeCloseTo(125, 9);
+    expect(halfPopulationRadius(curve, 200)).toBeCloseTo(50, 9);
+  });
+
+  it('is monotonic in the world total — a bigger world means a bigger radius', () => {
+    let previous = -1;
+    for (const world of [100, 200, 300, 400, 500, 600, 700, 800]) {
+      const r = halfPopulationRadius(curve, world);
+      expect(r).toBeGreaterThanOrEqual(previous);
+      previous = r;
+    }
+  });
+
+  it('clamps to the rim rather than throwing when the curve never reaches half', () => {
+    expect(halfPopulationRadius(curve, 10_000)).toBe(300);
+  });
+
+  it('survives an empty or degenerate curve', () => {
+    expect(halfPopulationRadius({ stepKm: 50, cumulative: [] }, 8e9)).toBe(0);
+    expect(peopleWithin({ stepKm: 0, cumulative: [1] }, 10)).toBe(0);
+  });
+});
+
+describe('the committed fields', () => {
+  const SCENES = new URL('../../scenes/', import.meta.url);
+  const read = <T,>(name: string): T => JSON.parse(readFileSync(new URL(name, SCENES), 'utf8')) as T;
+  const scene = read<{ origin: [number, number]; region: { meta: string; world: { meta: string } } }>('wat-ket.json');
+  const field = read<{ projection: { centre: [number, number]; radiusKm: number }; stats: { totalInside: number }; curve: PopulationCurve }>(scene.region.meta);
+  const world = read<typeof field>(scene.region.world.meta);
+
+  /**
+   * THE test that catches somebody regenerating on the old centre. Every distance the
+   * chapter shows is a distance from Wat Ket, and an AEQD field is only correct about
+   * distances from its own centre.
+   */
+  it('are centred on the scene origin, not on the Valeriepieris centre', () => {
+    for (const m of [field, world]) {
+      expect(m.projection.centre[0]).toBeCloseTo(scene.origin[0], 4);
+      expect(m.projection.centre[1]).toBeCloseTo(scene.origin[1], 4);
+    }
+  });
+
+  it('carry a curve that is monotonic non-decreasing in radius', () => {
+    for (const m of [field, world]) {
+      let previous = 0;
+      for (const v of m.curve.cumulative) {
+        expect(v).toBeGreaterThanOrEqual(previous);
+        previous = v;
+      }
+      expect(m.curve.cumulative.length).toBe(Math.ceil(m.projection.radiusKm / m.curve.stepKm));
+    }
+  });
+
+  it("end at the field's own total, tying the two artefacts together", () => {
+    for (const m of [field, world]) {
+      const last = m.curve.cumulative[m.curve.cumulative.length - 1];
+      expect(Math.abs(last - m.stats.totalInside)).toBeLessThan(1);
+    }
+  });
+
+  /** The claim, bracketed for a world of 7.8, 8.0 and 8.2 billion. */
+  it('put half of humanity within about 3,400 km of Wat Ket', () => {
+    const r = [7.8e9, 8.0e9, 8.2e9].map((w) => halfPopulationRadius(world.curve, w));
+    expect(r[0]).toBeGreaterThan(3100);
+    expect(r[2]).toBeLessThan(3700);
+    expect(r[1]).toBeGreaterThan(r[0]);
+    expect(r[2]).toBeGreaterThan(r[1]);
+  });
+});

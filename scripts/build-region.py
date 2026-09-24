@@ -209,6 +209,32 @@ def fetch_tile(tile: str) -> Path | None:
     return tif if tif.exists() else None
 
 
+# The curve's resolution. 50 km is four cells of the 3,437 km field and two of the
+# world's — finer than either raster, so the curve is limited by the data, not by this.
+CURVE_STEP_KM = 50
+
+
+def cumulative_by_radius(acc: np.ndarray, radius_km: float, grid: int) -> list[int]:
+    """
+    Everyone within r of the centre, for r = step, 2 step, ... radius_km.
+
+    Each cell is credited at its centre's planar distance — which in an azimuthal
+    equidistant frame IS the great-circle distance, to within half a cell. The last
+    bin is inclusive of anything that landed in the grid, so the final entry equals
+    the field's own total exactly; a test ties the two.
+    """
+    half = radius_km
+    cell = (2 * half) / grid
+    idx = np.arange(grid, dtype=np.float64) + 0.5
+    east = idx[None, :] * cell - half
+    north = half - idx[:, None] * cell
+    dist = np.hypot(east, north)
+    n = int(math.ceil(radius_km / CURVE_STEP_KM))
+    bins = np.minimum(np.floor(dist / CURVE_STEP_KM).astype(np.int64), n - 1)
+    per_bin = np.bincount(bins.ravel(), weights=acc.ravel(), minlength=n)
+    return [int(round(v)) for v in np.cumsum(per_bin)]
+
+
 def accumulate(tif: Path, centre, radius_km, acc: np.ndarray, grid: int) -> float:
     """
     Scatter one tile's population into the output grid.
@@ -438,6 +464,7 @@ def main() -> int:
     inside_total = float(acc.sum())
     populated = int((acc > 0).sum())
     pmax = float(acc.max())
+    curve = cumulative_by_radius(acc, radius_km, grid)
 
     if pmax <= 0:
         print("error: no population landed in the grid.", file=sys.stderr)
@@ -524,6 +551,16 @@ def main() -> int:
             "populated": populated,
             "totalInside": inside_total,
             "tilesUsed": used,
+        },
+        "curve": {
+            "_comment": (
+                "Cumulative population within each radius of the centre, every stepKm "
+                "from 0. Entry i is everyone within (i + 1) * stepKm; the last entry is "
+                "the whole field. The viewer's growing circle reads its counter off this, "
+                "and the half-of-humanity radius is derived from it rather than typed in."
+            ),
+            "stepKm": CURVE_STEP_KM,
+            "cumulative": curve,
         },
         "source": {
             "dataset": "GHS-POP R2023A, epoch 2025, 30 arcsec, EPSG:4326",
