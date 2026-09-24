@@ -145,6 +145,10 @@ export function PresentMap({
       maxPitch: 85,
       attributionControl: false,
       interactive: true,
+      // Development only: keeps the drawn frame readable, so a script can sample the
+      // canvas's pixels and say what rendered — the check a backgrounded tab cannot make
+      // by eye. Costs a buffer copy per frame, which production does not pay.
+      canvasContextAttributes: { preserveDrawingBuffer: process.env.NODE_ENV !== 'production' },
       // Nothing here is a game either: the map redraws on its own events only.
       fadeDuration: 0,
     });

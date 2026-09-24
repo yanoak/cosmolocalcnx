@@ -64,17 +64,26 @@ export const ANCHOR_LAYER = 'anchor';
  * as the three.js columns were.
  */
 export const MAX_CELL_HEIGHT_M = 400_000;
-export const CELL_HEIGHT_BY_ZOOM: ExpressionSpecification = [
-  'interpolate',
-  ['linear'],
-  ['zoom'],
-  3,
-  60_000,
-  5,
-  200_000,
-  7,
-  MAX_CELL_HEIGHT_M,
-];
+
+/**
+ * `h` times a ceiling that rises with zoom. MapLibre allows `zoom` only as the input of
+ * a top-level interpolate, so the multiplication sits inside each stop rather than
+ * around the whole thing.
+ */
+export function cellHeight(): ExpressionSpecification {
+  const at = (metres: number): ExpressionSpecification => ['*', ['get', 'h'], metres];
+  return [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    3,
+    at(60_000),
+    5,
+    at(200_000),
+    7,
+    at(MAX_CELL_HEIGHT_M),
+  ] as ExpressionSpecification;
+}
 
 /**
  * The basemap's Flavor, from tokens.
@@ -220,7 +229,7 @@ export function cellsLayers(ringKm: number, levels: readonly CellsLevel[]): Laye
     maxzoom: level === levels[levels.length - 1] ? 24 : level.maxzoom + 1,
     paint: {
       'fill-extrusion-color': cellColour(ringKm),
-      'fill-extrusion-height': ['*', ['get', 'h'], CELL_HEIGHT_BY_ZOOM],
+      'fill-extrusion-height': cellHeight(),
       'fill-extrusion-base': 0,
       'fill-extrusion-opacity': 1,
     },
