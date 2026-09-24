@@ -82,6 +82,28 @@ function useMeasuredStage(): [React.RefObject<HTMLDivElement | null>, Size | nul
  * switches to. Four lines, and it removes the one failure mode that would look
  * exactly like the installation being broken.
  */
+/**
+ * During the stem the page scrolls under a finger on the canvas. OrbitControls sets
+ * `touch-action: none` on the canvas when it connects — right for the bowl, where a
+ * drag pans — but in the stem the controls are off and that rule still swallowed every
+ * vertical swipe that started on the map, so a phone could only scroll on the cards.
+ * Yan, 24 Sep 2026. Re-applied whenever `interactive` flips, after the controls have had
+ * their say.
+ */
+function TouchScroll({ interactive }: { interactive: boolean }) {
+  const gl = useThree((state) => state.gl);
+  useEffect(() => {
+    const el = gl.domElement;
+    const apply = () => {
+      el.style.touchAction = interactive ? 'none' : 'pan-y';
+    };
+    apply();
+    const id = requestAnimationFrame(apply);
+    return () => cancelAnimationFrame(id);
+  }, [gl, interactive]);
+  return null;
+}
+
 function RedrawOnVisible() {
   const invalidate = useThree((state) => state.invalidate);
 
@@ -334,6 +356,7 @@ export function Diorama({
           <color attach="background" args={[PALETTE_EXTENDED['cosmo.offWhite']]} />
 
           <RedrawOnVisible />
+          <TouchScroll interactive={interactive} />
 
           {/* Cuts the camera to the open view. Switching is a selection, not a
               journey — a tween here would be the rail coming back through the door. */}

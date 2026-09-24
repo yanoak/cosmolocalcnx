@@ -54,8 +54,14 @@ export function Scrolly({
   onExplore: () => void;
 }) {
   const byId = new Map(copy.map((c) => [c.id, c]));
+  const last = beats.length - 1;
   return (
     <div className="scrolly-track" aria-label="Story">
+      {/* The prompt to keep going, until the last card — which has its own button. */}
+      <div className={current < last ? 'scrolly-more' : 'scrolly-more is-done'} aria-hidden="true">
+        <span>Scroll</span>
+        <span className="scrolly-more-chevron">⌄</span>
+      </div>
       {beats.map((b, i) => {
         const c = byId.get(b.id);
         return (

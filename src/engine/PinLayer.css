@@ -30,6 +30,8 @@
 .pin-icon {
   display: block;
   margin: 0 auto;
+  width: calc(var(--pin-w, 88) * 1px);
+  height: calc(var(--pin-h, 88) * 1px);
   transition: transform 160ms ease;
   filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--register-page-ink) 22%, transparent));
 }
@@ -124,4 +126,23 @@
   padding: 0;
   font-size: 1.25rem;
   line-height: 1;
+}
+
+/* Phones: the icons at just over half size, and no names on the landscape — twelve
+   labels on a 390 px screen were the clutter, and the popup still carries the name. The
+   label stays in the accessibility tree, so the button keeps its name. Yan, 24 Sep 2026. */
+@media (max-width: 560px) {
+  .pin-icon {
+    width: calc(var(--pin-w, 88) * 0.55px);
+    height: calc(var(--pin-h, 88) * 0.55px);
+  }
+  .pin-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    padding: 0;
+    box-shadow: none;
+  }
 }

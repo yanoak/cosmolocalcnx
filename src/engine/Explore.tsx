@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { ChapterId, ViewId } from './views';
 import './Explore.css';
 
@@ -56,6 +57,10 @@ export function Explore({
   onToggle?: (id: string) => void;
 }) {
   const pair = views && views.length > 1 ? views : null;
+  // On a phone the five layer pills fold behind one "Layers" button; on a laptop the
+  // button is not rendered by CSS and the pills are always out. State lives here so a
+  // chapter change (which remounts Explore) closes it.
+  const [layersOpen, setLayersOpen] = useState(false);
   return (
     <>
       <button type="button" className="explore-reread" onClick={onReread}>
@@ -75,7 +80,15 @@ export function Explore({
       )}
       <div className="explore" role="group" aria-label="Explore">
         {layers && layers.length > 0 && (
-          <div className="explore-layers" role="group" aria-label="Layers">
+          <div className={layersOpen ? 'explore-layers is-open' : 'explore-layers'} role="group" aria-label="Layers">
+            <button
+              type="button"
+              className="explore-layers-toggle"
+              aria-expanded={layersOpen}
+              onClick={() => setLayersOpen((v) => !v)}
+            >
+              Layers {layersOpen ? '×' : '⌄'}
+            </button>
             {layers.map((l) => (
               <button
                 key={l.id}

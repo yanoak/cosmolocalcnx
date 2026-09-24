@@ -57,3 +57,41 @@
 @media (prefers-reduced-motion: reduce) {
   .scrolly-card { transition: none; }
 }
+
+/* "Scroll ⌄" near the bottom of the viewport while there is more stem to read. Fixed to
+   the viewport rather than to a section, so it holds still while the cards move past;
+   inside the track so it inherits the track's stacking. Gone on the last card, which
+   carries the invitation instead. Yan, 24 Sep 2026: phones did not know to scroll. */
+.scrolly-more {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 5px;
+  border-radius: 999px;
+  background: var(--register-page-ground);
+  color: var(--register-page-muted);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--register-page-ink) 14%, transparent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+.scrolly-more.is-done { opacity: 0; }
+.scrolly-more-chevron {
+  display: inline-block;
+  line-height: 0.6;
+  font-size: 1.125rem;
+  animation: scrolly-nudge 1.6s ease-in-out infinite;
+}
+@keyframes scrolly-nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scrolly-more-chevron { animation: none; }
+}

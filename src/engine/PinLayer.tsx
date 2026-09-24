@@ -183,6 +183,9 @@ function Pin({
               alt=""
               width={Math.round(sprite.width * scale)}
               height={Math.round(sprite.height * scale)}
+              // The same numbers as CSS variables, so a phone can draw the icon at a
+              // fraction of them without a second measurement — see PinLayer.css.
+              style={{ '--pin-w': Math.round(sprite.width * scale), '--pin-h': Math.round(sprite.height * scale) } as React.CSSProperties}
               draggable={false}
             />
           ) : (

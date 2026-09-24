@@ -92,3 +92,12 @@
   background: var(--register-invert-ground);
 }
 .explore-layers button[aria-pressed='true']:hover { color: var(--register-invert-kicker); }
+
+/* The fold: a phone shows one "Layers" button and the pills only when it is open. */
+.explore-layers-toggle { display: none; }
+@media (max-width: 560px) {
+  .explore-layers { flex-direction: column; align-items: stretch; border-radius: 18px; }
+  .explore-layers-toggle { display: block; color: var(--register-page-ink); }
+  .explore-layers:not(.is-open) button:not(.explore-layers-toggle) { display: none; }
+  .explore-layers.is-open button { text-align: left; }
+}
