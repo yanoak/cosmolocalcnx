@@ -808,6 +808,13 @@ export default function Page() {
 
         <SelectPanel selection={selection} locale={locale} onClose={close} />
 
+        {/* The maker's mark: Thibi's logo, bottom right, linking to the studio. A credit the
+            piece shows on purpose — the one kind of name that belongs in a committed file,
+            see CLAUDE.md. Under the chapter buttons, which step up to make room for it. */}
+        <a className="brand" href="https://thibi.co/" target="_blank" rel="noopener noreferrer" aria-label="Thibi — visit the website">
+          <img src="/logos/Thibi_FinalLogo_Black.svg" alt="Thibi" width={78} height={23} />
+        </a>
+
         {/* Seven sources whose licences require attribution to be VISIBLE — OSM and
             Overture under ODbL, the tambon boundary under CC BY-IGO, the heights, the
             population field and the city names under CC BY 4.0, the DEM under its fixed

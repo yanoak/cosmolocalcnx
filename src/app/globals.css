@@ -93,7 +93,7 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
    explore bar, which owns the bottom edge with the credits button. */
 .view-caption {
   position: absolute;
-  left: 16px; right: 16px; bottom: 64px;
+  left: 16px; right: 16px; bottom: 104px;   /* above the explore bar, which is above the brand row */
   margin: 0;
   max-width: 34rem;
   font-size: 0.875rem;
@@ -126,6 +126,25 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
 .cell-tip.is-left { transform: translate(calc(-100% - 14px), -50%); }
 .cell-tip strong { font-weight: 700; font-size: 0.9375rem; }
 .cell-tip span { color: var(--register-page-muted); }
+
+/* The maker's mark, bottom right: Thibi's wordmark as a link, on the same row as the
+   credits `i` in the other corner. Quiet — it is the last thing on the page, not the
+   first — and it brightens under the pointer. */
+.brand {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  z-index: 2;
+  display: block;
+  line-height: 0;
+  opacity: 0.55;
+  transition: opacity 160ms ease;
+}
+.brand:hover, .brand:focus-visible { opacity: 1; }
+.brand img { display: block; width: 78px; height: auto; }
+@media (max-width: 560px) {
+  .brand img { width: 64px; }
+}
 
 /* The growing circle's counter, during the Present stem. Three figures on one line,
    over the scene, in the reading register; the card above it carries the words. */
