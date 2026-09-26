@@ -601,6 +601,8 @@ export function ValleyView({
   pinsInteractive = false,
   transport = false,
   threads = null,
+  onOpenAt,
+  settle,
 }: {
   source: ValleySource;
   sceneBounds: [number, number, number, number];
@@ -626,6 +628,9 @@ export function ValleyView({
    * its beat. See threads.ts for why these strokes are not the transport overlay.
    */
   threads?: ReadonlySet<ThreadId> | null;
+  /** Where the open pin stands, for the camera. See PinLayer. */
+  onOpenAt?: (at: [number, number, number] | null) => void;
+  settle?: number;
 }) {
   const raw = useValleyField(source.url, source.meta);
 
@@ -705,6 +710,8 @@ export function ValleyView({
           openId={openPin}
           onOpen={onOpenPin ?? (() => {})}
           interactive={pinsInteractive}
+          onOpenAt={onOpenAt}
+          settle={settle}
         />
       )}
     </group>

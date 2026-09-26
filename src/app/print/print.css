@@ -106,7 +106,6 @@
 
 .built { padding: 0 20px; }
 .built h2 { font-size: 0.9375rem; margin: 0 0 4px; }
-.built h2:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 4px; }
 .built .stats { margin: 0 0 14px; font-size: 0.8125rem; color: var(--ui-text-muted); }
 
 .tiles { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }

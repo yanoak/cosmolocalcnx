@@ -14,3 +14,32 @@
 
 /* The city labels are DOM markers, styled exactly as they were over the canvas. */
 .present-map .maplibregl-marker { pointer-events: none; }
+
+/* The opening pulse at Wat Ket: a ring in the accent that swells out of the anchor dot
+   and fades, on the Present's first beat only. Centred on the anchor by the Marker; it
+   never takes the pointer. Nothing moves for a visitor who has asked for less motion. */
+.anchor-pulse {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+.anchor-pulse.is-on { opacity: 1; }
+.anchor-pulse::before,
+.anchor-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--ui-accent);
+  animation: anchor-pulse 2s ease-out infinite;
+}
+.anchor-pulse::after { animation-delay: 1s; }
+@keyframes anchor-pulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(4.5); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .anchor-pulse::before, .anchor-pulse::after { animation: none; opacity: 0; }
+}

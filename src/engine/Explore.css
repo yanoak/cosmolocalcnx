@@ -5,7 +5,7 @@
   position: absolute;
   left: 72px;                      /* clear of the credits button in the corner */
   right: 16px;
-  bottom: 56px;                    /* one row up: the brand mark has the corner below */
+  bottom: 212px;                   /* above the QR code and the mark in the corner below */
   z-index: 2;
   display: flex;
   align-items: center;
@@ -67,11 +67,17 @@
 
 @media (max-width: 560px) {
   .explore-hint { display: none; }   /* thumbs already know */
+  .explore { bottom: 56px; }         /* no QR code on a phone, so only the mark to clear */
 }
 
-/* The Past's layer toggles, bottom left of the bowl: pills on the card's ground, a
-   pressed layer filled in the invert register like the scale toggle. */
+/* The Past's layer toggles, bottom left beside the credits `i` — the Present's legend
+   takes the same spot. Pills on the card's ground, a pressed layer filled in the invert
+   register like the scale toggle. */
 .explore-layers {
+  position: absolute;
+  left: 60px;                      /* clear of the credits button in the corner */
+  bottom: 12px;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;

@@ -106,6 +106,7 @@ export function PresentMap({
   continuous,
   durationMs = 600,
   interactive,
+  pulse = false,
   labels,
   onPick,
   onReady,
@@ -124,6 +125,12 @@ export function PresentMap({
   continuous: boolean;
   durationMs?: number;
   interactive: boolean;
+  /**
+   * Whether the ring at Wat Ket pulses — the opening beat, before the circle grows, so
+   * the eye finds where it starts. A DOM marker with a CSS animation over the anchor,
+   * so the map itself never repaints for it. Added 26 Sep 2026.
+   */
+  pulse?: boolean;
   /** Cities that carry a permanent label. */
   labels: readonly City[];
   /** A cell under the pointer, or null when the pointer has left the cells. */
@@ -133,9 +140,11 @@ export function PresentMap({
 }) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
+  /** The pulse's element, made once with the map; `pulse` only toggles its class. */
+  const pulseEl = useRef<HTMLDivElement | null>(null);
   const loaded = useRef(false);
-  const latest = useRef({ ringKm, pose, continuous, interactive, claimKm });
-  latest.current = { ringKm, pose, continuous, interactive, claimKm };
+  const latest = useRef({ ringKm, pose, continuous, interactive, claimKm, pulse });
+  latest.current = { ringKm, pose, continuous, interactive, claimKm, pulse };
   const pickHandler = useRef(onPick);
   pickHandler.current = onPick;
   const readyHandler = useRef(onReady);
@@ -194,6 +203,12 @@ export function PresentMap({
       });
       loaded.current = true;
       applyRing(m, origin, latest.current.ringKm, latest.current.claimKm, states);
+
+      const pulseWrap = document.createElement('div');
+      pulseWrap.className = latest.current.pulse ? 'anchor-pulse is-on' : 'anchor-pulse';
+      pulseWrap.setAttribute('aria-hidden', 'true');
+      pulseEl.current = pulseWrap;
+      markers.push(new Marker({ element: pulseWrap, anchor: 'center' }).setLngLat([origin[1], origin[0]]).addTo(m));
       applyInteraction(m, latest.current.interactive);
 
       for (const city of labels) {
@@ -268,6 +283,11 @@ export function PresentMap({
     if (!m || !loaded.current || !states) return;
     applyRing(m, origin, ringKm, claimKm, states);
   }, [ringKm, claimKm, origin]);
+
+  /** The opening pulse at Wat Ket, on or off. */
+  useEffect(() => {
+    pulseEl.current?.classList.toggle('is-on', pulse);
+  }, [pulse]);
 
   /** Hands on or off. */
   useEffect(() => {

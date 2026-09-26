@@ -296,3 +296,45 @@ describe('standFor', () => {
     expect(Math.hypot(p[0] - 100, p[1], p[2] + 200)).toBeCloseTo(1000, 6);
   });
 });
+
+import { panDuration, targetBelow, targetOf } from '../camera';
+
+describe('panDuration', () => {
+  const A: CameraPose = { view: 'valley', zoom: 0.01, target: [0, 0, 0] };
+  it('takes no time across views or for no move', () => {
+    expect(panDuration(A, { ...A, view: 'city' })).toBe(0);
+    expect(panDuration(A, A)).toBe(0);
+  });
+  it('takes longer for a longer pan, within bounds', () => {
+    const near = panDuration(A, { ...A, target: [5000, 0, 0] });
+    const far = panDuration(A, { ...A, target: [60000, 0, 0] });
+    expect(near).toBeGreaterThanOrEqual(400);
+    expect(far).toBeGreaterThan(near);
+    expect(far).toBeLessThanOrEqual(1200);
+  });
+});
+
+describe('targetOf', () => {
+  it('inverts standFor', () => {
+    const t: [number, number, number] = [123, 4, -567];
+    const back = targetOf(standFor(t, 9000), 9000);
+    back.forEach((v, i) => expect(v).toBeCloseTo(t[i], 6));
+  });
+});
+
+describe('targetBelow', () => {
+  it('moves the target straight up the screen, so the point sits that far below centre', () => {
+    const at: [number, number, number] = [1000, 50, -2000];
+    const zoom = 0.02; // px per metre
+    const t = targetBelow(at, 200, zoom);
+    // Screen position of a three.js point, via projectView's (east, north, h) frame.
+    const screen = (p: [number, number, number]) => projectView(p[0], -p[2], p[1]);
+    const [ax, ay] = screen(at);
+    const [tx, ty] = screen(t);
+    expect(tx - ax).toBeCloseTo(0, 6);
+    expect((ty - ay) * zoom).toBeCloseTo(200, 6);
+  });
+  it('is the point itself at no offset', () => {
+    expect(targetBelow([1, 2, 3], 0, 0.5)).toEqual([1, 2, 3]);
+  });
+});

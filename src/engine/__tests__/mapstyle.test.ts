@@ -108,3 +108,23 @@ describe('the map style', () => {
     }
   });
 });
+
+import { legendStops } from '@/engine/mapstyle';
+import { POPULATION_RAMP as RAMP } from '@/engine/theme';
+
+describe('legendStops', () => {
+  it('has one swatch per ramp stop, in ramp order, from empty to the densest cell', () => {
+    const stops = legendStops(47_499);
+    expect(stops.map((s) => s.colour)).toEqual([...RAMP]);
+    expect(stops[0].perKm2).toBe(0);
+    expect(stops[stops.length - 1].perKm2).toBe(47_000);
+  });
+  it('inverts the log ramp build-cells.py writes', () => {
+    // t = 0.5 is the geometric middle: sqrt(47,500) − 1 ≈ 217.
+    expect(legendStops(47_499)[2].perKm2).toBe(220);
+  });
+  it('rises monotonically', () => {
+    const d = legendStops(47_499).map((s) => s.perKm2);
+    for (let i = 1; i < d.length; i++) expect(d[i]).toBeGreaterThan(d[i - 1]);
+  });
+});

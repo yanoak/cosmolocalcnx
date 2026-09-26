@@ -56,6 +56,8 @@ export function PinLayer({
   onOpen,
   interactive,
   sizePx = PIN_PX,
+  onOpenAt,
+  settle = 0,
 }: {
   pins: readonly Hotspot[];
   copy: ReadonlyMap<string, PinCopy>;
@@ -70,7 +72,30 @@ export function PinLayer({
   interactive: boolean;
   /** The long edge of a pin on screen. The valley draws its eight a little smaller. */
   sizePx?: number;
+  /**
+   * Told where the open pin stands, in three.js world coordinates — or null when none
+   * is open here — so the camera can go to it. The height is the surface's, which on
+   * the valley is exaggerated four times and far from nothing on a ridge.
+   */
+  onOpenAt?: (at: [number, number, number] | null) => void;
+  /** Bumped when the camera settles, so an open card re-measures where it fits. */
+  settle?: number;
 }) {
+  const open = openId ? pins.find((h) => h.id === openId && h.at) : undefined;
+  const openAt: [number, number, number] | null = open?.at
+    ? (() => {
+        const placement = placeInFrame(open.at, halfFrameM);
+        return [placement.at[0], heightAt(placement.at), -placement.at[1]];
+      })()
+    : null;
+  const [ax, ay, az] = openAt ?? [NaN, NaN, NaN];
+  const report = useRef(onOpenAt);
+  report.current = onOpenAt;
+  useEffect(() => {
+    report.current?.(Number.isNaN(ax) ? null : [ax, ay, az]);
+  }, [ax, ay, az]);
+  useEffect(() => () => report.current?.(null), []);
+
   return (
     <>
       {pins.map((h) => {
@@ -87,6 +112,7 @@ export function PinLayer({
             onOpen={onOpen}
             interactive={interactive}
             sizePx={sizePx}
+            settle={settle}
           />
         );
       })}
@@ -106,6 +132,7 @@ function Pin({
   onOpen,
   interactive,
   sizePx,
+  settle,
 }: {
   hotspot: Hotspot;
   placement: Placement;
@@ -115,6 +142,7 @@ function Pin({
   onOpen: (id: string | null) => void;
   interactive: boolean;
   sizePx: number;
+  settle: number;
 }) {
   const sprite = iconFor(hotspot.icon);
   const wrapper = useRef<HTMLDivElement>(null);
@@ -137,7 +165,7 @@ function Pin({
     const st = stage.getBoundingClientRect();
     const iconBottom = button.current?.getBoundingClientRect().bottom ?? c.bottom;
     setFit(fitPopup(c, st, st.top + st.height - iconBottom));
-  }, [open]);
+  }, [open, settle]);
 
   // Focus follows the popup in and comes back to the pin on the way out, so a keyboard
   // visitor never loses their place on the landscape.

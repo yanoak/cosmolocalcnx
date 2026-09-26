@@ -29,6 +29,15 @@ const VALLEY_PINS = [
   'chiang-dao',
 ] as const;
 
+/**
+ * The Past's one framing, stem and bowl alike: south-east of the origin and a little
+ * closer than the valley's fit, so the whole diamond sits up in the frame with all seven
+ * pins in view — the truck and the tunnel were falling off the bottom. Measured off
+ * Yan's own framing, 26 Sep 2026: the icons fitted to within ~20 px. Every beat holds
+ * it, so the camera never moves during the Past's stem; the threads do the changing.
+ */
+const PAST_FRAME = { zoom: 1.19, target: [10900, 0, 9550] as [number, number, number] };
+
 export const SCORES: Record<ChapterId, Score> = {
   past: {
     chapter: 'past',
@@ -38,12 +47,13 @@ export const SCORES: Record<ChapterId, Score> = {
       // the two chapters that share the valley share a grammar. Added 24 Sep 2026 evening.
       // The base: the Ping as the valley's crossroads, before any date. The river is already
       // drawn; the first dated card puts a boat on it. Yan, 24 Sep 2026 evening.
-      { id: 'crossroads', view: 'valley', layers: ['river'] },
-      { id: 'river', view: 'valley', layers: ['river'], hotspots: ['ping-boat'] },
-      { id: 'caravans', view: 'valley', layers: ['river', 'caravans'], hotspots: ['ping-boat', 'mule-caravan', 'bullock-cart'] },
+      { id: 'crossroads', view: 'valley', pose: PAST_FRAME, layers: ['river'] },
+      { id: 'river', view: 'valley', pose: PAST_FRAME, layers: ['river'], hotspots: ['ping-boat'] },
+      { id: 'caravans', view: 'valley', pose: PAST_FRAME, layers: ['river', 'caravans'], hotspots: ['ping-boat', 'mule-caravan', 'bullock-cart'] },
       {
         id: 'roads',
         view: 'valley',
+        pose: PAST_FRAME,
         layers: ['river', 'caravans', 'roads'],
         hotspots: ['ping-boat', 'mule-caravan', 'bullock-cart', 'highway-truck'],
       },
@@ -51,6 +61,7 @@ export const SCORES: Record<ChapterId, Score> = {
       {
         id: 'rail',
         view: 'valley',
+        pose: PAST_FRAME,
         layers: ['river', 'caravans', 'roads', 'rail'],
         hotspots: ['ping-boat', 'mule-caravan', 'bullock-cart', 'highway-truck', 'station', 'khun-tan'],
       },
@@ -59,10 +70,24 @@ export const SCORES: Record<ChapterId, Score> = {
       {
         id: 'air',
         view: 'valley',
+        pose: PAST_FRAME,
         layers: ['river', 'caravans', 'roads', 'rail', 'air'],
         hotspots: ['ping-boat', 'mule-caravan', 'bullock-cart', 'highway-truck', 'station', 'khun-tan', 'airport'],
         terminal: true,
       },
+    ],
+    // The bowl holds the stem's framing. See PAST_FRAME.
+    bowl: { view: 'valley', ...PAST_FRAME },
+    // Down opens the pins in the order they arrived in the valley, not the beats' order,
+    // which is by thread and puts the 1969 truck before the 1922 railway. Yan, 26 Sep 2026.
+    walk: [
+      'ping-boat', //     1867, the documented journey upstream
+      'mule-caravan', //  undated; the same pre-rail trade as the boat
+      'bullock-cart', //  undated; likewise
+      'khun-tan', //      1918, the tunnel finished ahead of the line
+      'station', //       1922, the railway arrives
+      'airport', //       1934, operations begin
+      'highway-truck', // 1969, Highway 11
     ],
   },
   present: {
@@ -73,7 +98,7 @@ export const SCORES: Record<ChapterId, Score> = {
       // chapter's home view, the circle fitted, and only the ring moves. Stops at 0, 2,000
       // and the claim since the evening of 24 Sep; the beat past the claim went with them.
       // The base: one point on Wat Ket, before anything grows.
-      { id: 'here', view: 'circle', ring: { from: 0, to: 0 } },
+      { id: 'here', view: 'circle', ring: { from: 0, to: 0 }, card: 'low' }, // under Wat Ket, not over it
       // To 2,000 km — a fifth of the world — with the beat's progress; the counter reads
       // the committed curve.
       { id: 'two-thousand', view: 'circle', ring: { from: 0, to: 2000 } },

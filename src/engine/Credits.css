@@ -34,16 +34,13 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 2px solid var(--register-page-ink);
+  /* No ring since 26 Sep 2026 — Yan: the dark stroke read heavier than anything else in
+     the corner. The ground disc alone keeps the `i` legible over the scene. */
   background: var(--register-page-ground);
 }
 .credits[open] .credits-toggle > span {
   background: var(--register-page-ink);
   color: var(--register-page-ground);
-}
-.credits-toggle:focus-visible {
-  outline: 3px solid var(--ui-focus);
-  outline-offset: 2px;
 }
 
 /* The reading register, anchored above the button. */

@@ -1,6 +1,7 @@
 'use client';
 
 import type { Beat } from './chapters';
+import { Fragment } from 'react';
 import { renderCopy } from './copy';
 import './Scrolly.css';
 
@@ -11,7 +12,7 @@ import './Scrolly.css';
  * layout that works at every aspect ratio the three delivery surfaces have.
  *
  * It renders; it does not scroll. The page owns the scroll container and turns
- * scroll progress into a beat position (`beatAt`), because the page is what has to
+ * scroll progress into a beat position (`stemAt`), because the page is what has to
  * hand that position to the camera, the layers and the hotspots at once.
  *
  * The stem ends on a button, not a threshold. Since 24 Sep 2026 the terminal beat's
@@ -46,7 +47,7 @@ export function Scrolly({
 }: {
   beats: readonly Beat[];
   copy: readonly BeatCopy[];
-  /** The beat the scroll is currently in — its card is lit, the rest recede. */
+  /** The card being read — `cardAt` — lit; the rest recede. */
   current: number;
   /** The invitation under the terminal card, e.g. "Explore the Past". */
   exploreLabel: string;
@@ -68,9 +69,14 @@ export function Scrolly({
       {beats.map((b, i) => {
         const c = byId.get(b.id);
         return (
+          <Fragment key={b.id}>
+          {/* An empty screen before every card but the first: the map changes here,
+              with no words over it, and the card arrives after. See stemAt. */}
+          {i > 0 && <div className="scrolly-gap" aria-hidden="true" />}
           <section
-            key={b.id}
-            className={i === current ? 'scrolly-section is-current' : 'scrolly-section'}
+            className={['scrolly-section', i === current ? 'is-current' : '', b.card === 'low' ? 'is-low' : '']
+              .filter(Boolean)
+              .join(' ')}
             data-beat={b.id}
           >
             <article className="scrolly-card">
@@ -98,6 +104,7 @@ export function Scrolly({
               </button>
             )}
           </section>
+          </Fragment>
         );
       })}
     </div>

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  beatAt,
+  cardAt,
+  stemAt,
+  stemStops,
   joinBeatCopy,
   releasedAt,
   resolvePose,
@@ -17,54 +19,81 @@ const past = () => ({
   beats: [beat('river'), beat('caravans'), beat('roads'), beat('rail'), beat('air', 'valley', { terminal: true })],
 });
 
-describe('beatAt', () => {
-  it('gives each beat an equal share of the scroll, with a 0–1 progress inside it', () => {
-    expect(beatAt(0, 4)).toEqual({ index: 0, t: 0 });
-    expect(beatAt(0.125, 4)).toEqual({ index: 0, t: 0.5 });
-    expect(beatAt(0.5, 4)).toEqual({ index: 2, t: 0 });
-    expect(beatAt(0.875, 4)).toEqual({ index: 3, t: 0.5 });
+describe('stemAt', () => {
+  // Four beats: cards at 0, 2, 4, 6 screens, empty screens at 1, 3, 5.
+  it('starts on the first beat, complete', () => {
+    expect(stemAt(0, 4)).toEqual({ index: 0, t: 1 });
   });
 
-  it('ends on the last beat at t = 1, not on a beat past the end', () => {
-    expect(beatAt(1, 4)).toEqual({ index: 3, t: 1 });
+  it('begins the next beat as soon as a card starts to leave', () => {
+    const b = stemAt(0.001, 4);
+    expect(b.index).toBe(1);
+    expect(b.t).toBeCloseTo(0.001, 9);
   });
 
-  // Present's growing circle binds to t, so a jump at a boundary is a jump on screen.
-  it('is continuous across a boundary — the end of one beat is the start of the next', () => {
-    const before = beatAt(0.25 - 1e-9, 4);
-    const after = beatAt(0.25, 4);
-    expect(before.index).toBe(0);
-    expect(before.t).toBeCloseTo(1, 6);
-    expect(after).toEqual({ index: 1, t: 0 });
+  it('has the map change complete on the empty screen', () => {
+    expect(stemAt(1, 4)).toEqual({ index: 1, t: 1 });
+    expect(stemAt(3, 4)).toEqual({ index: 2, t: 1 });
   });
 
-  it('is monotonic in progress', () => {
-    let last = { index: -1, t: 0 };
-    for (let i = 0; i <= 1000; i++) {
-      const b = beatAt(i / 1000, 5);
-      expect(b.index * 10 + b.t).toBeGreaterThanOrEqual(last.index * 10 + last.t - 1e-9);
-      last = b;
+  it('holds the change while the next card arrives, and on it', () => {
+    expect(stemAt(1.5, 4)).toEqual({ index: 1, t: 1 });
+    expect(stemAt(2, 4)).toEqual({ index: 1, t: 1 });
+    expect(stemAt(6, 4)).toEqual({ index: 3, t: 1 });
+  });
+
+  // Present's growing circle binds to t, so a jump at a boundary is a jump on screen:
+  // the end of one beat (t = 1) meets the start of the next (t = 0 on `from`).
+  it('runs t from 0 to 1 over the card leaving', () => {
+    expect(stemAt(2.25, 4)).toEqual({ index: 2, t: 0.25 });
+    expect(stemAt(2.75, 4)).toEqual({ index: 2, t: 0.75 });
+  });
+
+  it('clamps outside the scroll rather than indexing off the score', () => {
+    expect(stemAt(-1, 4)).toEqual({ index: 0, t: 1 });
+    expect(stemAt(99, 4)).toEqual({ index: 3, t: 1 });
+  });
+
+  it('survives one beat and an empty score', () => {
+    expect(stemAt(0.5, 1)).toEqual({ index: 0, t: 1 });
+    expect(stemAt(0.5, 0)).toEqual({ index: 0, t: 1 });
+  });
+
+  it('is monotonic in scroll', () => {
+    let last = -1;
+    for (let i = 0; i <= 600; i++) {
+      const b = stemAt(i / 100, 4);
+      const v = b.index * 10 + b.t;
+      expect(v).toBeGreaterThanOrEqual(last - 1e-9);
+      last = v;
     }
   });
+});
 
-  it('clamps outside [0, 1] rather than indexing off the score', () => {
-    expect(beatAt(-1, 4)).toEqual({ index: 0, t: 0 });
-    expect(beatAt(3, 4)).toEqual({ index: 3, t: 1 });
+describe('stemStops and cardAt', () => {
+  it('counts a card per beat and a gap between each pair', () => {
+    expect(stemStops(4)).toBe(7);
+    expect(stemStops(1)).toBe(1);
+    expect(stemStops(0)).toBe(1);
   });
 
-  it('is constant for a single beat', () => {
-    expect(beatAt(0.3, 1)).toEqual({ index: 0, t: 0.3 });
-    expect(beatAt(1, 1)).toEqual({ index: 0, t: 1 });
-  });
-
-  it('survives an empty score rather than dividing by zero', () => {
-    expect(beatAt(0.5, 0)).toEqual({ index: 0, t: 0 });
+  it('reads the leaving card until the gap, then the arriving one', () => {
+    expect(cardAt(stemAt(0, 4))).toBe(0);
+    expect(cardAt(stemAt(0.5, 4))).toBe(0);
+    expect(cardAt(stemAt(1, 4))).toBe(1);
+    expect(cardAt(stemAt(2, 4))).toBe(1);
+    expect(cardAt(stemAt(2.5, 4))).toBe(1);
   });
 });
 
 describe('validateScore', () => {
   it('accepts a well-formed score', () => {
     expect(validateScore(past())).toEqual([]);
+  });
+
+  it('rejects a bowl in a view its chapter does not use', () => {
+    expect(validateScore({ ...past(), bowl: { view: 'city' } }).join(' ')).toMatch(/bowl/);
+    expect(validateScore({ ...past(), bowl: { view: 'valley', target: [1, 0, 1] } })).toEqual([]);
   });
 
   // The invariant the 21 Sep rail removal bought, applied to beats: a beat NAMES its view.

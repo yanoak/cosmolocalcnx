@@ -64,12 +64,6 @@
 }
 .rail-node[aria-pressed='true'] .rail-label { font-weight: 600; }
 
-/* The button is transparent, so the focus outline has to land on the whole stop
-   rather than on an invisible box. */
-.rail-node:focus-visible {
-  outline: 3px solid var(--ui-focus);
-  outline-offset: 2px;
-}
 
 /* Phones: only the current view keeps its label. Three unlabelled beads would be a
    progress indicator for something the visitor cannot name, but three labels do not

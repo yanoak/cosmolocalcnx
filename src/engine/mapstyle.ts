@@ -313,3 +313,24 @@ export function coloursIn(value: unknown, out: Set<string> = new Set()): Set<str
   }
   return out;
 }
+
+/**
+ * The legend for the cells: one swatch per ramp stop, labelled with the density that
+ * colour marks. `t` is log10(density + 1) / log10(max + 1) — build-cells.py — so the
+ * density at a stop is that run backwards, rounded to two significant figures because a
+ * legend that says 3,217 is claiming a precision the colour does not have. The Pudding's
+ * 3D-cities legend is the model. Added 26 Sep 2026.
+ */
+export function legendStops(maxDensity: number): { colour: string; perKm2: number }[] {
+  const top = Math.log10(Math.max(0, maxDensity) + 1);
+  return POPULATION_RAMP.map((colour, i) => {
+    const t = i / (POPULATION_RAMP.length - 1);
+    return { colour, perKm2: twoFigures(10 ** (t * top) - 1) };
+  });
+}
+
+function twoFigures(n: number): number {
+  if (n <= 0) return 0;
+  const p = 10 ** (Math.floor(Math.log10(n)) - 1);
+  return Math.round(n / p) * p;
+}

@@ -39,10 +39,13 @@ import { Scrolly, type BeatCopy } from '@/engine/Scrolly';
 import { Explore } from '@/engine/Explore';
 import type { PinCopy } from '@/engine/PinLayer';
 import { firstPin, nearestPin, pinsFor } from '@/engine/pins';
+import { inWalkOrder, tourStep, type TourMove } from '@/engine/keytour';
 import type { Hotspot } from '@/engine/scene';
 import { THREAD_ORDER, THREADS, threadOf, type ThreadId } from '@/engine/threads';
 import {
-  beatAt,
+  cardAt,
+  stemAt,
+  stemStops,
   mapPoseBetween,
   resolveMapPose,
   ringAt,
@@ -53,10 +56,12 @@ import { halfPopulationRadius, peopleWithin } from '@/engine/region';
 import { PresentMap, type MapPick } from '@/engine/PresentMap';
 import { aeqdForward, type LatLon } from '@/engine/aeqd';
 import { CELLS_META, MAP_URLS } from '@/scenes/map';
+import { legendStops } from '@/engine/mapstyle';
 import { SCORES } from '@/content/scores';
 import copyDoc from '@/content/copy.json';
 import { ViewHeader } from '@/engine/ViewHeader';
 import { Credits } from '@/engine/Credits';
+import { SiteQr, SITE_LABEL, SITE_URL } from '@/engine/SiteQr';
 import type { ValleyStyle } from '@/engine/valley';
 import { BACKDROP_ASSETS } from '@/scenes/backdrop';
 import { VALLEY_ASSETS } from '@/scenes/valley';
@@ -124,8 +129,6 @@ function chapterInHash(hash: string): ChapterId | null {
   return (CHAPTER_ORDER as readonly string[]).includes(id) ? (id as ChapterId) : null;
 }
 
-/** "about 3,400 km" — rounded to the nearest hundred, which is all the bracket supports. */
-const roundKm = (km: number) => Math.round(km / 100) * 100;
 
 /**
  * Where the Present map sits: Wat Ket in the middle, the claim's circle fitting the
@@ -135,6 +138,11 @@ const roundKm = (km: number) => Math.round(km / 100) * 100;
  * a 3,400 km ring is about 700 px across. Pitch and bearing in degrees.
  */
 const ORIGIN = DOC.origin as LatLon;
+/** The cells' colour key: a swatch per ramp stop, labelled in people per km². */
+const POP_LEGEND = legendStops(CELLS_META.maxDensity);
+
+/** Where every stem starts: the first beat, complete. See stemAt. */
+const STEM_START: BeatPosition = { index: 0, t: 1 };
 const MAP_HOME: MapPose = { zoom: 4, pitch: 40, bearing: 0, centre: ORIGIN };
 
 /**
@@ -237,7 +245,7 @@ export default function Page() {
    * control moves the visitor on — never a beat.
    */
   const [mode, setMode] = useState<'stem' | 'explore'>('stem');
-  const [position, setPosition] = useState<BeatPosition>({ index: 0, t: 0 });
+  const [position, setPosition] = useState<BeatPosition>(STEM_START);
   const viewer = useRef<HTMLElement>(null);
   const topbar = useRef<HTMLDivElement>(null);
 
@@ -328,7 +336,7 @@ export default function Page() {
   const reread = useCallback(() => {
     setMode('stem');
     setOpenPin(null);
-    setPosition({ index: 0, t: 0 });
+    setPosition(STEM_START);
     requestAnimationFrame(() => viewer.current?.scrollTo({ top: 0 }));
   }, []);
 
@@ -337,14 +345,29 @@ export default function Page() {
     const el = viewer.current;
     if (!el || mode !== 'stem') return;
     const n = score.beats.length;
-    const max = Math.max(1, (n - 1) * el.clientHeight);
-    setPosition(beatAt(el.scrollTop / max, n));
+    const screens = el.scrollTop / Math.max(1, el.clientHeight);
+    if (Math.abs(screens - (beatTarget.current ?? NaN)) < 0.02) beatTarget.current = null;
+    setPosition(stemAt(screens, n));
   }, [mode, score]);
 
-  const scrollToBeat = useCallback((index: number, smooth = true) => {
+  /**
+   * The stop a key press is scrolling to, until the scroll gets there. A second press
+   * during a smooth scroll steps on from the target rather than from the screen still
+   * half in view, so holding Down does not stall.
+   */
+  const beatTarget = useRef<number | null>(null);
+  /** Scroll to a stem stop: 2i is card i, 2i + 1 the empty screen after it. See stemAt. */
+  const scrollToStop = useCallback((stop: number, smooth = true) => {
     const el = viewer.current;
     if (!el) return;
-    el.scrollTo({ top: Math.max(0, index) * el.clientHeight, behavior: smooth ? 'smooth' : 'auto' });
+    beatTarget.current = smooth ? Math.max(0, stop) : null;
+    el.scrollTo({ top: Math.max(0, stop) * el.clientHeight, behavior: smooth ? 'smooth' : 'auto' });
+  }, []);
+  /** The stop on screen now, or the one a key press is already heading for. */
+  const currentStop = useCallback(() => {
+    if (beatTarget.current !== null) return beatTarget.current;
+    const el = viewer.current;
+    return el ? Math.round(el.scrollTop / Math.max(1, el.clientHeight)) : 0;
   }, []);
   const [view, setView] = useState<ViewId>(() => resolveView(defaultView(resolveChapter(null, HAS_VIEWS), HAS_VIEWS), HAS_VIEWS));
 
@@ -452,10 +475,13 @@ export default function Page() {
     setChapter(c);
     setMode('stem');
     setOpenPin(null);
-    setPosition({ index: 0, t: 0 });
+    setPosition(STEM_START);
     viewer.current?.scrollTo({ top: 0 });
     setView(resolveView(defaultView(c, HAS_VIEWS), HAS_VIEWS));
     if (defaultView(c, HAS_VIEWS) !== 'circle') setMapPick(null);
+    // Off the rail and onto the chapter, so the next Down reads it rather than moving
+    // along the rail's buttons, which keep their arrows while they have focus.
+    stage.current?.focus({ preventScroll: true });
   }, []);
 
   /**
@@ -470,7 +496,7 @@ export default function Page() {
     const el = viewer.current;
     if (!el) return;
     el.scrollTo({ top: 0 });
-    setPosition({ index: 0, t: 0 });
+    setPosition(STEM_START);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapter]);
 
@@ -485,24 +511,25 @@ export default function Page() {
   }, [goToChapter]);
 
   /**
-   * The map's camera during the Present stem. A ring beat interpolates toward the next
-   * beat's pose as it plays, exactly as `poseBetween` does for the diorama; a beat
-   * without a ring eases to its own pose. In the bowl the last pose is HELD — pushing a
+   * The map's camera during the Present stem. A ring beat interpolates FROM the previous
+   * beat's pose to its own as it plays — t runs while the card before it leaves, see
+   * stemAt — exactly as `poseBetween` does for the diorama; a beat without a ring eases
+   * to its own pose. In the bowl the last pose is HELD — pushing a
    * new object would snap the map out from under a visitor's hands.
    */
-  const nextBeat = score.beats[position.index + 1] ?? null;
+  const prevBeat = position.index > 0 ? score.beats[position.index - 1] : null;
   const heldMapPose = useRef<MapPose>(MAP_HOME);
   const mapPose = useMemo<MapPose>(() => {
     if (mode !== 'stem' || chapter !== 'present') return heldMapPose.current;
     const here = resolveMapPose(beat, MAP_HOME);
     const p =
-      beat.ring && nextBeat
-        ? mapPoseBetween(here, resolveMapPose(nextBeat, MAP_HOME), position.t)
+      beat.ring && prevBeat
+        ? mapPoseBetween(resolveMapPose(prevBeat, MAP_HOME), here, position.t)
         : here;
     heldMapPose.current = p;
     return p;
-  }, [mode, chapter, beat, nextBeat, position.t]);
-  const mapContinuous = mode === 'stem' && !!(beat.ring && nextBeat);
+  }, [mode, chapter, beat, prevBeat, position.t]);
+  const mapContinuous = mode === 'stem' && !!(beat.ring && prevBeat);
   const mapRingKm = CLAIM
     ? (mode === 'stem' ? ringAt(beat, position.t, CLAIM.km) : null) ?? CLAIM.km
     : 0;
@@ -541,37 +568,72 @@ export default function Page() {
     stage.current?.focus();
   }, []);
 
+  /** Carry out one step of the keyboard's walk. See keytour.ts. */
+  const applyTour = useCallback(
+    (move: TourMove) => {
+      switch (move.kind) {
+        case 'stop':
+          scrollToStop(move.index);
+          return;
+        case 'explore':
+          openExplore();
+          setOpenPin(move.pin);
+          return;
+        case 'pin':
+          setOpenPin(move.id);
+          return;
+        case 'stem':
+          // Back onto the last card, where the bowl was opened from.
+          setOpenPin(null);
+          setMode('stem');
+          setPosition(stemAt(move.index, score.beats.length));
+          requestAnimationFrame(() => scrollToStop(move.index, false));
+          return;
+      }
+    },
+    [openExplore, score, scrollToStop],
+  );
+
   const onKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      // In the stem the keys drive the story, not the buildings.
+    (e: KeyboardEvent) => {
+      // The pins on screen, in the chapter's walk order — chronological in the Past —
+      // or the document's where a chapter does not give one.
+      const visiblePins = inWalkOrder(pinsFor(visibleHotspots, view, null), score.walk);
+      // Down and Up are one path through the chapter: the stem's cards, then its pins
+      // one after another, and back. Space and Right join Down in the stem, Left joins
+      // Up, as they always have; in the bowl Left and Right stay spatial.
+      const forward = e.key === 'ArrowDown' || (mode === 'stem' && (e.key === ' ' || e.key === 'ArrowRight'));
+      const back = e.key === 'ArrowUp' || (mode === 'stem' && e.key === 'ArrowLeft');
+      if (forward || back) {
+        e.preventDefault();
+        const move = tourStep(
+          {
+            mode,
+            stop: currentStop(),
+            stops: stemStops(score.beats.length),
+            pins: visiblePins.map((p) => p.id),
+            open: openPin,
+          },
+          forward ? 1 : -1,
+        );
+        if (move) applyTour(move);
+        return;
+      }
       if (mode === 'stem') {
-        if (e.key === ' ' || e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-          scrollToBeat(position.index + 1);
-          e.preventDefault();
-          return;
-        }
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-          scrollToBeat(position.index - 1);
-          e.preventDefault();
-          return;
-        }
         if (e.key === 'Escape') {
           // The keyboard's shortcut past the stem: land on the last card and open the bowl.
-          scrollToBeat(score.beats.length - 1, false);
+          scrollToStop(stemStops(score.beats.length) - 1, false);
           openExplore();
           return;
         }
       }
-      // In a chapter with pins, the arrows walk the pins rather than the buildings:
-      // nearest in that screen direction, from the open one or from the one nearest
-      // the origin. Screen directions, in projectView's frame — y is positive UP.
-      const visiblePins = pinsFor(chapterHotspots, view, null);
+      // Left and Right walk the pins spatially rather than the buildings: nearest in
+      // that screen direction, from the open one or from the one nearest the origin.
+      // Screen directions, in projectView's frame — y is positive UP.
       if (visiblePins.length > 0) {
         const dirs: Record<string, [number, number]> = {
           ArrowRight: [1, 0],
           ArrowLeft: [-1, 0],
-          ArrowUp: [0, 1],
-          ArrowDown: [0, -1],
         };
         const dir = dirs[e.key];
         if (dir) {
@@ -587,11 +649,10 @@ export default function Page() {
           return;
         }
       }
+      // Up and Down never arrive here: they belong to the walk above.
       const arrows: Record<string, [1 | -1, 'horizontal' | 'vertical']> = {
         ArrowRight: [1, 'horizontal'],
         ArrowLeft: [-1, 'horizontal'],
-        ArrowDown: [1, 'vertical'],
-        ArrowUp: [-1, 'vertical'],
       };
       const move = arrows[e.key];
       if (move) {
@@ -622,8 +683,35 @@ export default function Page() {
       const n = Number(e.key);
       if (n >= 1 && n <= CHAPTER_ORDER.length) goToChapter(CHAPTER_ORDER[n - 1]);
     },
-    [buildings, chapterHotspots, close, goToChapter, mode, openExplore, openPin, position.index, score, scrollToBeat, view],
+    [applyTour, buildings, close, currentStop, goToChapter, mode, openExplore, openPin, score, scrollToStop, view, visibleHotspots],
   );
+
+  /**
+   * The keys are read from the whole window, not only the canvas, so Down works from
+   * the first moment without clicking into the scene first — and after clicking a
+   * button in the card or the explore bar. Left alone: anything that types, the map's
+   * own keyboard pan while it has focus, Space on something Space activates, and any
+   * chord with a modifier, so Cmd-1 still switches browser tabs. A control that
+   * handles its own arrows — the rail — stops them before they arrive here.
+   */
+  const keyHandler = useRef(onKeyDown);
+  useEffect(() => {
+    keyHandler.current = onKeyDown;
+  }, [onKeyDown]);
+  useEffect(() => {
+    const listener = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target instanceof HTMLElement ? e.target : null;
+      if (t) {
+        if (t.isContentEditable || t.closest('input, textarea, select')) return;
+        if (t.closest('.maplibregl-map')) return;
+        if ((e.key === ' ' || e.key === 'Enter') && t.closest('button, a, summary')) return;
+      }
+      keyHandler.current(e);
+    };
+    window.addEventListener('keydown', listener);
+    return () => window.removeEventListener('keydown', listener);
+  }, []);
 
   return (
     <main
@@ -665,8 +753,7 @@ export default function Page() {
           className="canvas-wrap"
           tabIndex={0}
           role="application"
-          aria-label="Wat Ket diorama. Arrow keys move between buildings, Enter opens details, Escape closes."
-          onKeyDown={onKeyDown}
+          aria-label="Wat Ket and the world. Down and Up step through the story and then its places, one after another. Escape closes."
         >
           <div className="canvas-fill">
             {/* Two renderers, one stage, BOTH mounted for the whole visit and shown one at a
@@ -696,6 +783,7 @@ export default function Page() {
               beat={mode === 'stem' ? beat : null}
               interactive={mode === 'explore'}
               hotspots={visibleHotspots}
+              bowl={score.bowl}
               pinCopy={pinCopy}
               openPin={openPin}
               onOpenPin={setOpenPin}
@@ -716,6 +804,7 @@ export default function Page() {
                   pose={mapPose}
                   continuous={mapContinuous}
                   interactive={chapter === 'present' && mode === 'explore'}
+                  pulse={chapter === 'present' && mode === 'stem' && position.index === 0}
                   labels={REGION.labels}
                   onPick={setMapPick}
                   onReady={() => setMapReady(true)}
@@ -758,30 +847,17 @@ export default function Page() {
         {mode === 'explore' && (
         <div className="view-caption" aria-live="polite">
           {view === 'circle' ? (
-            <p>
-              <strong>
-                Half of everyone alive lives within about{' '}
-                {CLAIM ? roundKm(CLAIM.km).toLocaleString() : '3,400'} km of here.
-              </strong>{' '}
-              <span>
-                {CLAIM
-                  ? `${Math.round(CLAIM.lowKm).toLocaleString()}–${Math.round(CLAIM.highKm).toLocaleString()} km for a world of 7.8–8.2 billion; the field stops 12,000 km out.`
-                  : ''}
-              </span>
-            </p>
+            // No caption: the ring readout carries the claim during the stem, and the
+            // legend beside the credits is the circle's key. Yan, 26 Sep 2026.
+            null
           ) : view === 'valley' ? (
             chapter === 'futures' ? (
-              // The valley-as-futures: a place and a date, like the city's caption. The
-              // method line belongs to the Past, where the relief is the subject.
+              // The valley-as-futures: a place and a date, like the city's caption.
               <p>Ping Valley, 2045.</p>
             ) : (
-              <p>
-                <strong>The valley the city grew in.</strong>{' '}
-                <span>
-                  120 km across, from Doi Inthanon to the Ping. Heights are exaggerated
-                  four times, so the ground reads as ground.
-                </span>
-              </p>
+              // The Past's valley has no caption since 26 Sep 2026 — Yan: the layer
+              // switches sit in the corner now and the relief speaks for itself.
+              null
             )
           ) : (
             <p>Wat Ket, 2045.</p>
@@ -808,12 +884,40 @@ export default function Page() {
 
         <SelectPanel selection={selection} locale={locale} onClose={close} />
 
-        {/* The maker's mark: Thibi's logo, bottom right, linking to the studio. A credit the
-            piece shows on purpose — the one kind of name that belongs in a committed file,
-            see CLAUDE.md. Under the chapter buttons, which step up to make room for it. */}
-        <a className="brand" href="https://thibi.co/" target="_blank" rel="noopener noreferrer" aria-label="Thibi — visit the website">
-          <img src="/logos/Thibi_FinalLogo_Black.svg" alt="Thibi" width={78} height={23} />
-        </a>
+        {/* Bottom right: the piece's own address — a QR code for the exhibition screen and
+            the URL under it — over the maker's mark. Yan, 26 Sep 2026. */}
+        {/* The cells' colour key, beside the credits `i`, for the whole Present chapter —
+            the stem's steps as well as the bowl, since the colours are what the cards talk
+            about. After the Pudding's 3D-cities legend. Yan, 26 Sep 2026. */}
+        {chapter === 'present' && (
+          <figure className="pop-legend">
+            <figcaption className="pop-legend-title">People per km²</figcaption>
+            <ol className="pop-legend-scale">
+              {POP_LEGEND.map((stop) => (
+                <li key={stop.colour}>
+                  <span className="pop-legend-swatch" style={{ background: stop.colour }} />
+                  <span className="pop-legend-value">{stop.perKm2.toLocaleString('en')}</span>
+                </li>
+              ))}
+            </ol>
+          </figure>
+        )}
+
+        {/* Bottom right: the piece's own address — a QR code for the exhibition screen and
+            the URL under it — over the maker's mark. Yan, 26 Sep 2026. */}
+        <div className="corner-credit">
+          <a className="site-link" href={SITE_URL} target="_blank" rel="noopener noreferrer">
+            <SiteQr />
+            <span className="site-link-label">{SITE_LABEL}</span>
+          </a>
+          {/* The maker's mark: Thibi's logo, linking to the studio. A credit the piece shows
+              on purpose — the one kind of name that belongs in a committed file, see
+              CLAUDE.md. */}
+          <a className="brand" href="https://thibi.co/" target="_blank" rel="noopener noreferrer" aria-label="Created by Thibi — visit the website">
+            <span className="brand-label" aria-hidden="true">Created by</span>
+            <img src="/logos/Thibi_FinalLogo_Black.svg" alt="Thibi" width={78} height={23} />
+          </a>
+        </div>
 
         {/* Seven sources whose licences require attribution to be VISIBLE — OSM and
             Overture under ODbL, the tambon boundary under CC BY-IGO, the heights, the
@@ -857,7 +961,7 @@ export default function Page() {
         <Scrolly
           beats={score.beats}
           copy={beatCopy}
-          current={position.index}
+          current={cardAt(position)}
           exploreLabel={`Explore the ${CHAPTER_TENSE[chapter]}`}
           onExplore={openExplore}
         />

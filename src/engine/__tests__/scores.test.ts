@@ -44,3 +44,17 @@ describe('the committed scores', () => {
     expect(changes).toBe(1);
   });
 });
+
+import scene from '@/scenes/wat-ket.json';
+
+describe('a chapter walk', () => {
+  const hotspots = (scene as unknown as { hotspots: { id: string; chapter: string }[] }).hotspots;
+  for (const id of CHAPTER_ORDER) {
+    const walk = SCORES[id].walk;
+    if (!walk) continue;
+    it(`${id} names every one of its pins exactly once`, () => {
+      const pins = hotspots.filter((h) => h.chapter === id).map((h) => h.id);
+      expect([...walk].sort()).toEqual([...pins].sort());
+    });
+  }
+});

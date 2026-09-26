@@ -1,9 +1,9 @@
 'use client';
 
 import { useThree } from '@react-three/fiber';
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type * as THREE from 'three';
-import { moveDuration, poseBetween, samePose, standFor, type CameraPose } from './camera';
+import { moveDuration, panDuration, poseBetween, samePose, standFor, targetOf, type CameraPose } from './camera';
 import { easeInOutCubic } from './tween';
 
 /**
@@ -26,10 +26,16 @@ import { easeInOutCubic } from './tween';
 export function CameraRig({
   pose,
   durationMs = 0,
+  pan = false,
   onArrive,
 }: {
   pose: CameraPose;
   durationMs?: number;
+  /**
+   * When true, a move within the view is timed by how far it pans rather than by
+   * `durationMs`. The bowl's pin-to-pin moves. See `panDuration`.
+   */
+  pan?: boolean;
   /** After the camera settles on a NEW pose — not on mount. */
   onArrive?: () => void;
 }) {
@@ -49,7 +55,13 @@ export function CameraRig({
   const arrived = useRef(onArrive);
   arrived.current = onArrive;
 
-  useEffect(() => {
+  // A LAYOUT effect, not a passive one. The controls receive `pose.target` as a prop in
+  // the same commit, and MapControls calls update() — a lookAt — on every frame. A
+  // passive effect can run after a frame has drawn, and that frame shows the camera
+  // turned toward the new target from its old position: a one-frame tilt, seen as a
+  // flash whenever a pin closed and the target jumped back to the overview. Found
+  // 26 Sep 2026. A layout effect runs in the commit, before any frame can.
+  useLayoutEffect(() => {
     const from = previous.current;
     if (from && samePose(from, pose)) return;
     const first = from === null;
@@ -80,9 +92,22 @@ export function CameraRig({
     const reduced =
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    // Start from where the camera IS, not from the last pose it was handed: in the bowl
+    // a visitor may have panned and zoomed since, and a move that began by snapping
+    // back to the old pose would be a jump. The target is read off the camera's
+    // position, since the controls' own target already holds the new pose's by now.
+    const start: CameraPose | null =
+      from && distance.current !== null
+        ? {
+            view: from.view,
+            zoom: camera.zoom,
+            target: targetOf([camera.position.x, camera.position.y, camera.position.z], distance.current),
+          }
+        : from;
+
     // Across views there is no journey to draw: the cut happens even mid-stem.
-    const ms = moveDuration(from, pose, durationMs);
-    if (first || !from || reduced || ms <= 0) {
+    const ms = !start ? 0 : pan ? panDuration(start, pose) : moveDuration(start, pose, durationMs);
+    if (first || !start || reduced || ms <= 0) {
       apply(pose);
       if (!first) arrived.current?.();
       return;
@@ -91,7 +116,7 @@ export function CameraRig({
     const started = performance.now();
     const step = (now: number) => {
       const u = Math.min(1, (now - started) / ms);
-      apply(poseBetween(from, pose, easeInOutCubic(u)));
+      apply(poseBetween(start, pose, easeInOutCubic(u)));
       if (u < 1) {
         raf.current = requestAnimationFrame(step);
       } else {
@@ -104,7 +129,7 @@ export function CameraRig({
       if (raf.current !== null) cancelAnimationFrame(raf.current);
       raf.current = null;
     };
-  }, [pose, durationMs, camera, controls, invalidate]);
+  }, [pose, durationMs, pan, camera, controls, invalidate]);
 
   return null;
 }

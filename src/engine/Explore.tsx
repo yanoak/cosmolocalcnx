@@ -78,29 +78,31 @@ export function Explore({
           ))}
         </div>
       )}
-      <div className="explore" role="group" aria-label="Explore">
-        {layers && layers.length > 0 && (
-          <div className={layersOpen ? 'explore-layers is-open' : 'explore-layers'} role="group" aria-label="Layers">
+      {/* The layer switches sit apart from the bar, in the bottom row beside the credits
+          `i` — Yan, 26 Sep 2026 — where the Present keeps its legend. */}
+      {layers && layers.length > 0 && (
+        <div className={layersOpen ? 'explore-layers is-open' : 'explore-layers'} role="group" aria-label="Layers">
+          <button
+            type="button"
+            className="explore-layers-toggle"
+            aria-expanded={layersOpen}
+            onClick={() => setLayersOpen((v) => !v)}
+          >
+            Layers {layersOpen ? '×' : '⌄'}
+          </button>
+          {layers.map((l) => (
             <button
+              key={l.id}
               type="button"
-              className="explore-layers-toggle"
-              aria-expanded={layersOpen}
-              onClick={() => setLayersOpen((v) => !v)}
+              aria-pressed={active?.has(l.id) ?? true}
+              onClick={() => onToggle?.(l.id)}
             >
-              Layers {layersOpen ? '×' : '⌄'}
+              {l.label}
             </button>
-            {layers.map((l) => (
-              <button
-                key={l.id}
-                type="button"
-                aria-pressed={active?.has(l.id) ?? true}
-                onClick={() => onToggle?.(l.id)}
-              >
-                {l.label}
-              </button>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
+      )}
+      <div className="explore" role="group" aria-label="Explore">
         <span className="explore-hint">Drag to pan, pinch or scroll to zoom.</span>
         {next && (
           <button type="button" className="button--invite" onClick={() => onNext(next)}>

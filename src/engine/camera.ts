@@ -212,6 +212,44 @@ export function standFor(target: Vec3, distance: number): Vec3 {
   ];
 }
 
+/**
+ * The target a camera standing at `position` is looking at, `distance` back along the
+ * attitude — `standFor` run backwards. How the rig learns where a visitor has panned
+ * to, since the controls' own target is overwritten by the next pose before it can be
+ * read.
+ */
+export function targetOf(position: Vec3, distance: number): Vec3 {
+  return [
+    position[0] - BASIS.towards[0] * distance,
+    position[1] - BASIS.towards[1] * distance,
+    position[2] - BASIS.towards[2] * distance,
+  ];
+}
+
+/**
+ * How long a pan between two poses in one view takes: by how far it travels on
+ * screen, so a hop to the next pin is quick and a trip across the valley is not a
+ * lurch, within bounds that keep it one gesture. The bowl's pin-to-pin moves; there is
+ * no zoom in them — Yan, 26 Sep 2026, after trying a zoom-out-and-in flight.
+ */
+export function panDuration(from: CameraPose, to: CameraPose): number {
+  if (from.view !== to.view || samePose(from, to)) return 0;
+  const d = Math.hypot(to.target[0] - from.target[0], to.target[1] - from.target[1], to.target[2] - from.target[2]);
+  const px = d * Math.max(from.zoom, to.zoom);
+  return Math.min(1200, Math.max(400, 300 + px * 0.8));
+}
+
+/**
+ * The camera target that puts world point `at` `downPx` CSS pixels BELOW the centre of
+ * the screen at `zoom` — the target moved up the screen by that much. Orthographic, so
+ * the offset is the same everywhere. For an open pin: its card opens above the icon, and
+ * a centred icon left the card under the button at the top of the stage. 26 Sep 2026.
+ */
+export function targetBelow(at: Vec3, downPx: number, zoom: number): Vec3 {
+  const m = zoom > 0 ? downPx / zoom : 0;
+  return [at[0] + BASIS.up[0] * m, at[1] + BASIS.up[1] * m, at[2] + BASIS.up[2] * m];
+}
+
 export function samePose(a: CameraPose, b: CameraPose): boolean {
   return (
     a.view === b.view &&

@@ -2,8 +2,8 @@
    Never write a hex value in this file. */
 
 /* The track scrolls OVER the sticky stage. It starts one viewport up so the first card is
-   on screen at scrollTop 0 rather than a screen below it — which is what makes
-   scrollTop / ((n − 1) × viewport) the beat progress, with card i centred at i / (n − 1). */
+   on screen at scrollTop 0 rather than a screen below it. Card i is centred at 2i
+   viewports and the empty screen after it at 2i + 1 — see stemAt in chapters.ts. */
 .scrolly-track {
   position: relative;
   z-index: 2;
@@ -20,6 +20,20 @@
   gap: 18px;
   scroll-snap-align: start;
   padding: 0 16px;
+}
+
+/* A card that keeps the middle of the scene clear: near the bottom of its screen, above
+   the "Scroll" prompt. The Present's first card, so Wat Ket is visible under it. */
+.scrolly-section.is-low {
+  justify-content: flex-end;
+  padding-bottom: max(72px, 9dvh);
+}
+
+/* The empty screen between two cards, where the map changes before the next card's words
+   arrive. A snap point of its own, so a scroll can rest on the change. See stemAt. */
+.scrolly-gap {
+  height: 100dvh;
+  scroll-snap-align: start;
 }
 
 /* The way out of the stem, under the last card: the invert-register pill the piece uses

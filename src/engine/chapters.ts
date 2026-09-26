@@ -68,6 +68,12 @@ export interface Beat {
   mapPose?: Partial<MapPose>;
   /** The last beat: ends the stem and releases the bowl. Exactly one per score, and last. */
   terminal?: boolean;
+  /**
+   * Where the card sits in its screen: centred by default, or `low` — near the bottom,
+   * for a beat whose subject is in the middle of the scene and must not be under the
+   * words. The Present's first card, over Wat Ket. Added 26 Sep 2026.
+   */
+  card?: 'low';
 }
 
 /** A ring radius: kilometres, or the claim itself. */
@@ -111,6 +117,17 @@ export function mapPoseBetween(from: MapPose, to: MapPose, u: number): MapPose {
 export interface Score {
   chapter: ChapterId;
   beats: readonly Beat[];
+  /**
+   * Where the bowl opens, when the terminal beat's framing is not the one to explore
+   * from: a view and a pose relative to that view's fit, like a beat's. Added 26 Sep
+   * 2026 for the Past, whose valley fit left its pins bunched to one side.
+   */
+  bowl?: { view: ViewId } & Partial<BeatPose>;
+  /**
+   * The order the keyboard opens the chapter's pins in, when the document's is not the
+   * one — ids, every pin exactly once. The Past walks them chronologically. See keytour.ts.
+   */
+  walk?: readonly string[];
 }
 
 /** A position in a score: which beat, and how far through it. */
@@ -121,17 +138,40 @@ export interface BeatPosition {
 }
 
 /**
- * Scroll progress over the whole stem → beat and progress within it. Each beat gets an
- * equal share. The last beat owns `progress === 1` (index n−1, t = 1) rather than there
- * being a phantom beat past the end, and a boundary belongs to the beat it begins.
+ * How many screens the stem scrolls through, counting the one it starts on: a card per
+ * beat and an empty screen between each pair. The keyboard stops on every one.
  */
-export function beatAt(progress: number, count: number): BeatPosition {
-  if (count <= 0) return { index: 0, t: 0 };
-  const p = progress < 0 ? 0 : progress > 1 ? 1 : progress;
-  if (p === 1) return { index: count - 1, t: 1 };
-  const scaled = p * count;
-  const index = Math.min(Math.floor(scaled), count - 1);
-  return { index, t: scaled - index };
+export function stemStops(count: number): number {
+  return Math.max(1, 2 * count - 1);
+}
+
+/**
+ * Scroll position → beat and progress within it, since 26 Sep 2026.
+ *
+ * `screens` is scrollTop over one viewport. Card i is centred at 2i; between cards is an
+ * empty screen, at 2i + 1. A beat BEGINS the moment the card before it starts to leave:
+ * its map change — layers, camera, the growing ring — runs over t = 0 → 1 while that card
+ * scrolls off, is complete on the empty screen, and holds at t = 1 while its own card
+ * scrolls in. So a visitor sees the map change first and reads about it second, and a
+ * keyboard's first Down is the change and its second is the words. Yan's call.
+ *
+ * Replaced `beatAt`, which gave each beat an equal share of a scroll with no gaps and
+ * changed the map only as the next card arrived. The first beat has nothing before it
+ * and is complete from the start.
+ */
+export function stemAt(screens: number, count: number): BeatPosition {
+  if (count <= 1) return { index: 0, t: 1 };
+  const max = 2 * (count - 1);
+  const s = screens < 0 ? 0 : screens > max ? max : screens;
+  if (s <= 0) return { index: 0, t: 1 };
+  const index = Math.min(count - 1, Math.ceil(s / 2));
+  const t = Math.min(1, s - 2 * (index - 1));
+  return { index, t };
+}
+
+/** The card nearest the reading position: the one leaving until the gap, then the one arriving. */
+export function cardAt(at: BeatPosition): number {
+  return at.t < 1 ? Math.max(0, at.index - 1) : at.index;
 }
 
 /** The fitted camera for each view, as the renderer knows it right now. */
@@ -220,6 +260,10 @@ export function validateScore(score: Score): string[] {
         }
       }
     }
+  }
+
+  if (score.bowl && !views.includes(score.bowl.view)) {
+    errors.push(`${where}: its bowl opens in view "${score.bowl.view}", which the chapter does not use`);
   }
 
   const terminals = score.beats.filter((b) => b.terminal).length;

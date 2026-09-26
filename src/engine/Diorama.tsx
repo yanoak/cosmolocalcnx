@@ -2,12 +2,12 @@
 
 import { MapControls } from '@react-three/drei';
 import { Canvas, useThree } from '@react-three/fiber';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Buildings } from './Buildings';
-import { isometricFit, type Bounds, type CameraPose } from './camera';
+import { isometricFit, targetBelow, type Bounds, type CameraPose } from './camera';
 import { CameraRig } from './CameraRig';
-import { resolvePose, type Beat, type ViewFits } from './chapters';
+import { resolvePose, type Beat, type Score, type ViewFits } from './chapters';
 import { DebugOverlay } from './DebugOverlay';
 import { Ground, GroundAreas } from './Ground';
 import { BackdropPlane, type BackdropSource } from './BackdropPlane';
@@ -137,6 +137,15 @@ function RedrawOnVisible() {
   return null;
 }
 
+/** How far below the stage's centre an open pin sits, as a fraction of its height. */
+const PIN_BELOW_CENTRE = 0.25;
+/**
+ * How much closer than the overview the camera stands while a pin is open. The same for
+ * every pin, so moving between two is still a pure pan; only opening the first and
+ * closing the last change the zoom. Yan, 26 Sep 2026.
+ */
+const PIN_ZOOM = 1.5;
+
 /**
  * A fixed isometric diorama you inspect, not a world you traverse.
  *
@@ -174,6 +183,7 @@ export function Diorama({
   pinCopy = NO_PIN_COPY,
   openPin = null,
   onOpenPin,
+  bowl,
   warm = NO_WARM,
   valleyTransport = false,
   valleyThreads = null,
@@ -231,6 +241,8 @@ export function Diorama({
   pinCopy?: ReadonlyMap<string, PinCopy>;
   openPin?: string | null;
   onOpenPin?: (id: string | null) => void;
+  /** Where the chapter's bowl opens, if not on the terminal beat's framing. See `Score.bowl`. */
+  bowl?: Score['bowl'];
   /**
    * Views to have BUILT now, shown or not — the open chapter's, so a stem that cuts from
    * the city to the valley finds the valley ready instead of building 130k triangles on
@@ -315,15 +327,50 @@ export function Diorama({
    * view's fit, since a held pose belongs to the view it was made in.
    */
   const held = useRef<CameraPose | null>(null);
-  const pose = useMemo<CameraPose>(() => {
+  /** The bowl's overview in this view: the chapter's own framing, else the held beat, else the fit. */
+  const overview = useMemo<CameraPose>(() => {
     if (beat) {
       const p = resolvePose(beat, fits);
       held.current = p;
       return p;
     }
+    if (bowl && bowl.view === view) {
+      return {
+        view,
+        zoom: clampZoom(specs[view], fits[view].zoom * (bowl.zoom ?? 1)),
+        target: bowl.target ?? fits[view].target,
+      };
+    }
     if (held.current && held.current.view === view) return held.current;
     return { view, zoom: fits[view].zoom, target: fits[view].target };
-  }, [beat, fits, view]);
+  }, [beat, bowl, fits, specs, view]);
+
+  /**
+   * Where the open pin stands, reported by the pin layer. In the bowl the camera pans to
+   * it, a little closer in (PIN_ZOOM); closing it pans back out to the overview. Keyboard
+   * or tap, the same.
+   */
+  const [pinAt, setPinAt] = useState<[number, number, number] | null>(null);
+  const onOpenAt = useCallback((at: [number, number, number] | null) => {
+    setPinAt((was) =>
+      was === at || (was && at && was[0] === at[0] && was[1] === at[1] && was[2] === at[2]) ? was : at,
+    );
+  }, []);
+  const pose = useMemo<CameraPose>(() => {
+    if (beat || !openPin || !pinAt) return overview;
+    // Below centre, not on it: the card opens above the icon and needs the room, clear
+    // of the button at the top of the stage. Yan, 26 Sep 2026.
+    const zoom = clampZoom(specs[view], overview.zoom * PIN_ZOOM);
+    const down = (size?.height ?? 0) * PIN_BELOW_CENTRE;
+    return { view, zoom, target: targetBelow(pinAt, down, zoom) };
+  }, [beat, openPin, pinAt, overview, specs, view, size?.height]);
+
+  /** Bumped each time the camera settles, so an open card re-measures its fit there. */
+  const [settle, setSettle] = useState(0);
+  const arrive = useCallback(() => {
+    setSettle((n) => n + 1);
+    onArrive?.();
+  }, [onArrive]);
 
   /**
    * Which views have ever been opened.
@@ -388,7 +435,13 @@ export function Diorama({
 
           {/* Cuts the camera to the open view. Switching is a selection, not a
               journey — a tween here would be the rail coming back through the door. */}
-          <CameraRig pose={pose} durationMs={beat ? beatDurationMs : 0} onArrive={onArrive} />
+          <CameraRig
+            pose={pose}
+            durationMs={beat ? beatDurationMs : 0}
+            // In the bowl every move within a view is a pan, timed by its length.
+            pan={!beat}
+            onArrive={arrive}
+          />
 
           {/* Built on first visit, then kept. Discrete views mean never paying for a
               world nobody is looking at — and the valley's mesh is 130k triangles and a
@@ -409,6 +462,8 @@ export function Diorama({
                 pinsInteractive={interactive}
                 transport={valleyTransport}
                 threads={valleyThreads}
+                onOpenAt={view === 'valley' ? onOpenAt : undefined}
+                settle={settle}
               />
             </group>
           )}
@@ -424,6 +479,8 @@ export function Diorama({
               openId={openPin}
               onOpen={onOpenPin ?? (() => {})}
               interactive={interactive}
+              onOpenAt={onOpenAt}
+              settle={settle}
             />
           )}
 

@@ -23,6 +23,8 @@ export const CELLS_META = cells as unknown as {
   radiusKm: number;
   levels: { layer: string; minzoom: number; maxzoom: number; cellDeg: number; cells: number }[];
   stats: { cells: number; totalPeople: number; max: number };
+  /** People per km² in the densest finest-grid cell: `t = 1`. See build-cells.py. */
+  maxDensity: number;
 };
 
 /** `pmtiles://` plus a root-relative path: the protocol fetches it from this origin. */

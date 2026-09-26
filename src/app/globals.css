@@ -68,7 +68,10 @@ button {
 }
 button:hover { color: var(--register-page-kicker); }
 button[aria-pressed='true'] { color: var(--register-page-kicker); }
-:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: 2px; }
+/* No focus ring anywhere, Yan's call on 26 Sep 2026: the box drawn round an icon or a
+   button read as a selection highlight on the exhibition screen. Keyboard position is
+   still carried by the open pop-up and the pin icon's lift, see PinLayer.css. */
+:focus, :focus-visible { outline: none; }
 
 /* The invert register as a control: the panels' one invitation, for the one thing
    that moves a visitor on. Purple ground, off-white ink, a pill. */
@@ -103,6 +106,47 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
   pointer-events: none;
 }
 .view-caption p { margin: 0; }
+/* The Present's colour key, bottom left beside the credits `i`, through the whole chapter.
+   A swatch per ramp stop with the density it marks under it, after the Pudding's
+   3D-cities legend. On the card's ground, since it sits over the cells and a bare label
+   there cannot be read. */
+.pop-legend {
+  position: absolute;
+  left: 60px;                      /* clear of the credits button in the corner */
+  bottom: 12px;
+  z-index: 2;
+  margin: 0;
+  pointer-events: none;
+  padding: 8px 12px 7px;
+  border-radius: 8px;
+  background: var(--register-page-ground);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--register-page-ink) 12%, transparent);
+  color: var(--register-page-ink);
+}
+.pop-legend-title { margin: 0 0 6px; font-weight: 700; font-size: 0.8125rem; }
+.pop-legend-scale {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(44px, 64px));
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pop-legend-scale li { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.pop-legend-swatch {
+  display: block;
+  width: 100%;
+  height: 12px;
+  border-radius: 2px;
+  /* The first stop is the ground colour; the edge keeps it a swatch rather than a gap. */
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--register-page-ink) 14%, transparent);
+}
+.pop-legend-value { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) {
+  .pop-legend { padding: 6px 9px 5px; }
+  .pop-legend-scale { grid-template-columns: repeat(5, 38px); }
+  .pop-legend-value { font-size: 0.6875rem; }
+}
 /* The cell tooltip: the label pill, grown — a place on the first line, its people and its
    distance under it. Follows the pointer, never takes it. */
 .cell-tip {
@@ -127,23 +171,75 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
 .cell-tip strong { font-weight: 700; font-size: 0.9375rem; }
 .cell-tip span { color: var(--register-page-muted); }
 
-/* The maker's mark, bottom right: Thibi's wordmark as a link, on the same row as the
-   credits `i` in the other corner. Quiet — it is the last thing on the page, not the
-   first — and it brightens under the pointer. */
-.brand {
+/* Bottom right: the piece's address over the maker's mark, one column, right-aligned,
+   on the same row as the credits `i` in the other corner. */
+.corner-credit {
   position: absolute;
   right: 16px;
   bottom: 14px;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+/* The QR code and the URL under it. Full strength, unlike the mark: a code scanned from
+   across a room needs all the contrast it can have. The padding is the quiet zone the
+   code is generated without. */
+.site-link {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  color: var(--register-page-ink);
+  text-decoration: none;
+}
+/* As wide as the URL under it — Yan, 26 Sep 2026. `width: 0` keeps the code out of the
+   column's intrinsic width, so the label alone sets it; `min-width` then fills it. */
+.site-qr-code {
   display: block;
-  line-height: 0;
+  box-sizing: border-box;
+  width: 0;
+  min-width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--register-page-ground);
+  color: var(--register-page-ink);
+}
+.site-link-label { font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-align: center; }
+.site-link:hover .site-link-label { color: var(--register-page-kicker); }
+/* On a phone the visitor is already here: the code would point at the page it is on. */
+@media (max-width: 560px) {
+  .site-link { display: none; }
+}
+
+/* The maker's mark: Thibi's wordmark as a link. Quiet — it is the last thing on the
+   page, not the first — and it brightens under the pointer. */
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  color: var(--register-page-ink);
+  text-decoration: none;
   opacity: 0.55;
   transition: opacity 160ms ease;
 }
 .brand:hover, .brand:focus-visible { opacity: 1; }
+/* "Created by", one small line over the wordmark. Part of the link, so it dims and
+   brightens with it; hidden from the accessible name, which already says it. */
+.brand-label {
+  font-size: 0.6875rem;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
 .brand img { display: block; width: 78px; height: auto; }
 @media (max-width: 560px) {
   .brand img { width: 64px; }
+  .brand-label { font-size: 0.625rem; }
 }
 
 /* The growing circle's counter, during the Present stem. Three figures on one line,
@@ -235,7 +331,6 @@ button[aria-pressed='true'] { color: var(--register-page-kicker); }
 /* Diorama measures this box itself and sizes the canvas from it — see the comment
    in Diorama.tsx. It must therefore have a definite size of its own. */
 .diorama { position: absolute; inset: 0; }
-.canvas-wrap:focus-visible { outline: 3px solid var(--ui-focus); outline-offset: -3px; }
 
 .panel {
   background: var(--cosmo-offWhite);
